@@ -21,4 +21,17 @@ uv run lstmabar smoke        # config -> seed -> run dir sanity check
 
 Optional extras: `dsp`, `analysis`, `clap`, `demo`, `quantum`. Install them with, for example, `uv sync --extra dev --extra demo`.
 
+## Demo
+
+A local Gradio page with manual knobs on the differentiable pedalboard and dry/wet A/B playback:
+
+```bash
+uv sync --extra dev --extra demo
+uv run lstmabar demo                 # http://127.0.0.1:7860 (--port N)
+```
+
+Upload or record a clip (trimmed to 15 s, uploads up to 25 MB), or pick a synthetic example riff. Knobs are generated from each effect block's parameter specs; log-taper knobs slide over their position and show the physical value underneath.
+
+`--share` creates a public URL that runs anyone's uploads on your machine; add `--auth user:pass` to require a login.
+
 Heavy training runs on Colab via [colab/bootstrap.ipynb](colab/bootstrap.ipynb), using the same CLI.
