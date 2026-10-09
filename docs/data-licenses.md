@@ -20,7 +20,7 @@
 |---|---|---|---|---|
 | **Guitar-TECHS** (Pedroza et al. 2025) | DI input (also mic'd clean amp) | CC BY 4.0 (Zenodo + project site) | **Yes** | Attribution. 48 kHz / 32-bit float; resample to 44.1 kHz. |
 | **EGFxSet** (Pedroza et al. 2022) | Real-pedal test set (also clean DI single notes) | CC BY 4.0 (Zenodo). mirdata lists CC BY-SA 4.0 (discrepancy) | **Yes** | Attribution. Cite 2 papers (ISMIR LBD 2022 + DAFx 2024). Single 5 s notes only. Reportedly noisy. |
-| **pOD-set** (Dal Rì et al. 2025) | Real-pedal test set (27 overdrives × gain sweep) | CC BY-NC 4.0 (Zenodo) | **Yes w/ conditions** | Non-commercial. Input is a mixed-instrument file, not pure DI guitar. 45 GB. |
+| **pOD-set** (Dal Rì et al. 2025) | Real-pedal test set (27 overdrives × 6 gain × 6 tone grid) | CC BY-NC 4.0 (Zenodo) | **Yes w/ conditions** | Non-commercial. Input is a mixed-instrument file, not pure DI guitar. 45 GB. |
 | **ToneTwist AFx** (Comunità et al.) | Real-pedal test set (paired dry/wet, ~40 devices) | CC BY-NC 4.0 per Zenodo record (2 records checked). Repo code: MIT | **Yes w/ conditions** | Non-commercial. Dry inputs include **IDMT-SMT-Guitar (CC BY-NC-ND)** and **YouTube bass recordings** (inherited-rights red flag). Internal eval only. Don't republish audio. |
 | **IDMT-SMT-Guitar** (Fraunhofer IDMT) | DI input | CC BY-NC-ND 4.0 (Zenodo + IDMT page: "provided for evaluation purpose") | **Yes w/ conditions** (private training/eval only) | NC + ND: no sharing of renders or derived audio. Weights trained on it are a grey area. "Evaluation purpose" wording. |
 | **IDMT-SMT-Audio-Effects** (Fraunhofer IDMT) | Effects test set (mostly not real pedals) | CC BY-NC-ND 4.0 (Zenodo + IDMT page) | **Yes w/ conditions** (private eval only) | As above. Effect chain not documented on Zenodo, so don't treat it as real-pedal audio. |
@@ -57,7 +57,7 @@
 - **License:** CC BY-NC 4.0 (Zenodo license field). **Confidence: high.**
 - **Permits:** non-commercial research, redistribution, renders, weights, and a free demo, with attribution. Nothing commercial.
 - **Attribution:** Dal Rì, Stefani, Turchet, Conci, "Morphdrive", DAFx25, pp. 23–30. DOI 10.5281/zenodo.15389653.
-- **Contents:** **27 real boutique overdrive pedals** (e.g. Boss Blues Driver, Fulltone OCD v1.3, Klon KTR, Walrus 385 MKII), each recorded across gain settings 0–5. Chain latency is removed and polarity corrected. The input is about 6 min of mixed instrumental material from Yeh et al., plus sine sweeps. **Not pure DI guitar.**
+- **Contents:** **27 real boutique overdrive pedals** (e.g. Boss Blues Driver, Fulltone OCD v1.3, Klon KTR, Walrus 385 MKII), each recorded across a 6 × 6 grid of gain and tone knob positions (0, 2, … 10), 36 combinations per pedal, ~98 h total. Chain latency is removed and polarity corrected. The input is about 6 min of mixed instrumental material from Yeh et al., plus sine sweeps. **Not pure DI guitar.**
 - **Format:** WAV, 48 kHz, 24-bit, per-pedal zips with CSV. 45.1 GB in total, so download only the pedals we need.
 - **Red flags:** NC. The rights in the Yeh et al. input material weren't checked (open question).
 
@@ -157,7 +157,7 @@
 
 ### `test_real` set (task 4.4)
 1. **EGFxSet** (CC BY 4.0) is the core: BD-2, TS Mini, RAT2, CE-3, Phase 45, E-Lady, DL4, amp reverbs. Every one is a real unit with a matching clean input. Listen for noise first.
-2. **pOD-set** (CC BY-NC 4.0): 27 real overdrives with **gain sweeps**, which suits a parametric sim-to-real check on the drive axis. Download only a handful of pedals.
+2. **pOD-set** (CC BY-NC 4.0): 27 real overdrives with a **gain × tone knob grid**, which suits a parametric sim-to-real check on the drive and tone axes. Download only a handful of pedals.
 3. **ToneTwist AFx analog subset** (CC BY-NC 4.0, inherited-rights caveat): paired real fuzz, distortion, overdrive, chorus, tremolo, compressor. Internal evaluation numbers only. Never publish its audio.
 4. **IDMT-SMT-Audio-Effects** is **not** a real-pedal set until we confirm how its effects were made. At most a secondary private eval.
 
@@ -175,7 +175,7 @@
 
 ## Open questions / follow-ups
 1. **Fraunhofer IDMT:** does "provided for evaluation purpose" rule out training? Are model weights trained on IDMT-SMT-Guitar shareable under CC BY-NC-ND? (Contact via the IDMT dataset page.)
-2. **EGDB authors (Yu-Hua Chen / Yi-Hsuan Yang):** what license covers the DI tracks? Can we train on them and publish weights and a demo?
+2. **EGDB authors (Yu-Hua Chen, f08946011@ntu.edu.tw / Yi-Hsuan Yang):** what license covers the DI tracks? Can we train on them and publish weights and a demo?
 3. **EGFxSet:** confirm CC BY 4.0 (Zenodo) vs CC BY-SA 4.0 (mirdata index) with the authors or mirdata maintainers. Also check sample rate and bit depth on download.
 4. **TONE3000 (support@tone3000.com):** is using a hand-picked set of captures to render ML training data, and publishing the resulting non-commercial model weights, acceptable under the ToS? Does "cco" mean CC0? Is there a way to filter by license in the UI?
 5. **GuitarML (smartguitarml@gmail.com):** what license covers the ToneLibrary / Proteus Tone Pack model files? Does the repo's GPL-3.0 apply to them?
