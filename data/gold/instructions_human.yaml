@@ -1,38 +1,2119 @@
-# Human-written gold instructions (held-out eval).
+# Human-style gold instructions (held-out test data). See README.md.
 #
-# ONLY genuinely human-written requests belong here: text typed by a real
-# guitarist describing the tone they want. Do NOT add LLM-generated,
-# LLM-paraphrased or LLM-"cleaned up" text (those go in instructions_llm_*.yaml).
-# Keep the author's original wording, typos and slang verbatim.
+# source: simulated_human = written by independent LLM agents, each role-playing ONE
+#   invented guitarist in an isolated context (10 people x 15 requests, 2026-10-09).
+# source: human = written by real people. Append real items with ids continuing after
+#   the last id, `author` set to a pseudonym (e.g. friend-01). Never relabel simulated items.
 #
-# Conventions:
-#   source: human                (always)
-#   id:     h001, h002, ...      (unique, sequential)
-#   author: required             (stable pseudonymous id per person, e.g. human-01)
-#   target: same schema/enums as instructions_llm_persona.yaml
-#     in_scope:        true | false   (false if it mainly needs modulation/delay/reverb/octave/pitch/wah/amp-sim)
-#     family:          clean | overdrive | distortion | fuzz | none   (none = EQ/comp only)
-#     gain:            none | low | medium | high | extreme
-#     brightness:      dark | slightly_dark | neutral | slightly_bright | bright
-#     mids:            scooped | neutral | pushed
-#     compression:     none | light | heavy
-#     clipping:        soft | hard | asymmetric | unknown   (clean/none family -> unknown)
-#     reference_pedal: drive/comp pedal name if named or clearly implied, else null
-#   notes: one line on the author's intent
-#
-# Example item (replace [] below with a list of items like this):
-# - id: h001
-#   source: human
-#   author: human-01
-#   instruction: "..."
-#   target:
-#     in_scope: true
-#     family: overdrive
-#     gain: medium
-#     brightness: neutral
-#     mids: pushed
-#     compression: none
-#     clipping: soft
-#     reference_pedal: null
-#   notes: "..."
-[]
+# Simulated authors:
+#   sim-01: Kenji Morimoto, 44, Osaka jazz-fusion club player and J-pop session guitarist (Ibanez AS semi-hollow, Japanese Strat-type with SSS), fluent but non-native English, types short and polite, drops articles
+#   sim-02: Jonas "Jo" Krüger, 28, Neukölln, plays a beat-up Harley Benton offset in post-punk band Kaltfront through whatever amp the venue has; lowercase typist, blunt, drops German words.
+#   sim-03: Graham Pritchard, 55, Nuneaton; played rhythm in 80s pub band "The Rusty Nails", back at it with an Epiphone Les Paul copy and a Boss Katana in the spare room, polite, wary of tech, signs off his messages
+#   sim-04: Darnell "Dee" Batiste, 34, New Orleans rhythm guitarist (Strat + ES-335, Deluxe Reverb) in a Frenchmen St brass band and Sunday church band, lives on tight clean chank and compression, types fast lowercase on his phone between sets
+#   sim-05: Maya Tran, 21, DePaul junior in Chicago, plays a Player Tele (lots of two-hand tapping) in emo/math-rock band "glass hallway", lurks r/guitarpedals + TGP, watches every JHS/Knobs demo, overthinks everything, types lowercase w/ abbreviations
+#   sim-06: Brendan "Bren" Kowalski, 36, Coburg (Melbourne) sparky, plays a '03 SG Standard in drop A/B through an Orange OR120 + Sunn Model T into two 4x12s for doom trio Mound of Ash; types lowercase, no apostrophes, dry and blunt.
+#   sim-07: Rohan Kulkarni, 31, Andheri West home-studio session guitarist (HSS Strat, Ibanez RG, Focusrite into Reaper) tracking ad jingles and film BGM for Mumbai producers who send reference tracks and want files same night
+#   sim-08: Darius "Kelz" Kelly, 26, Atlanta trap/hip-hop producer; records simple loops on a Squier Bullet Strat into a Scarlett Solo in FL Studio, thinks in mixing terms, types lowercase with abbreviations, doesn't know pedal names
+#   sim-09: Dee Halvorsen, 34, Portland OR, sings and plays guitar in surf/garage trio The Tidepool Ghosts; plays a '66 Teisco Del Rey and a Guyatone LG-series through borrowed amps, owns a Maestro FZ-1A clone and a crusty Univox Super-Fuzz, types in lowercase and is dry and opinionated
+#   sim-10: Johan Lindqvist, 33, Stockholm prog-metal 7-string player (Strandberg Boden, drop A / F#) and part-time engineer at a Södermalm studio, normally tracks DI + Neural DSP/Axe-FX sims and is testing this app against them; precise, frequency-minded, Swedish-English.
+
+- id: h001
+  source: simulated_human
+  author: sim-01
+  instruction: Tonight jazz club gig with semi-hollow. I want clean but little bit warm and round sound. Not so bright please. small compression is ok
+  target:
+    in_scope: true
+    family: clean
+    gain: none
+    brightness: slightly_dark
+    mids: neutral
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: warm, slightly dark jazz clean for semi-hollow with a touch of compression
+- id: h002
+  source: simulated_human
+  author: sim-01
+  instruction: J-pop recording session. Director say 'more sparkle on the cutting'. I use strat half tone (2-4 position). Bright clean, compressor like Dyna Comp, tight and even
+  target:
+    in_scope: true
+    family: clean
+    gain: none
+    brightness: bright
+    mids: neutral
+    compression: heavy
+    clipping: unknown
+    reference_pedal: MXR Dyna Comp
+  notes: sparkly squashed clean for J-pop funk cutting, Dyna Comp style
+- id: h003
+  source: simulated_human
+  author: sim-01
+  instruction: fusion lead like Larry Carlton Room 335. semi hollow bridge pickup. overdrive medium, mid push, long sustain but not fizzy.
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: smooth vocal mid-forward overdrive lead, sustain without fizz
+- id: h004
+  source: simulated_human
+  author: sim-01
+  instruction: too much gain than before. half please
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: pushed
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: 'relative tweak on the previous lead: cut drive roughly in half'
+- id: h005
+  source: simulated_human
+  author: sim-01
+  instruction: At live house the semi-hollow is howling (feedback) when I step on drive. Can you reduce low end and keep the crunch? stage is small and loud
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: light crunch with less bass to tame semi-hollow feedback
+- id: h006
+  source: simulated_human
+  author: sim-01
+  instruction: TS9 into clean amp. for blues number in the 2nd set
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: Ibanez TS9 Tube Screamer
+  notes: classic Tube Screamer blues overdrive
+- id: h007
+  source: simulated_human
+  author: sim-01
+  instruction: city pop ballad, like Tatsuro Yamashita cutting. clean with chorus and little delay pls
+  target:
+    in_scope: false
+    family: clean
+    gain: none
+    brightness: slightly_bright
+    mids: neutral
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: 80s Japanese city-pop clean; main ask is chorus + delay
+- id: h008
+  source: simulated_human
+  author: sim-01
+  instruction: Session for anime song, rock part. They want heavy distortion but I am not metal guy lol. strat single coil so please high gain but not so much noise, tight low end
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: tight high-gain rock distortion for anime song session on single coils
+- id: h009
+  source: simulated_human
+  author: sim-01
+  instruction: just curious.. I never use fuzz. try vintage Fuzz Face sound with strat neck pickup?
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: Dallas Arbiter Fuzz Face
+  notes: 'experiment: vintage Fuzz Face on neck pickup'
+- id: h010
+  source: simulated_human
+  author: sim-01
+  instruction: little brighter
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: 'relative tweak: just a bit more treble on last result'
+- id: h011
+  source: simulated_human
+  author: sim-01
+  instruction: I cannot play like Holdsworth haha but want that kind legato lead. RAT with low gain setting, mid forward, smooth
+  target:
+    in_scope: true
+    family: distortion
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: light
+    clipping: hard
+    reference_pedal: ProCo RAT
+  notes: RAT at moderate gain, mid-forward smooth fusion legato lead
+- id: h012
+  source: simulated_human
+  author: sim-01
+  instruction: Recording intro of J-pop ballad, arpeggio with strat. very clean, every note same volume. compression more but keep natural attack
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: pristine even arpeggio clean, compression for evenness without killing attack
+- id: h013
+  source: simulated_human
+  author: sim-01
+  instruction: result is muddy. semi hollow neck pickup is too boomy, cut low mid?
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: slightly_bright
+    mids: scooped
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: 'EQ fix: reduce low-mid boom from neck pickup'
+- id: h014
+  source: simulated_human
+  author: sim-01
+  instruction: Klon type for solo boost. transparent, I dont want to change my tone, only more push to amp
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: Klon Centaur
+  notes: transparent Klon-style boost for solos
+- id: h015
+  source: simulated_human
+  author: sim-01
+  instruction: can you add auto wah? funk cutting session tomorrow
+  target:
+    in_scope: false
+    family: clean
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: wants envelope filter for funk, not available
+- id: h016
+  source: simulated_human
+  author: sim-02
+  instruction: need it dirtier but not metal. playing SO36 friday and the house amp is a jc120 which sounds like a kitchen. want that scratchy mid crunch like gang of four but with a bit more hair on it
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_bright
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: Crunchy, trebly-mid post-punk overdrive to rescue a sterile clean venue amp; not high gain.
+- id: h017
+  source: simulated_human
+  author: sim-02
+  instruction: zu viel bass. muddy as hell in the recording
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: Too much low end on the recorded track; cut bass so it clears up, no drive change.
+- id: h018
+  source: simulated_human
+  author: sim-02
+  instruction: fuzz. loud. ugly.
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: Wants a nasty, saturated fuzz; no further spec.
+- id: h019
+  source: simulated_human
+  author: sim-02
+  instruction: song is called Plattenbau, its basically 2 chords for 3 minutes. want it to sound like a wall of RAT, gain like 3 oclock, filter turned up so its not fizzy
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: ProCo RAT
+  notes: Thick high-gain RAT wall for a two-chord song, with the RAT filter rolling off fizz (darker).
+- id: h020
+  source: simulated_human
+  author: sim-02
+  instruction: less than before. still too much gain the chords are just mush
+  target:
+    in_scope: true
+    family: distortion
+    gain: medium
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: ProCo RAT
+  notes: 'Relative tweak after s04: keep the RAT sound but back the gain off so chords separate.'
+- id: h021
+  source: simulated_human
+  author: sim-02
+  instruction: recording a demo in the proberaum tonight. i just want my clean sound to not be so thin and spiky, the bridge pickup on this thing is ice pick city
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: slightly_dark
+    mids: pushed
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: 'Stay clean but tame the harsh bridge pickup: less treble, more body, a little evening-out.'
+- id: h022
+  source: simulated_human
+  author: sim-02
+  instruction: can u make the intro sound like its in a huge empty hall, lots of echo
+  target:
+    in_scope: false
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: Wants big reverb/delay for an intro; nothing about drive or EQ.
+- id: h023
+  source: simulated_human
+  author: sim-02
+  instruction: more compression on the clean part pls, the arpeggios jump around in volume. squashed but not dead
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: heavy
+    clipping: unknown
+    reference_pedal: null
+  notes: Heavy compression to even out clean arpeggio dynamics while keeping some life.
+- id: h024
+  source: simulated_human
+  author: sim-02
+  instruction: that joy division chorus guitar sound, cold and wobbly. little bit of dirt too
+  target:
+    in_scope: false
+    family: overdrive
+    gain: low
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: Main ask is chorus modulation (out of scope); a touch of light overdrive is secondary.
+- id: h025
+  source: simulated_human
+  author: sim-02
+  instruction: my mate lent me his ds-1 and honestly i hate it lol but our singer loves it. so ok ds1 but less harsh up top, it hurts
+  target:
+    in_scope: true
+    family: distortion
+    gain: medium
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: Boss DS-1
+  notes: DS-1 style distortion with the harsh top end rolled off.
+- id: h026
+  source: simulated_human
+  author: sim-02
+  instruction: tone bender kind of thing, sputtery and broken, for the noise part at the end of the set when everything falls apart
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: Tone Bender
+  notes: Gated, sputtering vintage germanium-style fuzz for a chaotic noise outro.
+- id: h027
+  source: simulated_human
+  author: sim-02
+  instruction: just a boost to push the venue marshall into breakup. nothing fancy
+  target:
+    in_scope: true
+    family: clean
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: Clean boost to drive a house Marshall's front end; no added character.
+- id: h028
+  source: simulated_human
+  author: sim-02
+  instruction: vorher war besser. way too bright now, takes my ears off
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: 'Relative tweak: the last result got too trebly, pull the brightness back down.'
+- id: h029
+  source: simulated_human
+  author: sim-02
+  instruction: big muff kinda fuzz, thick and fat, but it has to still cut through our drummer who hits like a truck. last time with a muff i just disappeared in the mix
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: Big Muff
+  notes: Big Muff sustain/thickness but with mids pushed instead of scooped so it cuts in a loud band.
+- id: h030
+  source: simulated_human
+  author: sim-02
+  instruction: is there an octave fuzz? the jack white seven nation army thing
+  target:
+    in_scope: false
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: Curious about octave-up/pitch fuzz (octave effect not supported); fuzz is part of it.
+- id: h031
+  source: simulated_human
+  author: sim-03
+  instruction: Hello. I would like the sound of Paul Kossoff on All Right Now please. My Les Paul copy sounds a bit thin and weedy through this amp, nothing like the record. Thanks, Graham
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_dark
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: Warm, thick, mid-heavy Marshall-style crunch to fix a thin sound
+- id: h032
+  source: simulated_human
+  author: sim-03
+  instruction: bit more crunch
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: 'Relative tweak: same tone as last result, a little more gain'
+- id: h033
+  source: simulated_human
+  author: sim-03
+  instruction: Trying to get the Status Quo sound for Caroline. Chunky rhythm but not too much fuzz on it. Me and the brother in law are having a go at it on Saturday
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: Tight chunky boogie rhythm crunch, moderate gain; 'fuzz' just means dirt
+- id: h034
+  source: simulated_human
+  author: sim-03
+  instruction: Thats too fizzy on the top end now, sounds like a wasp in a jar. can you take some of the top off but leave the rest
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: Keep the previous drive, just roll off harsh treble
+- id: h035
+  source: simulated_human
+  author: sim-03
+  instruction: whole lotta love riff, jimmy page
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: Gritty mid-forward 60s/70s Les Paul crunch
+- id: h036
+  source: simulated_human
+  author: sim-03
+  instruction: My son says I need a Tube Screamer for the solos, is that something you can do? I want it to sing a bit more like Gary Moore on Parisienne Walkways, it just dies off at the moment.
+  target:
+    in_scope: true
+    family: overdrive
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: light
+    clipping: soft
+    reference_pedal: Tube Screamer
+  notes: Singing, sustaining lead tone with mid push; TS named by son
+- id: h037
+  source: simulated_human
+  author: sim-03
+  instruction: Can you put some echo on it like Hank Marvin and the Shadows, Apache. Nice and clean.
+  target:
+    in_scope: false
+    family: clean
+    gain: none
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: Mainly wants tape echo/reverb on a clean bright tone
+- id: h038
+  source: simulated_human
+  author: sim-03
+  instruction: Less than before please, its far too much now. Sounds like heavy metal!!
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: 'Relative tweak: back the gain right off to a mild drive'
+- id: h039
+  source: simulated_human
+  author: sim-03
+  instruction: Hello again. I am recording a bit on the laptop for the first time (Audacity) and the guitar is up and down in volume all over the place, the quiet bits just disappear. Can it even it out without changing the sound too much? Many thanks, Graham
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: heavy
+    clipping: unknown
+    reference_pedal: null
+  notes: Compression only to level out uneven dynamics, tone otherwise untouched
+- id: h040
+  source: simulated_human
+  author: sim-03
+  instruction: Gary Moore Still Got The Blues, the long solo. warm and smooth not harsh
+  target:
+    in_scope: true
+    family: overdrive
+    gain: high
+    brightness: slightly_dark
+    mids: pushed
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: Smooth, warm, sustaining high-gain lead with mids
+- id: h041
+  source: simulated_human
+  author: sim-03
+  instruction: Pub gig at the Red Lion on the 14th, first one in 30 odd years! Need a good all round rock sound that will do AC/DC, Free and Thin Lizzy without fiddling about between songs. Not too much gain as I'm out of practice and it shows up the mistakes lol. Cheers
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: Versatile classic-rock crunch at moderate gain, one setting for the whole set
+- id: h042
+  source: simulated_human
+  author: sim-03
+  instruction: hendrix fuzz please purple haze
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: Fuzz Face
+  notes: Classic woolly 60s Hendrix fuzz
+- id: h043
+  source: simulated_human
+  author: sim-03
+  instruction: On the clean sound it is muffled and boomy, like there's a blanket over the amp. Can you clear it up a bit
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: 'EQ fix: cut low-end boom, add some clarity to the clean tone'
+- id: h044
+  source: simulated_human
+  author: sim-03
+  instruction: Can you make it go wah wah like the start of Voodoo Chile. I havent got the pedal
+  target:
+    in_scope: false
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: Wants a wah effect, which the app can't do
+- id: h045
+  source: simulated_human
+  author: sim-03
+  instruction: Thin Lizzy, The Boys Are Back In Town, the twin guitar bit. Bit brighter than last time and a touch more bite please, the previous one was a bit woolly. Cheers G
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_bright
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: Crunchy lead with more treble and bite than the last woolly result
+- id: h046
+  source: simulated_human
+  author: sim-04
+  instruction: gig tmrw w the brass band, horns eatin me alive. need tight clean scratch tone, more snap less boom
+  target:
+    in_scope: true
+    family: clean
+    gain: none
+    brightness: slightly_bright
+    mids: pushed
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: clean percussive 16th-note scratch that cuts through horns; trim lows, add bite
+- id: h047
+  source: simulated_human
+  author: sim-04
+  instruction: squish it like a dyna comp. nile rodgers chuck thing
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: bright
+    mids: neutral
+    compression: heavy
+    clipping: unknown
+    reference_pedal: MXR Dyna Comp
+  notes: heavy squashed compression on clean bright funk chucking, Chic style
+- id: h048
+  source: simulated_human
+  author: sim-04
+  instruction: less comp than that its pumping on the stabs
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: bright
+    mids: neutral
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: back off the compression from the last result, chord stabs are pumping
+- id: h049
+  source: simulated_human
+  author: sim-04
+  instruction: church sunday. pastor said guitar sounds harsh thru the house speakers lol. just warm clean w a lil comp to even it out
+  target:
+    in_scope: true
+    family: clean
+    gain: none
+    brightness: slightly_dark
+    mids: neutral
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: tame the highs for the church PA, stay clean, gentle leveling
+- id: h050
+  source: simulated_human
+  author: sim-04
+  instruction: Cissy Strut for a second line thing. dry n cutting, no dirt
+  target:
+    in_scope: true
+    family: clean
+    gain: none
+    brightness: bright
+    mids: pushed
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: Meters-style dry clean tone with midrange bite for an outdoor parade
+- id: h051
+  source: simulated_human
+  author: sim-04
+  instruction: can u put wah on this
+  target:
+    in_scope: false
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: wanted a wah for funk rhythm; app has no wah
+- id: h052
+  source: simulated_human
+  author: sim-04
+  instruction: doin purple rain at church (yes really) need a lil grit for the solo but not metal. tube screamer type
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: Ibanez Tube Screamer
+  notes: moderate mid-forward TS overdrive for a lead, not heavy
+- id: h053
+  source: simulated_human
+  author: sim-04
+  instruction: too bright now
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: 'relative tweak: pull treble down a bit from the last setting'
+- id: h054
+  source: simulated_human
+  author: sim-04
+  instruction: trackin rhythm for a neo soul demo at my boy Marcus studio. want it round n smooth, like Isley Brothers era. maybe tiny bit of breakup on the edges? and compress it so the strums sit even in the mix
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_dark
+    mids: neutral
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: warm rounded edge-of-breakup rhythm with even compression for recording
+- id: h055
+  source: simulated_human
+  author: sim-04
+  instruction: one tune in the set needs nasty fuzz, sly stone vibe. idk just make it gnarly
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: null
+  notes: late-60s funk/psych fuzz, raw and splatty
+- id: h056
+  source: simulated_human
+  author: sim-04
+  instruction: mids r mud under the trombones. cut the low mid n keep the chank
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: slightly_bright
+    mids: scooped
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: carve low-mids to stay out of the trombones' range, keep top-end attack
+- id: h057
+  source: simulated_human
+  author: sim-04
+  instruction: slow ballad at the wedding gig sat, gimme some chorus n verb pls
+  target:
+    in_scope: false
+    family: clean
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: wanted chorus and reverb for a clean ballad; app can't do modulation/reverb
+- id: h058
+  source: simulated_human
+  author: sim-04
+  instruction: ok a lil more gain than before but still clean-ish. edge of breakup when i dig in
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: 'relative tweak: slightly more drive, just breaking up on hard picking'
+- id: h059
+  source: simulated_human
+  author: sim-04
+  instruction: keep it clean but boost it for my solo spot, gotta jump out over the horns
+  target:
+    in_scope: true
+    family: clean
+    gain: low
+    brightness: slightly_bright
+    mids: pushed
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: clean boost with mid push for volume and presence on the solo
+- id: h060
+  source: simulated_human
+  author: sim-04
+  instruction: rat w gain almost all the way down, dirty rhythm for Use Me cover
+  target:
+    in_scope: true
+    family: distortion
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: ProCo RAT
+  notes: low-gain RAT grit on a Bill Withers groove
+- id: h061
+  source: simulated_human
+  author: sim-05
+  instruction: need like edge of breakup for the tapping parts, american football LP1 vibes but w a tiny bit of hair on it. neck pickup on the tele
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_bright
+    mids: neutral
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: mostly clean sparkly tele tone with just a hint of breakup for tapped lines
+- id: h062
+  source: simulated_human
+  author: sim-05
+  instruction: comp. just comp. my left hand hammer ons basically disappear vs the picked notes, volume is all over the place
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: heavy
+    clipping: unknown
+    reference_pedal: null
+  notes: even out the volume of tapped/hammered notes with strong compression, no drive
+- id: h063
+  source: simulated_human
+  author: sim-05
+  instruction: tele bridge pickup is ice picky af lol. can u tame the highs w/o making it muddy
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: cut harsh treble on the bridge pickup a little, keep it clear
+- id: h064
+  source: simulated_human
+  author: sim-05
+  instruction: TS9 style into a hot rod deluxe for the chorus of our song parking lot weather. mid hump, not a ton of gain, it needs to cut thru 2 other guitars in a tiny basement
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: Ibanez TS9 Tube Screamer
+  notes: classic tube screamer mid-forward overdrive at moderate gain for a chorus part
+- id: h065
+  source: simulated_human
+  author: sim-05
+  instruction: less gain than that. like half
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: Ibanez TS9 Tube Screamer
+  notes: same TS-style drive as last try but about half the gain
+- id: h066
+  source: simulated_human
+  author: sim-05
+  instruction: ok rly random but what does a RAT sound like on a tele for the loud part. filter all the way open, gain kinda cranked
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: bright
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: ProCo RAT
+  notes: curious about a cranked RAT with the filter fully open (bright) on the loud section
+- id: h067
+  source: simulated_human
+  author: sim-05
+  instruction: shimmer verb + octave up for the outro swell pls
+  target:
+    in_scope: false
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: wants shimmer reverb and octave-up for an ambient outro, no drive
+- id: h068
+  source: simulated_human
+  author: sim-05
+  instruction: recording tmrw at my friend's basement studio and he said my DI last time was too clicky/spiky on the pick attack. so clean, a little bit of comp, roll off a lil top end. thats it dont get fancy
+  target:
+    in_scope: true
+    family: clean
+    gain: none
+    brightness: slightly_dark
+    mids: neutral
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: clean recording tone, light compression to soften transients and slightly less treble
+- id: h069
+  source: simulated_human
+  author: sim-05
+  instruction: fuzz face for the bridge section. gated, sputtery, kinda broken sounding. i know its a weird pick for math rock dont @ me
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: Dallas Arbiter Fuzz Face
+  notes: gated, sputtery Fuzz Face style fuzz for a contrast section
+- id: h070
+  source: simulated_human
+  author: sim-05
+  instruction: our drummer wants the last song heavier, like metalcore adjacent breakdown w scooped mids?? but i still need the tapping to be legible so not a total wall of mush. idk if thats even possible tbh
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_bright
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: heavy scooped distortion for a breakdown but tight/defined enough for tapping
+- id: h071
+  source: simulated_human
+  author: sim-05
+  instruction: too fizzy
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_dark
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: previous heavy distortion result has too much high-end fizz, darken it a bit
+- id: h072
+  source: simulated_human
+  author: sim-05
+  instruction: klon klone setting (the one from the jhs video lol), gain at like 9 oclock, treble a hair up. just want to push the amp a bit for the solo-ish tapping part
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: Klon Centaur
+  notes: low-gain Klon-style push with slightly more treble for a lead part
+- id: h073
+  source: simulated_human
+  author: sim-05
+  instruction: big muff but not the super scooped one. like the version w the mids knob where u can actually hear urself in the mix
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: EHX Big Muff
+  notes: Big Muff sustain fuzz but with the mids brought up so it sits in a band mix
+- id: h074
+  source: simulated_human
+  author: sim-05
+  instruction: chorus pls, that warbly 90s emo clean thing
+  target:
+    in_scope: false
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: wants a chorus/modulation effect on cleans, not something the app does
+- id: h075
+  source: simulated_human
+  author: sim-05
+  instruction: is it overthinking to want a tiny bit of drive on the clean part just so tapped notes sustain longer?? like barely noticeable, the comp should be doing most of the sustain work. idk. just try it
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: heavy
+    clipping: soft
+    reference_pedal: null
+  notes: barely-there drive plus strong compression for more sustain on tapped clean notes
+- id: h076
+  source: simulated_human
+  author: sim-06
+  instruction: SG tuned to drop A. want a massive wall of fuzz like dopesmoker era sleep. thick, dark, no fizzy top end
+  target:
+    in_scope: true
+    family: fuzz
+    gain: extreme
+    brightness: dark
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: maximal thick dark fuzz wall for slow drop-A riffs, top end rolled off
+- id: h077
+  source: simulated_human
+  author: sim-06
+  instruction: still too much fizz up top. sounds like a dodgy transformer buzzing at me. roll the treble off
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: dark
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: same fuzz as before but darker, kill the high-frequency fizz
+- id: h078
+  source: simulated_human
+  author: sim-06
+  instruction: bit less fuzz than that one, the low B is farting out
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: back the fuzz off a notch so the low string stays defined
+- id: h079
+  source: simulated_human
+  author: sim-06
+  instruction: gig at the tote friday. sound guy always reckons im too loud and muddy in the room and i disappear behind the bass. need it to cut thru but still be heavy as. push the mids a bit
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: heavy but mid-forward, less mud so it cuts through a live mix
+- id: h080
+  source: simulated_human
+  author: sim-06
+  instruction: green russian muff pls
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: slightly_dark
+    mids: scooped
+    compression: none
+    clipping: soft
+    reference_pedal: Big Muff
+  notes: 'Russian green Big Muff tone: thick, scooped, smooth sustain'
+- id: h081
+  source: simulated_human
+  author: sim-06
+  instruction: tracking rhythms saturday at a mates studio in brunswick. want it tight, not woolly. rat into the orange kinda thing
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: ProCo RAT
+  notes: tight RAT-style distortion for recorded rhythm parts, less low-end flub
+- id: h082
+  source: simulated_human
+  author: sim-06
+  instruction: can u add heaps of reverb and a slow phaser for the intro, like its coming out of a cave
+  target:
+    in_scope: false
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: ambient intro needing reverb and phaser, no drive change asked
+- id: h083
+  source: simulated_human
+  author: sim-06
+  instruction: quiet bit before the riff drops. mostly clean, just a little bit of hair on it like a valve amp just on the edge
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: edge-of-breakup light overdrive for the quiet section
+- id: h084
+  source: simulated_human
+  author: sim-06
+  instruction: electric wizard funeralopolis. filthy, broken, sounds like half the signal is missing
+  target:
+    in_scope: true
+    family: fuzz
+    gain: extreme
+    brightness: dark
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: null
+  notes: sputtery, gated, broken-sounding dark fuzz like Electric Wizard
+- id: h085
+  source: simulated_human
+  author: sim-06
+  instruction: some of my chugs jump out way louder than others, attack is all over the shop. squash it a bit but dont kill the sustain
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: even out uneven picking dynamics with gentle compression, keep sustain
+- id: h086
+  source: simulated_human
+  author: sim-06
+  instruction: tone bender style, old british raspy fuzz. thick but a bit of bite in the mids
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: asymmetric
+    reference_pedal: Tone Bender
+  notes: vintage Tone Bender fuzz, raspy and mid-forward
+- id: h087
+  source: simulated_human
+  author: sim-06
+  instruction: ok now its too dark. like listening thru a fridge door. open it up a touch
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: previous fuzz overcorrected dark, add a little top back
+- id: h088
+  source: simulated_human
+  author: sim-06
+  instruction: octave up fuzz for the solo. hendrix but heavier and dumber
+  target:
+    in_scope: false
+    family: fuzz
+    gain: high
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: null
+  notes: octave-up fuzz for a solo; the octave is the main ask
+- id: h089
+  source: simulated_human
+  author: sim-06
+  instruction: lead needs to sing over the wall. bit of a boost, more sustain, mids forward. TS in front of the amp sort of thing
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: light
+    clipping: soft
+    reference_pedal: Tube Screamer
+  notes: Tube Screamer-style mid push and sustain for leads
+- id: h090
+  source: simulated_human
+  author: sim-06
+  instruction: apprentice reckons my tone sounds like a 3 phase motor seizing up. thats the goal mate. MORE
+  target:
+    in_scope: true
+    family: fuzz
+    gain: extreme
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: push the fuzz even further, maximum grind
+- id: h091
+  source: simulated_human
+  author: sim-07
+  instruction: producer wants crunchy rock tone for a bike ad, 30 sec spot. not too heavy, it should feel energetic but VO is on top so dont make it fight. ref is something like hero honda type old ads
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: neutral
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: Energetic medium crunch for a bike ad that sits under voiceover, not heavy.
+- id: h092
+  source: simulated_human
+  author: sim-07
+  instruction: less fizz
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: Previous high-gain result was too fizzy on top; roll off the highs, keep the drive.
+- id: h093
+  source: simulated_human
+  author: sim-07
+  instruction: Need clean funky tone for a biscuit ad, lots of chikka chikka 16th strumming. Compressed and tight, little bright. No drive at all
+  target:
+    in_scope: true
+    family: clean
+    gain: none
+    brightness: slightly_bright
+    mids: neutral
+    compression: heavy
+    clipping: unknown
+    reference_pedal: null
+  notes: Clean funk rhythm, squashed and slightly bright, zero distortion.
+- id: h094
+  source: simulated_human
+  author: sim-07
+  instruction: MD said the lead is sounding very thin yaar. make it fatter, more mids, like a tube screamer type sound. its for the hero entry bgm in a south remake so it should sing
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: light
+    clipping: soft
+    reference_pedal: Ibanez Tube Screamer
+  notes: Thin lead needs a mid-pushed singing TS-style overdrive for a hero-entry cue.
+- id: h095
+  source: simulated_human
+  author: sim-07
+  instruction: metal riff for a gaming app promo. heavy, tight low end, scooped mids. deadline is 6pm pls
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: Heavy scooped high-gain metal rhythm for a gaming promo.
+- id: h096
+  source: simulated_human
+  author: sim-07
+  instruction: can u add some delay and reverb on this so it sounds like those 90s bollywood romantic song solos. dreamy
+  target:
+    in_scope: false
+    family: clean
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: Wants ambient delay/reverb for a dreamy 90s Bollywood solo; mostly out of scope.
+- id: h097
+  source: simulated_human
+  author: sim-07
+  instruction: thoda kam gain than last one. still crunch but chords should be clear
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: 'Relative tweak: back off the gain so chords stay articulate, keep light crunch.'
+- id: h098
+  source: simulated_human
+  author: sim-07
+  instruction: Recording is very boomy, I recorded on neck pickup by mistake and no time to retrack. can you clean up the low end and make it bit brighter, no distortion
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: bright
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: 'EQ fix only: cut boomy lows from a neck-pickup take and brighten, no drive.'
+- id: h099
+  source: simulated_human
+  author: sim-07
+  instruction: fuzz tone, old school 60s garage type, for a retro coffee brand ad. ref they sent is like satisfaction riff
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: Maestro Fuzz-Tone
+  notes: Vintage 60s Satisfaction-style fuzz for a retro coffee ad.
+- id: h100
+  source: simulated_human
+  author: sim-07
+  instruction: just a clean boost for the solo part, it gets lost in the mix
+  target:
+    in_scope: true
+    family: clean
+    gain: low
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: Clean boost to lift the solo out of the mix.
+- id: h101
+  source: simulated_human
+  author: sim-07
+  instruction: too much compression now, the strumming feels dead. open it up
+  target:
+    in_scope: true
+    family: clean
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: 'Relative tweak on clean funk part: reduce compression so dynamics come back.'
+- id: h102
+  source: simulated_human
+  author: sim-07
+  instruction: Producer sent a ref of some indie band with this wall of fuzz sound, very thick and dark, sustain forever. Big muff vibe I think. Its for a web series title track
+  target:
+    in_scope: true
+    family: fuzz
+    gain: extreme
+    brightness: dark
+    mids: scooped
+    compression: none
+    clipping: soft
+    reference_pedal: Electro-Harmonix Big Muff Pi
+  notes: Thick dark sustaining Big Muff wall-of-fuzz for a web series title.
+- id: h103
+  source: simulated_human
+  author: sim-07
+  instruction: need wah on the intro lick, shaft type. can this do?
+  target:
+    in_scope: false
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: Asking for a 70s Shaft-style wah effect; out of scope.
+- id: h104
+  source: simulated_human
+  author: sim-07
+  instruction: medium gain bluesy for a sad scene, sustain needed but not harsh. warm, slightly dark. MD wants it like gilmour-ish
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_dark
+    mids: neutral
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: Warm, slightly dark, sustaining Gilmour-ish overdrive for an emotional scene.
+- id: h105
+  source: simulated_human
+  author: sim-07
+  instruction: Rat type distortion pls, raw and aggressive, punk feel for a energy drink ad. bit more bite on top
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: ProCo RAT
+  notes: Raw punky RAT distortion with a bit of top-end bite for an energy drink ad.
+- id: h106
+  source: simulated_human
+  author: sim-08
+  instruction: make it sound warm n vintage like a sample off an old soul record. its going under an 808 so i dont want it bright at all
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_dark
+    mids: neutral
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: 'soul-sample warmth: a touch of soft saturation, rolled-off top, a bit of glue'
+- id: h107
+  source: simulated_human
+  author: sim-08
+  instruction: still too bright
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: 'relative tweak after hearing result: just take more top end off'
+- id: h108
+  source: simulated_human
+  author: sim-08
+  instruction: the guitar loop is fighting w my 808 in the low end. can u thin out the bottom but keep the body in the middle so it still cuts on phone speakers
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: 'EQ fix: cut lows, keep/push mids so it translates without clashing with the 808'
+- id: h109
+  source: simulated_human
+  author: sim-08
+  instruction: dusty lofi type guitar like i chopped it off a vinyl
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: dark
+    mids: neutral
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: 'lofi sample vibe: dark, slightly saturated, squashed a little'
+- id: h110
+  source: simulated_human
+  author: sim-08
+  instruction: need it gritty like that guitar on the travis scott joint, distorted but not like rock music distorted u feel me
+  target:
+    in_scope: true
+    family: distortion
+    gain: medium
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: moody gritty distortion, moderate gain, not a bright rock crunch
+- id: h111
+  source: simulated_human
+  author: sim-08
+  instruction: more grit than last time but less of that fizzy sound on top
+  target:
+    in_scope: true
+    family: distortion
+    gain: medium
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: 'relative: raise drive a notch, darken the fizz'
+- id: h112
+  source: simulated_human
+  author: sim-08
+  instruction: can u put like a tape wobble on it, like the pitch kinda warbles
+  target:
+    in_scope: false
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: wants wow/flutter pitch modulation, which the app can't do
+- id: h113
+  source: simulated_human
+  author: sim-08
+  instruction: my picking is all over the place volume wise. squash it so it sits steady in the mix
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: heavy
+    clipping: unknown
+    reference_pedal: null
+  notes: heavy compression to even out uneven dynamics
+- id: h114
+  source: simulated_human
+  author: sim-08
+  instruction: nah thats way too much dirt now lol. like half that
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: 'relative: cut the drive roughly in half, back to light grit'
+- id: h115
+  source: simulated_human
+  author: sim-08
+  instruction: rage beat. i want the guitar BLOWN OUT like the speaker is broke. as nasty as it goes
+  target:
+    in_scope: true
+    family: fuzz
+    gain: extreme
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: maxed-out broken-speaker fuzz for a rage-style beat
+- id: h116
+  source: simulated_human
+  author: sim-08
+  instruction: make it sound like its playin out of an old radio for the intro
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: neutral
+    mids: pushed
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: 'band-limited telephone/radio EQ: no lows, no highs, honky mids'
+- id: h117
+  source: simulated_human
+  author: sim-08
+  instruction: spacey and far away for the bridge, like lots of reverb echo type
+  target:
+    in_scope: false
+    family: none
+    gain: none
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: wants reverb/delay ambience, out of scope
+- id: h118
+  source: simulated_human
+  author: sim-08
+  instruction: got a session w my homie tmrw he wants a 70s funk clean guitar, snappy and tight, gonna chop it up
+  target:
+    in_scope: true
+    family: clean
+    gain: none
+    brightness: slightly_bright
+    mids: neutral
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: clean, bright-ish, snappy compressed funk tone for chopping
+- id: h119
+  source: simulated_human
+  author: sim-08
+  instruction: is there a setting that makes it sound expensive?? my squier sounds cheap and thin. want it fuller
+  target:
+    in_scope: true
+    family: clean
+    gain: low
+    brightness: neutral
+    mids: pushed
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: 'fuller, polished clean: slight boost, more body in the mids, light glue'
+- id: h120
+  source: simulated_human
+  author: sim-08
+  instruction: my boy said i need a tube screamer for that crunchy sound. can u do that
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: Tube Screamer
+  notes: 'parroting a friend''s recommendation: Tube Screamer-style mid crunch'
+- id: h121
+  source: simulated_human
+  author: sim-09
+  instruction: my teisco sounds thin and polite. want that maestro fz-1 buzz, the satisfaction-era razzy kind, but more like the break in psychotic reaction
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: Maestro FZ-1
+  notes: Buzzy, raspy 60s germanium fuzz with a thin top, the Count Five sound, to stop the Teisco sounding polite
+- id: h122
+  source: simulated_human
+  author: sim-09
+  instruction: clean surf rhythm. snappy, no mud. dick dale shouldnt be embarrassed
+  target:
+    in_scope: true
+    family: clean
+    gain: none
+    brightness: bright
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: Bright, tight clean tone for surf rhythm, with the low-end mud cleaned out
+- id: h123
+  source: simulated_human
+  author: sim-09
+  instruction: ok thats too much. half that fuzz
+  target:
+    in_scope: true
+    family: fuzz
+    gain: medium
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: null
+  notes: Same fuzz as the last result but with roughly half the gain
+- id: h124
+  source: simulated_human
+  author: sim-09
+  instruction: left my fender reverb tank at the practice space like an idiot. can you make it drippy? full splash, 6G15 style
+  target:
+    in_scope: false
+    family: clean
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: Wants wet spring reverb in place of the missing Fender reverb unit, no drive
+- id: h125
+  source: simulated_human
+  author: sim-09
+  instruction: recording at a friends basement studio saturday. our bass player is LOUD and the guitar vanishes under him. I want the rhythm parts thinner and more cutting with a little hair on it, not a 'rock' tone. and please no tube screamer honk, i'll know
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: Light dirt, less low end and more bite so rhythm guitar cuts through a loud bass, with no TS-style mid hump
+- id: h126
+  source: simulated_human
+  author: sim-09
+  instruction: outro of low tide ballroom needs the univox super-fuzz thing. ugly, octave-y, scooped, like the guitar is falling down the stairs
+  target:
+    in_scope: true
+    family: fuzz
+    gain: extreme
+    brightness: neutral
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: Univox Super-Fuzz
+  notes: Extreme, mid-scooped Super-Fuzz for a song outro; the octave-up part is a side wish, the fuzz is the main ask
+- id: h127
+  source: simulated_human
+  author: sim-09
+  instruction: the sonics. that's the request
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_bright
+    mids: pushed
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: Blown-out, midrange-heavy garage distortion like the Sonics' records
+- id: h128
+  source: simulated_human
+  author: sim-09
+  instruction: fuzz is fizzy and nasty on the top end, not the good nasty. guyatone with hot pickups into a borrowed solid state amp (dont ask). tame the fizz keep the fuzz
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: Keep the fuzz level but roll off the harsh high-end fizz
+- id: h129
+  source: simulated_human
+  author: sim-09
+  instruction: squish it. my tremolo picking is all over the place volume wise and i refuse to practice more
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: heavy
+    clipping: unknown
+    reference_pedal: null
+  notes: Heavy compression to even out uneven tremolo-picked surf parts, no drive
+- id: h130
+  source: simulated_human
+  author: sim-09
+  instruction: a big muff is NOT period correct and I want that on record. but the drummer wrote a slow song and wants a wall. so. big muff. a wall of it
+  target:
+    in_scope: true
+    family: fuzz
+    gain: extreme
+    brightness: neutral
+    mids: scooped
+    compression: none
+    clipping: soft
+    reference_pedal: Big Muff
+  notes: Thick, sustained, scooped Big Muff wall for a slow song, asked for under protest
+- id: h131
+  source: simulated_human
+  author: sim-09
+  instruction: lil less bright than the last one?
+  target:
+    in_scope: true
+    family: clean
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: Same clean surf tone as before but a bit less treble
+- id: h132
+  source: simulated_human
+  author: sim-09
+  instruction: shadows of knight oh yeah era. dirty amp right at the edge, mean but NOT fuzz
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: Edge-of-breakup mean amp grit, Chicago garage, with no fuzz
+- id: h133
+  source: simulated_human
+  author: sim-09
+  instruction: can this do a cocked wah? that stuck-halfway honk for a lead
+  target:
+    in_scope: false
+    family: none
+    gain: none
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: Wants a fixed, parked wah filter sound, which is a wah, not drive or EQ
+- id: h134
+  source: simulated_human
+  author: sim-09
+  instruction: show at the know friday and their PA eats treble alive, its brutal. lead tone needs to be fat and a little darker, tone bender mk1.5 vibes, sustain forever. rhythm i'll handle myself
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: slightly_dark
+    mids: pushed
+    compression: none
+    clipping: asymmetric
+    reference_pedal: Tone Bender
+  notes: Fat, darker, sustaining Tone Bender-style lead fuzz to survive a harsh club PA
+- id: h135
+  source: simulated_human
+  author: sim-09
+  instruction: just curious what you do with 'link wray rumble'
+  target:
+    in_scope: true
+    family: distortion
+    gain: medium
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: Curious how the app reads the gritty, torn-speaker 1958 Rumble tone
+- id: h136
+  source: simulated_human
+  author: sim-10
+  instruction: Testing this vs my usual sim chain. 7 string in drop A, rhythm part. I want tight modern high gain, low end controlled under ca 100Hz and no fizz above 6k. Think Vildhjarta/Meshuggah tightness, not a wall of mud.
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: Baseline tight modern high-gain rhythm for low-tuned 7-string, controlled lows and top end
+- id: h137
+  source: simulated_human
+  author: sim-10
+  instruction: tubescreamer as a tightener only. drive at 0, level up, cut the lows before the clipping
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: Ibanez Tube Screamer
+  notes: 'Classic metal TS boost: minimal drive, mid hump, tightens low end'
+- id: h138
+  source: simulated_human
+  author: sim-10
+  instruction: less fizz than before. 4-5k is harsh on the palm mutes
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: 'Relative tweak: same high-gain tone, tame upper-mid/presence harshness'
+- id: h139
+  source: simulated_human
+  author: sim-10
+  instruction: Clean intro for our song Kallvatten, arpeggios on the 7 string. Glassy and even, light compression so the low B notes dont jump out. If you can also add some shimmer reverb that would be perfect but not needed
+  target:
+    in_scope: true
+    family: clean
+    gain: none
+    brightness: bright
+    mids: neutral
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: Glassy clean with gentle leveling compression; reverb is a nice-to-have
+- id: h140
+  source: simulated_human
+  author: sim-10
+  instruction: can u put a dotted 8th delay on this lead
+  target:
+    in_scope: false
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: Wants a rhythmic delay on the lead, no tone change asked
+- id: h141
+  source: simulated_human
+  author: sim-10
+  instruction: Solo tone. Needs to cut through a dense mix so push 800Hz-1k, long sustain, smooth top, not the ice-pick thing at 3k. Bit of compression ok.
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: Singing high-gain lead with mid push and sustain, smooth highs
+- id: h142
+  source: simulated_human
+  author: sim-10
+  instruction: 'Curious: what would a RAT do here instead of my plugin? medium gain, filter fairly open'
+  target:
+    in_scope: true
+    family: distortion
+    gain: medium
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: ProCo RAT
+  notes: 'Comparison experiment: RAT at moderate gain, filter knob open'
+- id: h143
+  source: simulated_human
+  author: sim-10
+  instruction: gig at Kägelbanan friday, need a backup rhythm sound in case the laptop dies. high gain, NOT scooped, it has to sit with bass in a bad room
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: Reliable live high-gain rhythm with mids intact for a boomy venue
+- id: h144
+  source: simulated_human
+  author: sim-10
+  instruction: better. still mud around 250-300hz though, take that down abit. rest is fine
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: 'Relative tweak: cut low-mids only, keep everything else'
+- id: h145
+  source: simulated_human
+  author: sim-10
+  instruction: Only compression, no drive. Clean DI going to reamp later. ca 4:1, fast attack so the djent chugs are even
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: heavy
+    clipping: unknown
+    reference_pedal: null
+  notes: Fast firm compression on DI for even chugs, no tone change
+- id: h146
+  source: simulated_human
+  author: sim-10
+  instruction: big muff on low F#. probably terrible but i want to hear it
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: scooped
+    compression: none
+    clipping: soft
+    reference_pedal: Electro-Harmonix Big Muff
+  notes: 'Curiosity: Big Muff fuzz on the lowest string'
+- id: h147
+  source: simulated_human
+  author: sim-10
+  instruction: for a weird bridge part, octave up fuzz like the hendrix thing. is that possible?
+  target:
+    in_scope: false
+    family: fuzz
+    gain: high
+    brightness: bright
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: Octave-up fuzz effect, needs an octaver
+- id: h148
+  source: simulated_human
+  author: sim-10
+  instruction: Less gain than last version. add9 chords turn to mush, I want each note audible but still heavy-ish
+  target:
+    in_scope: true
+    family: distortion
+    gain: medium
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: 'Relative tweak: back off gain for clarity on extended chords'
+- id: h149
+  source: simulated_human
+  author: sim-10
+  instruction: Chorus doubles, left/right. Want more weight, maybe +2-3dB at 80Hz but stay tight, and a slight compression to glue. Highs a bit rounded off
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_dark
+    mids: neutral
+    compression: light
+    clipping: hard
+    reference_pedal: null
+  notes: Heavier, slightly darker double-tracked rhythm with low-end weight and glue comp
+- id: h150
+  source: simulated_human
+  author: sim-10
+  instruction: can you just make it sound like the Neural Gojira plugin, the 'Clean/Crunch' amp channel into the cab
+  target:
+    in_scope: false
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: Wants a specific amp-sim plugin's amp and cab emulation

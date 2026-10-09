@@ -36,4 +36,4 @@ CI (`.github/workflows/ci.yml`) runs ruff + pytest on Ubuntu with CPU torch.
 
 ## Evaluation data hygiene
 
-`data/gold/` holds held-out test instructions. **Never read `data/gold/` when writing or tuning training caption templates or caption generation code** (design §5). Human-written items (`source: human`) are the headline test set; `instructions_llm_draft.yaml` is an LLM-drafted supplement.
+`data/gold/` holds held-out test instructions. **Never read `data/gold/` when writing or tuning training caption templates or caption generation code** (design §5). Real human items (`source: human`) are the headline test set once added; `simulated_human`, `llm_persona` and `llm_draft` items are LLM-written and must be reported separately and never relabeled.
