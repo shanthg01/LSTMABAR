@@ -985,7 +985,7 @@ spikes = [
 requires-dist = [
     { name = "auraloss", marker = "extra == 'dsp'", specifier = ">=0.4" },
     { name = "dasp-pytorch", marker = "extra == 'dsp'", specifier = ">=0.0.1" },
-    { name = "gradio", marker = "extra == 'demo'", specifier = ">=4.0" },
+    { name = "gradio", marker = "extra == 'demo'", specifier = ">=5" },
     { name = "librosa", marker = "extra == 'analysis'", specifier = ">=0.10" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "omegaconf", specifier = ">=2.3" },

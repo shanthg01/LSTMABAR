@@ -110,3 +110,26 @@ def test_pluck_pitch_and_decay():
     lag = lo + int(np.argmax(ac[lo:hi]))
     assert sr / lag == pytest.approx(f0, rel=0.02)
     assert rms(y[-sr // 10 :]) < 0.1 * rms(y[: sr // 10])
+
+
+@pytest.mark.parametrize("seconds", [0.001, 0.01, 0.05])
+@pytest.mark.parametrize("kind", RIFF_KINDS)
+def test_synth_riff_very_short(kind, seconds):
+    x = synth_riff(kind, seconds=seconds, sample_rate=44100)
+    assert x.shape == (max(round(seconds * 44100), 1),)
+    assert np.all(np.isfinite(x))
+
+
+@pytest.mark.parametrize("seconds", [0.0, -1.0])
+def test_synth_riff_rejects_non_positive_seconds(seconds):
+    with pytest.raises(ValueError):
+        synth_riff("single_notes", seconds=seconds)
+
+
+def test_to_mono_float_trims_and_rejects_bad_rate():
+    data = np.ones((48000 * 10, 2), np.int16)
+    x = to_mono_float(data, 48000, 44100, max_seconds=1.5)
+    assert x.shape == (66150,)
+    for sr in (0, -1):
+        with pytest.raises(ValueError, match="sample rate"):
+            to_mono_float(data, sr, 44100)

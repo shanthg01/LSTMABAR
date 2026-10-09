@@ -6,10 +6,14 @@ from lstmabar.audio import rms, synth_riff
 from lstmabar.demo.render import (
     default_knobs,
     describe_text,
+    iter_specs,
     knobs_to_params,
+    physical_from_slider,
     prepare_input,
     random_knobs,
     render,
+    slider_config,
+    slider_from_physical,
     to_int16,
 )
 from tests.demo.fakes import FakeBoard
@@ -101,9 +105,61 @@ def test_prepare_input_uses_upload_or_falls_back_to_riff():
     stereo = (np.random.default_rng(0).uniform(-1, 1, (sr * 3, 2)) * 32767).astype(np.int16)
     clip = prepare_input((sr * 2, stereo), "single_notes", sr, max_seconds=1.0)
     assert clip.dtype == np.float32 and clip.shape == (sr,)
-    # An empty upload also falls back to the riff.
-    empty = prepare_input((sr, np.zeros(0, np.int16)), "power_chords", sr, 15.0, riff_seconds=0.5)
-    assert empty.shape == (sr // 2,)
+
+
+def test_prepare_input_trims_before_resampling(monkeypatch):
+    import lstmabar.audio as audio
+
+    seen = []
+    real = audio.resample
+
+    def spy(x, orig_sr, target_sr):
+        seen.append(len(x))
+        return real(x, orig_sr, target_sr)
+
+    monkeypatch.setattr(audio, "resample", spy)
+    long_clip = np.zeros((48000 * 60, 2), np.int16)  # 60 s stereo upload
+    x = prepare_input((48000, long_clip), "single_notes", 44100, max_seconds=2.0)
+    assert seen == [96000]  # only the first 2 s reach the resampler
+    assert x.shape == (88200,)
+
+
+@pytest.mark.parametrize(
+    "value,match",
+    [
+        ((0, np.ones(100, np.int16)), "sample rate"),
+        ((-8000, np.ones(100, np.int16)), "sample rate"),
+        ((44100, np.zeros(0, np.int16)), "empty"),
+        ((44100, np.zeros((0, 2), np.float32)), "empty"),
+    ],
+)
+def test_prepare_input_rejects_bad_uploads(value, match):
+    with pytest.raises(ValueError, match=match):
+        prepare_input(value, "single_notes", 44100, max_seconds=15.0)
+
+
+def test_slider_configs_are_bounded_and_round_trip(board):
+    for _, spec in iter_specs(board):
+        cfg = slider_config(spec)
+        n_steps = (cfg["maximum"] - cfg["minimum"]) / cfg["step"]
+        assert 1 <= n_steps <= 1000, spec.name
+        assert cfg["minimum"] <= cfg["value"] <= cfg["maximum"]
+        assert physical_from_slider(spec, cfg["value"]) == pytest.approx(spec.default, rel=1e-6)
+        for v in (spec.min, spec.default, spec.max, (spec.min + spec.max) / 2):
+            s = slider_from_physical(spec, v)
+            assert cfg["minimum"] <= s <= cfg["maximum"]
+            assert physical_from_slider(spec, s) == pytest.approx(v, rel=1e-6)
+    cutoff = board.blocks["eq"].param_specs[0]
+    assert slider_config(cutoff)["maximum"] == 1.0  # log knob slides over its position
+    assert slider_config(cutoff)["info"] == "= 1000 Hz  (range 100 Hz to 10000 Hz)"
+    assert physical_from_slider(cutoff, 0.5) == pytest.approx(1000.0)
+    assert physical_from_slider(cutoff, None) == cutoff.default
+
+
+def test_knobs_to_params_clamps_before_normalizing(board):
+    # A negative value on a log knob would give NaN without clamping.
+    params = knobs_to_params(board, {"eq": {"cutoff_hz": -5.0}}, {})
+    assert params["eq"]["cutoff_hz"].item() == 0.0
 
 
 def test_to_int16_clips():

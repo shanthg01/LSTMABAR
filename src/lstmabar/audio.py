@@ -42,40 +42,54 @@ def _int_to_float(data: np.ndarray) -> np.ndarray:
     raise TypeError(f"unsupported audio dtype {data.dtype}")
 
 
-def _downmix(data: np.ndarray) -> np.ndarray:
-    """Mono from (T,), (T, C) or (C, T) with a small channel count."""
+def _time_first(data: np.ndarray) -> np.ndarray:
+    """``(T,)`` or ``(T, C)``; tolerates ``(C, T)`` when the first axis is clearly channels."""
     if data.ndim == 1:
         return data
     if data.ndim != 2:
         raise ValueError(f"expected 1-D or 2-D audio, got shape {data.shape}")
-    # Gradio and soundfile give (T, C); tolerate (C, T) when the first axis is clearly channels.
+    # Gradio and soundfile give (T, C).
     if data.shape[0] <= 8 and data.shape[1] > data.shape[0]:
-        data = data.T
-    return data.mean(axis=1)
+        return data.T
+    return data
 
 
-def to_mono_float(data: np.ndarray, sr: int, sample_rate: int = 44100) -> np.ndarray:
+def to_mono_float(
+    data: np.ndarray,
+    sr: int,
+    sample_rate: int = 44100,
+    max_seconds: float | None = None,
+) -> np.ndarray:
     """Convert raw audio (int or float, mono or multichannel) to mono float32 at ``sample_rate``.
 
     Matches what ``gradio.Audio(type="numpy")`` hands back: ``(sr, ndarray)`` with int16/int32
-    or float samples, shape ``(T,)`` or ``(T, C)``.
+    or float samples, shape ``(T,)`` or ``(T, C)``. With ``max_seconds`` the input is trimmed
+    *before* conversion and resampling, so long uploads cost no extra work.
     """
-    x = _downmix(_int_to_float(np.asarray(data)))
-    x = np.nan_to_num(x, nan=0.0, posinf=0.0, neginf=0.0)
-    return resample(x, int(sr), int(sample_rate))
+    if int(sr) <= 0 or int(sample_rate) <= 0:
+        raise ValueError(f"sample rates must be positive, got sr={sr}, target={sample_rate}")
+    data = _time_first(np.asarray(data))
+    if max_seconds is not None:
+        data = data[: int(round(max_seconds * sr))]
+    x = _int_to_float(data)
+    if x.ndim == 2:
+        x = x.mean(axis=1)
+    x = np.nan_to_num(x, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32)
+    x = resample(x, int(sr), int(sample_rate))
+    if max_seconds is not None:
+        x = x[: int(round(max_seconds * sample_rate))]
+    return x
 
 
 def load_audio(
     path: str | Path, sample_rate: int = 44100, max_seconds: float | None = None
 ) -> np.ndarray:
     """Read an audio file as mono float32 at ``sample_rate``, optionally truncated."""
-    data, sr = sf.read(str(path), dtype="float32", always_2d=True)
-    if max_seconds is not None:
-        data = data[: int(round(max_seconds * sr))]
-    x = to_mono_float(data, sr, sample_rate)
-    if max_seconds is not None:
-        x = x[: int(round(max_seconds * sample_rate))]
-    return x
+    with sf.SoundFile(str(path)) as f:
+        sr = f.samplerate
+        frames = -1 if max_seconds is None else int(round(max_seconds * sr))
+        data = f.read(frames, dtype="float32", always_2d=True)
+    return to_mono_float(data, sr, sample_rate, max_seconds=max_seconds)
 
 
 def rms(x: np.ndarray) -> float:
@@ -145,6 +159,8 @@ def _pluck(
 
 def _place(out: np.ndarray, note: np.ndarray, start: int, stop: int | None, fade: int) -> None:
     """Add ``note`` into ``out`` at ``start``; damp it with a short fade at ``stop`` if given."""
+    if start >= len(out) or (stop is not None and stop <= start):
+        return  # muted before it starts (only happens for very short clips)
     end = len(out) if stop is None else min(len(out), stop + fade)
     seg = note[: end - start].copy()
     if stop is not None and stop < len(out):
@@ -161,8 +177,10 @@ def synth_riff(
     """A short plucked-string guitar riff for demos and tests (mono float32, peak 0.8)."""
     if kind not in RIFF_KINDS:
         raise ValueError(f"unknown riff kind {kind!r}; choose from {RIFF_KINDS}")
+    if seconds <= 0 or sample_rate <= 0:
+        raise ValueError("seconds and sample_rate must be positive")
     rng = np.random.default_rng(seed)
-    n = int(round(seconds * sample_rate))
+    n = max(int(round(seconds * sample_rate)), 1)
     out = np.zeros(n)
     fade = int(0.01 * sample_rate)
 

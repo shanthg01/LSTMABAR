@@ -1,10 +1,17 @@
 """Pure rendering helpers behind the demo UI (no gradio import, testable on their own).
 
-The UI speaks physical units (Hz, dB, ms); the pedalboard takes normalized [0, 1] knobs. This
-module converts between them via each block's :class:`~lstmabar.dsp.base.ParamSpec` and never
-hard-codes knob names, so it works with any board exposing the ``Pedalboard`` API:
-``blocks`` (ordered name -> EffectBlock), ``block_names``, ``sample_rate``, ``forward``,
-``default_params`` and ``describe``.
+Knob values come in three representations, converted via each block's
+:class:`~lstmabar.dsp.base.ParamSpec`. Knob names are never hard-coded, so this works with any
+board exposing the ``Pedalboard`` API (``blocks``, ``block_names``, ``sample_rate``,
+``forward``, ``default_params``, ``describe``):
+
+- **physical** (Hz, dB, ms): used by ``default_knobs``, ``random_knobs``, ``knobs_to_params``
+  and the readout;
+- **normalized** [0, 1]: what the pedalboard takes;
+- **slider value**: what a UI slider holds. Linear knobs use physical units; log-taper knobs
+  use their normalized position, because a linear slider across decades would need ~1e6
+  steps. Convert with :func:`slider_from_physical` / :func:`physical_from_slider`, and build
+  sliders from :func:`slider_config`.
 """
 
 from typing import Any
@@ -14,10 +21,13 @@ import torch
 from torch import Tensor
 
 from lstmabar.audio import loudness_match, synth_riff, to_mono_float
+from lstmabar.dsp.base import ParamSpec
 
 BoardParams = dict[str, dict[str, Tensor]]
 
 MAX_PEAK = 0.99
+LINEAR_SLIDER_STEPS = 200
+LOG_SLIDER_STEP = 0.001
 
 
 def iter_specs(board: Any):
@@ -25,6 +35,70 @@ def iter_specs(board: Any):
     for name in board.block_names:
         for spec in board.blocks[name].param_specs:
             yield name, spec
+
+
+# --- Slider <-> physical ------------------------------------------------------------------------
+
+
+def _clamp(spec: ParamSpec, v: float) -> float:
+    return min(max(float(v), spec.min), spec.max)
+
+
+def slider_from_physical(spec: ParamSpec, v: float) -> float:
+    """Physical value -> slider value (normalized position for log-taper knobs)."""
+    v = _clamp(spec, v)
+    if spec.taper == "log":
+        return float(spec.normalize(torch.tensor(v, dtype=torch.float64)))
+    return v
+
+
+def physical_from_slider(spec: ParamSpec, s: float | None) -> float:
+    """Slider value -> physical value (``None`` means the spec default)."""
+    if s is None:
+        return float(spec.default)
+    if spec.taper == "log":
+        return float(spec.denormalize(torch.tensor(float(s), dtype=torch.float64)))
+    return _clamp(spec, s)
+
+
+def _num(v: float) -> str:
+    """4 significant digits, but never scientific notation for large values (20000, not 2e+04)."""
+    return f"{v:.0f}" if abs(v) >= 1000 else f"{v:.4g}"
+
+
+def format_value(spec: ParamSpec, v: float) -> str:
+    return f"{_num(v)} {spec.unit}".strip()
+
+
+def log_slider_info(spec: ParamSpec, physical: float) -> str:
+    """Info line under a log-taper slider: current physical value and range."""
+    lo, hi = format_value(spec, spec.min), format_value(spec, spec.max)
+    return f"= {format_value(spec, physical)}  (range {lo} to {hi})"
+
+
+def slider_config(spec: ParamSpec) -> dict[str, Any]:
+    """Keyword arguments for a UI slider for ``spec``: minimum/maximum/step/value/label/info."""
+    unit = f" ({spec.unit})" if spec.unit else ""
+    if spec.taper == "log":
+        return {
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "step": LOG_SLIDER_STEP,
+            "value": slider_from_physical(spec, spec.default),
+            "label": f"{spec.name}{unit}, log taper",
+            "info": log_slider_info(spec, spec.default),
+        }
+    return {
+        "minimum": spec.min,
+        "maximum": spec.max,
+        "step": float(f"{(spec.max - spec.min) / LINEAR_SLIDER_STEPS:.3g}"),
+        "value": spec.default,
+        "label": f"{spec.name}{unit}",
+        "info": None,
+    }
+
+
+# --- Physical knobs -> board params -------------------------------------------------------------
 
 
 def default_knobs(board: Any) -> dict[str, dict[str, float]]:
@@ -51,18 +125,22 @@ def knobs_to_params(
 ) -> BoardParams:
     """Physical knob values + per-block on/off -> normalized ``BoardParams`` with batch size 1.
 
-    Missing knobs fall back to their spec default and missing blocks are enabled.
+    Values are clamped to the spec range first; missing knobs fall back to their spec default
+    and missing blocks are enabled.
     """
     params: BoardParams = {}
     for name in board.block_names:
         block_values = values.get(name, {})
         p: dict[str, Tensor] = {}
         for spec in board.blocks[name].param_specs:
-            v = float(block_values.get(spec.name, spec.default))
+            v = _clamp(spec, block_values.get(spec.name, spec.default))
             p[spec.name] = spec.normalize(torch.tensor([v], dtype=torch.float32))
         p["enabled"] = torch.tensor([1.0 if enabled.get(name, True) else 0.0])
         params[name] = p
     return params
+
+
+# --- Rendering ----------------------------------------------------------------------------------
 
 
 def _peak_safe(x: np.ndarray, max_peak: float = MAX_PEAK) -> np.ndarray:
@@ -79,7 +157,7 @@ def render(
     """Run ``audio`` through ``board`` -> ``(dry, wet)``, both mono float32 and peak-safe.
 
     With ``match_loudness`` the wet signal is RMS-matched to the dry one so A/B comparisons
-    are not biased by level.
+    are not biased by level (it may stay quieter when the peak limit kicks in).
     """
     dry = _peak_safe(audio)
     x = torch.from_numpy(dry.copy()).unsqueeze(0)
@@ -103,7 +181,7 @@ def _fmt(v: Any) -> str:
         f = float(v)
     except (TypeError, ValueError):
         return str(v)
-    return f"{f:.4g}"
+    return _num(f)
 
 
 def describe_text(board: Any, params: BoardParams) -> str:
@@ -130,13 +208,21 @@ def prepare_input(
     max_seconds: float,
     riff_seconds: float = 4.0,
 ) -> np.ndarray:
-    """The clip to process: the uploaded/recorded audio if any, else a synthetic riff."""
-    if audio_value is not None:
-        sr, data = audio_value
-        x = to_mono_float(data, sr, sample_rate)
-        if x.size:
-            return x[: int(max_seconds * sample_rate)]
-    return synth_riff(riff_kind, seconds=min(riff_seconds, max_seconds), sample_rate=sample_rate)
+    """The clip to process: the uploaded/recorded audio if any, else a synthetic riff.
+
+    Uploads are trimmed to ``max_seconds`` before conversion and resampling. Raises
+    ``ValueError`` with a user-facing message on a bad sample rate or an empty clip.
+    """
+    if audio_value is None:
+        seconds = min(riff_seconds, max_seconds)
+        return synth_riff(riff_kind, seconds=seconds, sample_rate=sample_rate)
+    sr, data = audio_value
+    if sr is None or int(sr) <= 0:
+        raise ValueError(f"The uploaded clip has an invalid sample rate ({sr}).")
+    data = np.asarray(data)
+    if data.size == 0:
+        raise ValueError("The uploaded clip is empty.")
+    return to_mono_float(data, int(sr), sample_rate, max_seconds=max_seconds)
 
 
 def to_int16(x: np.ndarray) -> np.ndarray:
