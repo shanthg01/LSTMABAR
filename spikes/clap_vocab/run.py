@@ -152,6 +152,8 @@ EXPECTED = {
     "Tube Screamer": ["soft_od"],
 }
 
+assert set(sum(EXPECTED.values(), [])) <= set(TONES), "EXPECTED names an unknown tone"
+
 TEMPLATES = {
     "word": "{w}",
     "tone": "a {w} electric guitar tone",
@@ -162,17 +164,25 @@ SWEEP_GAINS = [1, 3, 10, 30, 100, 300]
 SWEEP_CUTOFFS = [700, 1400, 2800, 5600, 11000, 18000]
 
 
-def loudness_match(y: np.ndarray, ref_rms: float) -> np.ndarray:
+REF_RMS = 0.03  # low enough that no clip needs peak limiting, so RMS is exactly matched
+
+
+def loudness_match(y: np.ndarray, ref_rms: float = REF_RMS) -> np.ndarray:
     y = y * ref_rms / (np.sqrt(np.mean(y**2)) + 1e-12)
     peak = np.max(np.abs(y))
-    return y / peak * 0.99 if peak > 0.99 else y
+    if peak > 1.0:
+        raise ValueError(f"peak {peak:.2f} > 1 after RMS matching; lower REF_RMS")
+    return y
 
 
 SANITY_TEXTS = ["a pure sine wave tone", "white noise", "a plucked guitar string"]
 
 
 def sanity_clips() -> list[np.ndarray]:
-    """Pipeline control: CLAP should trivially match these to SANITY_TEXTS."""
+    """Pipeline control: CLAP should trivially match these to SANITY_TEXTS.
+
+    Not loudness-matched: this only checks that the embedding pipeline works at all.
+    """
     t = np.arange(int(6 * SR)) / SR
     sine = 0.3 * np.sin(2 * np.pi * 440 * t)
     noise = np.random.default_rng(0).normal(0, 0.1, len(t))
@@ -183,16 +193,15 @@ def sanity_clips() -> list[np.ndarray]:
 def build_clips() -> tuple[list[dict], list[dict]]:
     tone_clips, sweep_clips = [], []
     for riff_name, dry in riffs().items():
-        ref = 0.1
         for tone, fx in TONES.items():
             tone_clips.append(
-                {"riff": riff_name, "tone": tone, "audio": loudness_match(fx(dry), ref)}
+                {"riff": riff_name, "tone": tone, "audio": loudness_match(fx(dry))}
             )
         for g in SWEEP_GAINS:
-            y = loudness_match(drive(dry, 300, g, soft, 8000), ref)
+            y = loudness_match(drive(dry, 300, g, soft, 8000))
             sweep_clips.append({"riff": riff_name, "sweep": "gain", "value": g, "audio": y})
         for c in SWEEP_CUTOFFS:
-            y = loudness_match(chain(dry, pb.LowpassFilter(c)), ref)
+            y = loudness_match(chain(dry, pb.LowpassFilter(c)))
             sweep_clips.append({"riff": riff_name, "sweep": "cutoff", "value": c, "audio": y})
     return tone_clips, sweep_clips
 
@@ -342,7 +351,7 @@ def write_report(results: dict, path: Path) -> None:
         cells = [f"{a:+.2f} / {b:+.2f}" for a, b in r["sweeps"].values()]
         lines.append(f"| {m} | " + " | ".join(cells) + " |")
     for m, r in results.items():
-        lines += ["", f"## {m}: per-word AUC (template 'tone')", ""]
+        lines += ["", f"## {m}: per-word AUC (template 'tone' for both models)", ""]
         lines.append("| Word | AUC | Top-1 tone | Hit |")
         lines.append("|---|---|---|---|")
         for w, v in r["vocab"]["tone"]["per_word"].items():
