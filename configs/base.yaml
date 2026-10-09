@@ -1,0 +1,11 @@
+# Shared defaults. Experiment configs list this under `defaults:` and override keys.
+name: run
+seed: 0
+
+audio:
+  sample_rate: 44100
+  clip_seconds: 3.0
+
+paths:
+  data: data
+  runs: runs
