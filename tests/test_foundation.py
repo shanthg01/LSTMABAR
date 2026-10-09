@@ -1,6 +1,8 @@
 import json
+from pathlib import Path
 
 import numpy as np
+import pytest
 import torch
 from omegaconf import OmegaConf
 
@@ -8,6 +10,8 @@ from lstmabar.cli import main
 from lstmabar.config import load_config
 from lstmabar.runs import create_run_dir
 from lstmabar.seed import seed_everything
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_seed_everything_is_reproducible():
@@ -47,5 +51,25 @@ def test_create_run_dir_writes_config_and_meta(tmp_path):
 
 
 def test_cli_smoke(tmp_path, capsys):
-    assert main(["smoke", "--config", "configs/base.yaml", f"paths.runs={tmp_path}"]) == 0
+    config = REPO_ROOT / "configs" / "base.yaml"
+    assert main(["smoke", "--config", str(config), f"paths.runs={tmp_path}"]) == 0
     assert "smoke ok" in capsys.readouterr().out
+
+
+def test_load_config_accepts_scalar_default(tmp_path):
+    (tmp_path / "base.yaml").write_text("seed: 3\n")
+    (tmp_path / "exp.yaml").write_text("defaults: base.yaml\nname: exp\n")
+    assert load_config(tmp_path / "exp.yaml").seed == 3
+
+
+def test_load_config_rejects_cycles(tmp_path):
+    (tmp_path / "a.yaml").write_text("defaults: [b.yaml]\n")
+    (tmp_path / "b.yaml").write_text("defaults: [a.yaml]\n")
+    with pytest.raises(ValueError, match="cycle"):
+        load_config(tmp_path / "a.yaml")
+
+
+def test_create_run_dir_same_second_does_not_collide(tmp_path):
+    cfg = OmegaConf.create({"name": "sweep"})
+    dirs = {create_run_dir(cfg, root=tmp_path) for _ in range(3)}
+    assert len(dirs) == 3

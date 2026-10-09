@@ -38,8 +38,17 @@ def device_name() -> str:
 def create_run_dir(cfg: DictConfig, root: str | Path = "runs", name: str | None = None) -> Path:
     name = name or cfg.get("name", "run")
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    run_dir = Path(root) / name / stamp
-    run_dir.mkdir(parents=True, exist_ok=False)
+    base = Path(root) / name
+    base.mkdir(parents=True, exist_ok=True)
+    # Same-second runs (seed sweeps, parallel jobs) get -1, -2, ... suffixes.
+    run_dir, n = base / stamp, 0
+    while True:
+        try:
+            run_dir.mkdir()
+            break
+        except FileExistsError:
+            n += 1
+            run_dir = base / f"{stamp}-{n}"
 
     OmegaConf.save(cfg, run_dir / "config.yaml", resolve=True)
     meta = {

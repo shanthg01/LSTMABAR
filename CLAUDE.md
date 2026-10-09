@@ -19,7 +19,8 @@ uv sync --extra dev                      # add --extra dsp/analysis/clap/demo/qu
 uv run pytest                            # all tests
 uv run pytest tests/test_foundation.py::test_cli_smoke   # single test
 uv run ruff check .                      # lint (legacy/ excluded)
-uv run lstmabar info | smoke             # CLI entry point (src/lstmabar/cli.py)
+uv run lstmabar info                     # versions, device, git state (CLI: src/lstmabar/cli.py)
+uv run lstmabar smoke                    # config -> seed -> run-dir sanity check
 ```
 
 CI (`.github/workflows/ci.yml`) runs ruff + pytest on Ubuntu with CPU torch.
