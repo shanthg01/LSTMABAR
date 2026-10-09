@@ -33,8 +33,9 @@ Each item: `id`, `source`, `author` (human and persona files), `instruction`, `t
 - Clean and none families use `clipping: unknown`. A clean boost is `family: clean`, `gain: low`.
 - Tube Screamer: soft, mids pushed. RAT / DS-1: hard. Fuzz Face / Tone Bender: asymmetric.
 - Big Muff: soft (diodes in each stage's feedback loop). Klon: hard (Ge diodes to ground).
-  `instructions_llm_draft.yaml` predates these two conventions and still labels Big Muff
-  `hard` and Klon `soft`. Normalize it before using `clipping` in any metric.
+- Stacked drives: the last drive in the chain sets `clipping` (and its EQ character), e.g. "Muff into a RAT" → hard.
+  As of 2026-10-09 all gold files, including `instructions_llm_draft.yaml`, follow these
+  conventions.
 
 ## Rules
 
