@@ -16,14 +16,16 @@ The environment is managed by `uv` (Python 3.11 pinned in `.python-version`; CPU
 
 ```bash
 uv sync --extra dev                      # add --extra dsp/analysis/clap/demo/quantum as needed
-uv run pytest                            # all tests
+uv run pytest                            # all tests except those marked slow
+uv run pytest -m slow                    # slow checks only (P1.7 parameter recovery, ~8 min CPU)
+uv run lstmabar recover                  # same recovery run; writes reports/param_recovery.{md,json}
 uv run pytest tests/test_foundation.py::test_cli_smoke   # single test
 uv run ruff check .                      # lint (legacy/ excluded)
 uv run lstmabar info                     # versions, device, git state (CLI: src/lstmabar/cli.py)
 uv run lstmabar smoke                    # config -> seed -> run-dir sanity check
 ```
 
-CI (`.github/workflows/ci.yml`) runs ruff + pytest on Ubuntu with CPU torch.
+CI (`.github/workflows/ci.yml`) runs ruff + pytest on Ubuntu with CPU torch (slow tests are local only).
 
 ## Architecture conventions
 

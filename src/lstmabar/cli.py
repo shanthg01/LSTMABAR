@@ -13,6 +13,7 @@ import torch
 
 import lstmabar
 from lstmabar.config import load_config
+from lstmabar.dsp.recovery import RecoveryConfig, run_recovery, write_report
 from lstmabar.runs import create_run_dir, device_name, git_info
 from lstmabar.seed import seed_everything
 
@@ -83,6 +84,20 @@ def cmd_demo(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_recover(args: argparse.Namespace) -> int:
+    """P1.7 parameter recovery on Drive + EQ; writes ``<out>/param_recovery.{md,json}``."""
+
+    cfg = RecoveryConfig(trials=args.trials, steps=args.steps, seed=args.seed)
+    result = run_recovery(cfg)
+    md, js = write_report(result, args.out)
+    verdict = "PASS" if result.passed else "FAIL"
+    print(
+        f"recovery {verdict}: {sum(result.success)}/{cfg.trials} trials "
+        f"({100 * result.success_rate:.0f}%) in {result.seconds_elapsed:.0f} s -> {md}, {js}"
+    )
+    return 0 if result.passed else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="lstmabar")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -104,6 +119,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--auth", type=_auth_pair, default=None, metavar="USER:PASS", help="require a login"
     )
     p_demo.set_defaults(func=cmd_demo)
+
+    p_rec = sub.add_parser("recover", help="run the DSP parameter-recovery check (P1 exit gate)")
+    p_rec.add_argument("--trials", type=int, default=RecoveryConfig.trials)
+    p_rec.add_argument("--steps", type=int, default=RecoveryConfig.steps)
+    p_rec.add_argument("--seed", type=int, default=0)
+    p_rec.add_argument("--out", default="reports", help="directory for the report files")
+    p_rec.set_defaults(func=cmd_recover)
 
     return parser
 
