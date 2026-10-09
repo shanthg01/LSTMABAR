@@ -8,11 +8,11 @@ Used only to evaluate instruction-to-effect mapping.
 
 | File | ids | `source` | Written by | Role |
 |---|---|---|---|---|
-| `instructions_human.yaml` | `h###` | `human` | Real guitarists (`author` required) | **Headline test set** |
+| `instructions_human.yaml` | `h###` | `simulated_human` (h001–h150); `human` for real people, appended after | `simulated_human`: 10 independent LLM agents, each role-playing one invented guitarist in an isolated context (`author: sim-NN`, 15 each). `human`: real guitarists (`author` = pseudonym) | Human-style test set. Real `human` items, once added, are the headline subset |
 | `instructions_llm_persona.yaml` | `p###` | `llm_persona` | An LLM role-playing 8 distinct guitarist personas (`author: persona-N`, personas listed in the file header) | Supplementary test set |
 | `instructions_llm_draft.yaml` | `g###` | `llm_draft` | An LLM, single voice | Supplementary test set |
 
-All LLM-written items were produced by isolated agents that did not read the project's docs, code or caption templates. LLM-written items must never be relabeled as `human`. Report results per file, because LLM-written test text may share phrasing habits with LLM-paraphrased training captions.
+All LLM-written items (`llm_draft`, `llm_persona`, `simulated_human`) were produced by isolated agents that did not read the project's docs, code, caption templates or other gold files. LLM-written items must never be relabeled as `human`. Report results per file, because LLM-written test text may share phrasing habits with LLM-paraphrased training captions.
 
 ## Schema
 
