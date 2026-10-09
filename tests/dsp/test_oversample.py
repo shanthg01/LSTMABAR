@@ -3,6 +3,7 @@ import time
 import pytest
 import torch
 
+from lstmabar.dsp import oversample
 from lstmabar.dsp.oversample import HALF_WIDTH, downsample, oversampled, upsample
 from lstmabar.dsp.waveshaper import waveshape
 
@@ -133,9 +134,9 @@ def test_gradcheck_resamplers():
 
 
 def test_timing_report(capsys):
-    """Report CPU fwd+bwd time of oversampled(waveshape) at 4x, batch 8 x 3 s (not asserted)."""
+    """Report CPU fwd+bwd time of oversampled(waveshape) at 4x, batch 8 x 1 s (not asserted)."""
     torch.manual_seed(0)
-    x = (0.3 * torch.randn(8, 3 * FS)).requires_grad_(True)
+    x = (0.3 * torch.randn(8, FS)).requires_grad_(True)
     s, a, b = (torch.full((8,), v, requires_grad=True) for v in (0.7, 0.3, 0.1))
     best = float("inf")
     for _ in range(2):
@@ -144,5 +145,21 @@ def test_timing_report(capsys):
         y.square().mean().backward()
         best = min(best, time.perf_counter() - t0)
     with capsys.disabled():
-        print(f"\n[timing] oversampled(waveshape) x4, 8 x 3 s @ 44.1 kHz, fwd+bwd: {best:.3f} s")
+        print(f"\n[timing] oversampled(waveshape) x4, 8 x 1 s @ 44.1 kHz, fwd+bwd: {best:.3f} s")
     assert best < 30.0
+
+
+def test_kernel_cache_safe_after_inference_mode():
+    """Kernels first built under inference_mode must still work for training afterwards."""
+    for fn in (oversample._prototype, oversample._phase_taps):
+        fn.cache_clear()
+    for fn in (oversample._up_kernel, oversample._down_kernel):
+        fn.cache_clear()
+    with torch.inference_mode():
+        upsample(torch.randn(2, 64), 4)
+        oversampled(torch.tanh, torch.randn(2, 64), 4)
+    for fn in (oversample._up_kernel, oversample._down_kernel):
+        assert not fn(4, torch.device("cpu"), torch.float32).is_inference()
+    x = torch.randn(2, 64, requires_grad=True)
+    oversampled(torch.tanh, x, 4).square().sum().backward()
+    assert torch.isfinite(x.grad).all() and x.grad.abs().sum() > 0

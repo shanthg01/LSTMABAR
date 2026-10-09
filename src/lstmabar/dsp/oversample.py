@@ -32,12 +32,31 @@ TRANSITION = 0.10
 ATTENUATION_DB = 90.0
 
 
+def _kernel_cache(build: Callable[..., Tensor]) -> Callable[..., Tensor]:
+    """Memoize a filter builder, always building outside inference mode and autograd.
+
+    A kernel first built under ``torch.inference_mode()`` would be an inference tensor and
+    break later training calls (``save_for_backward`` rejects inference tensors), so every
+    cache entry is created as a normal, non-grad tensor regardless of the caller's mode.
+    The caches hold one entry per ``factor`` (and per ``(factor, device, dtype)`` for the
+    device kernels) and are unbounded by design: at most 4 factors x a handful of devices.
+    """
+
+    @functools.cache
+    def cached(*args):
+        with torch.inference_mode(False), torch.no_grad():
+            return build(*args)
+
+    cached.__doc__ = build.__doc__
+    return cached
+
+
 def _check_factor(factor: int) -> None:
     if factor not in FACTORS:
         raise ValueError(f"factor must be one of {FACTORS}, got {factor}")
 
 
-@functools.cache
+@_kernel_cache
 def _prototype(factor: int) -> Tensor:
     """Float64 CPU low-pass at the high rate, centred, DC gain 1 (sums to 1)."""
     n_taps = 2 * HALF_WIDTH * factor + 1
@@ -49,7 +68,7 @@ def _prototype(factor: int) -> Tensor:
     return h / h.sum()
 
 
-@functools.cache
+@_kernel_cache
 def _phase_taps(factor: int) -> Tensor:
     """``(factor, 2 * HALF_WIDTH + 1)`` polyphase split of the prototype (float64, CPU).
 
@@ -63,7 +82,7 @@ def _phase_taps(factor: int) -> Tensor:
     return torch.where(valid, h[idx.clamp(0, h.numel() - 1)], torch.zeros((), dtype=h.dtype))
 
 
-@functools.cache
+@_kernel_cache
 def _up_kernel(factor: int, device: torch.device, dtype: torch.dtype) -> Tensor:
     """``(factor, 1, taps)``: ``y[n * factor + r] = factor * sum_i g[r, i] x[n - i]``.
 
@@ -73,7 +92,7 @@ def _up_kernel(factor: int, device: torch.device, dtype: torch.dtype) -> Tensor:
     return w.to(device=device, dtype=dtype).unsqueeze(1).contiguous()
 
 
-@functools.cache
+@_kernel_cache
 def _down_kernel(factor: int, device: torch.device, dtype: torch.dtype) -> Tensor:
     """``(1, factor, taps)``: ``y[n] = sum_r sum_i g[r, -i] x[(n - i) * factor + r]``.
 

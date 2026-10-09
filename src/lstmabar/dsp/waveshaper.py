@@ -64,8 +64,15 @@ def waveshape(x: Tensor, softness: Tensor, asymmetry: Tensor, bias: Tensor) -> T
     ``p = 2 * 6**softness`` (2 -> 12) and negative-half ceiling ``c = 1 - 0.5 * asymmetry``;
     the output is ``(g(x + bias) - g(bias)) / (1 + |g(bias)|)``. The divisor is exactly 1 at
     ``bias = 0`` and keeps the biased curve inside [-1, 1] (``g`` lies in ``(-c, 1)``).
-    Monotonic in ``x`` for all parameters. ``softness``/``asymmetry``/``bias`` are ``(B,)`` (or
-    broadcastable) and are applied along the last (time) axis.
+    Monotonic in ``x`` for all parameters. ``softness``/``asymmetry``/``bias`` are ``(B,)``
+    (or broadcastable) and are applied along the last (time) axis.
+
+    Headroom with bias: shifting the operating point spends headroom on one side. At
+    ``bias = +0.5`` the positive output ceiling ``(1 - g(b)) / (1 + g(b))`` drops to ~0.34
+    (0.38 at softness 0, 0.33 at softness 1). At ``asymmetry = 1, bias = -0.5`` the negative
+    ceiling is ~-0.02 at softness 1 (-0.11 at softness 0), i.e. near half-wave rectification,
+    with tiny gradients through the clipped half. Callers should keep ``|bias| <= ~0.25`` for
+    musically useful settings (the Drive block's range does).
     """
     if x.dim() < 1:
         raise ValueError("x must have a time axis")
