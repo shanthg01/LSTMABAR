@@ -45,8 +45,10 @@ def test_increases_with_noise_level():
     target = _signal()
     g = torch.Generator().manual_seed(1)
     noise = torch.randn(target.shape, generator=g)
-    losses = [float(multi_resolution_stft_loss(target + s * noise, target))
-              for s in (1e-3, 1e-2, 1e-1, 1.0)]
+    losses = [
+        float(multi_resolution_stft_loss(target + s * noise, target))
+        for s in (1e-3, 1e-2, 1e-1, 1.0)
+    ]
     assert losses[0] > 0
     assert all(a < b for a, b in zip(losses, losses[1:], strict=False))
 

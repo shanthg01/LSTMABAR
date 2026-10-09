@@ -194,9 +194,7 @@ def build_clips() -> tuple[list[dict], list[dict]]:
     tone_clips, sweep_clips = [], []
     for riff_name, dry in riffs().items():
         for tone, fx in TONES.items():
-            tone_clips.append(
-                {"riff": riff_name, "tone": tone, "audio": loudness_match(fx(dry))}
-            )
+            tone_clips.append({"riff": riff_name, "tone": tone, "audio": loudness_match(fx(dry))})
         for g in SWEEP_GAINS:
             y = loudness_match(drive(dry, 300, g, soft, 8000))
             sweep_clips.append({"riff": riff_name, "sweep": "gain", "value": g, "audio": y})
@@ -242,9 +240,7 @@ def evaluate(model_id: str, tone_clips: list[dict], sweep_clips: list[dict]) -> 
     clips = [c["audio"] for c in tone_clips + sweep_clips] + sanity_clips()
     a, t = embed(model_id, clips, texts + sweep_texts + SANITY_TEXTS)
     n_tone, n_sweep = len(tone_clips), len(sweep_clips)
-    a_tone, a_sweep, a_sanity = (
-        a[:n_tone], a[n_tone : n_tone + n_sweep], a[n_tone + n_sweep :]
-    )
+    a_tone, a_sweep, a_sanity = (a[:n_tone], a[n_tone : n_tone + n_sweep], a[n_tone + n_sweep :])
     n_vocab, n_sw = len(texts), len(sweep_texts)
     t_vocab, t_sweep, t_sanity = t[:n_vocab], t[n_vocab : n_vocab + n_sw], t[n_vocab + n_sw :]
 
@@ -387,7 +383,7 @@ def main() -> None:
         t0 = time.time()
         results[m] = evaluate(m, tone_clips, sweep_clips)
         best = max(v["mean_auc"] for v in results[m]["vocab"].values())
-        print(f"{m}: best mean AUC {best:.3f} ({time.time()-t0:.0f}s)")
+        print(f"{m}: best mean AUC {best:.3f} ({time.time() - t0:.0f}s)")
     (OUT / "results.json").write_text(json.dumps(results, indent=2))
     write_report(results, OUT / "report.md")
     print(f"wrote {OUT / 'report.md'}")

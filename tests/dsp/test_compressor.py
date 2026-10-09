@@ -22,8 +22,13 @@ def _p(v, b: int = 1, dtype=torch.float32):
 def _run(x, threshold=-20.0, ratio=4.0, attack=5.0, release=100.0, **kw):
     b = x.shape[0]
     return compress(
-        x, _p(threshold, b, x.dtype), _p(ratio, b, x.dtype), _p(attack, b, x.dtype),
-        _p(release, b, x.dtype), SR, **kw,
+        x,
+        _p(threshold, b, x.dtype),
+        _p(ratio, b, x.dtype),
+        _p(attack, b, x.dtype),
+        _p(release, b, x.dtype),
+        SR,
+        **kw,
     )
 
 
@@ -100,8 +105,9 @@ def test_gradients_finite_and_nonzero():
     thr, ratio, att, rel, mk = params
     y = compress(x, thr, ratio, att, rel, SR, makeup_db=mk)
     y.square().mean().backward()
-    for name, v in zip(("x", "threshold", "ratio", "attack", "release", "makeup"),
-                       (x, *params), strict=True):
+    for name, v in zip(
+        ("x", "threshold", "ratio", "attack", "release", "makeup"), (x, *params), strict=True
+    ):
         assert v.grad is not None, name
         assert torch.isfinite(v.grad).all(), name
         assert v.grad.abs().sum() > 0, name
@@ -122,8 +128,9 @@ def test_batch_independence():
     att, rel = torch.tensor([2.0, 30.0]), torch.tensor([50.0, 300.0])
     y = compress(x, thr, ratio, att, rel, SR)
     for i in range(2):
-        yi = compress(x[i : i + 1], thr[i : i + 1], ratio[i : i + 1], att[i : i + 1],
-                      rel[i : i + 1], SR)
+        yi = compress(
+            x[i : i + 1], thr[i : i + 1], ratio[i : i + 1], att[i : i + 1], rel[i : i + 1], SR
+        )
         assert torch.allclose(y[i : i + 1], yi, atol=1e-6)
 
 
@@ -173,8 +180,9 @@ def test_param_shape_validation(bad):
 
 def test_scalar_params_broadcast():
     x = torch.randn(2, 1000) * 0.5
-    y = compress(x, torch.tensor(-20.0), torch.tensor([4.0]), torch.tensor(5.0),
-                 torch.tensor(50.0), SR)
+    y = compress(
+        x, torch.tensor(-20.0), torch.tensor([4.0]), torch.tensor(5.0), torch.tensor(50.0), SR
+    )
     assert torch.allclose(y, _run(x, threshold=-20.0, ratio=4.0, attack=5.0, release=50.0))
 
 
