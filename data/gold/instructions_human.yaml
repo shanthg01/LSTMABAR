@@ -1,0 +1,38 @@
+# Human-written gold instructions (held-out eval).
+#
+# ONLY genuinely human-written requests belong here: text typed by a real
+# guitarist describing the tone they want. Do NOT add LLM-generated,
+# LLM-paraphrased or LLM-"cleaned up" text (those go in instructions_llm_*.yaml).
+# Keep the author's original wording, typos and slang verbatim.
+#
+# Conventions:
+#   source: human                (always)
+#   id:     h001, h002, ...      (unique, sequential)
+#   author: required             (stable pseudonymous id per person, e.g. human-01)
+#   target: same schema/enums as instructions_llm_persona.yaml
+#     in_scope:        true | false   (false if it mainly needs modulation/delay/reverb/octave/pitch/wah/amp-sim)
+#     family:          clean | overdrive | distortion | fuzz | none   (none = EQ/comp only)
+#     gain:            none | low | medium | high | extreme
+#     brightness:      dark | slightly_dark | neutral | slightly_bright | bright
+#     mids:            scooped | neutral | pushed
+#     compression:     none | light | heavy
+#     clipping:        soft | hard | asymmetric | unknown   (clean/none family -> unknown)
+#     reference_pedal: drive/comp pedal name if named or clearly implied, else null
+#   notes: one line on the author's intent
+#
+# Example item (replace [] below with a list of items like this):
+# - id: h001
+#   source: human
+#   author: human-01
+#   instruction: "..."
+#   target:
+#     in_scope: true
+#     family: overdrive
+#     gain: medium
+#     brightness: neutral
+#     mids: pushed
+#     compression: none
+#     clipping: soft
+#     reference_pedal: null
+#   notes: "..."
+[]
