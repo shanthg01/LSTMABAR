@@ -73,6 +73,17 @@ Critical path: P0 → P1 → P2 → P4 → P6. Solo, so the "parallel" phases ar
 
 **Exit gate:** recovery ≥90% of trials on Drive + EQ; the M1 demo runs locally.
 
+**Status (2026-10-09): P1 exit gate passed; M1 reached** (PRs #9–#15).
+- Recovery ([report](../reports/param_recovery.md)): **23/24 audio match (96%)**. In parameter space, 9/24 trials have all knobs within ±0.05, or 16/24 with `drive.asymmetry`/`drive.bias` exempted (they trade off along a near-identical-audio direction). Most misses are the swept `eq.mid_hz`: likely local minima or coupled compensation.
+- M1 demo: `uv run lstmabar demo`. Sliders are generated from the param specs; 15 s clips render in ~2 s on CPU.
+- `default_pedalboard` forward+backward, B=8 × 3 s: ~2.8 s on CPU, dominated by the filter backward pass.
+
+P1 follow-ups (non-blocking, fold into later phases):
+- Speed: evaluate filter responses directly instead of zero-padded FFTs; move the compressor recursion off the CPU (parallel scan) if GPU training needs it; consider checkpointing the 4× shaper.
+- Optimization: multi-start or coarse-to-fine search for the swept mid peak (P6 parameter loss / predictor init).
+- Losses: crop the ~32-sample oversampler edge transients.
+- Demo polish: put defaults on the slider step grid; accept auth from an env var; ":1" unit for ratio; friendlier knob labels; manual browser click-test.
+
 ## P2 — Physics layer and pedal knowledge base (weeks 5–7) → M2
 
 | # | Task | Where | Output |
