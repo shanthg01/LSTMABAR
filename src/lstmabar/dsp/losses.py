@@ -28,7 +28,8 @@ def multi_resolution_stft_loss(
 
     ``pred`` and ``target`` are ``(B, T)``; returns a scalar. Differentiable w.r.t. ``pred``.
 
-    Details: centred STFT with reflect padding (so ``T`` must exceed ``n_fft // 2``);
+    Details: centred STFT with reflect padding (``T`` must exceed ``max(fft_sizes) // 2``,
+    else ``ValueError``);
     magnitudes are ``sqrt(max(|X|^2, eps))``; spectral convergence is
     ``||M_t - M_p||_F / (||M_t||_F + eps)`` per example; the log term is the mean of
     ``|log M_t - log M_p|`` over all bins, frames and examples.
@@ -36,6 +37,12 @@ def multi_resolution_stft_loss(
     if pred.shape != target.shape or pred.dim() != 2:
         raise ValueError(
             f"expected matching (B, T) inputs, got {tuple(pred.shape)} and {tuple(target.shape)}"
+        )
+    t = pred.shape[-1]
+    if fft_sizes and t <= max(fft_sizes) // 2:
+        raise ValueError(
+            f"signal length {t} too short: reflect padding needs T > n_fft // 2 "
+            f"= {max(fft_sizes) // 2} for n_fft = {max(fft_sizes)}"
         )
     target = target.to(device=pred.device, dtype=pred.dtype)
     total = pred.new_zeros(())

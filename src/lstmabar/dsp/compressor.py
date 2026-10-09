@@ -27,6 +27,10 @@ Approximations relative to a per-sample compressor:
 - The attack/release branch is a hard switch; its *choice* carries no gradient, but each branch
   coefficient depends on its time constant, so attack/release gradients are non-zero.
 - ``ratio`` is clamped to ``>= 1``, which zeroes its gradient below 1.
+
+Device note: the smoothing recursion always runs on the CPU (NumPy). On CUDA, its forward and
+backward copy the control-rate tensors (``B x ~T/CONTROL_HOP``) to the host and back, which
+synchronizes the device on every call.
 """
 
 import numpy as np
@@ -85,8 +89,12 @@ class _BranchingOnePole(torch.autograd.Function):
         return y
 
     @staticmethod
+    @torch.autograd.function.once_differentiable
     def backward(ctx, grad_y: Tensor):
         g, y, use_att, a_att, a_rel = ctx.saved_tensors
+        need_g, need_att, need_rel = ctx.needs_input_grad
+        if not (need_g or need_att or need_rel):
+            return None, None, None
         b, n = g.shape
         a = torch.where(use_att, a_att.unsqueeze(-1), a_rel.unsqueeze(-1))
         y_prev = torch.cat([g.new_zeros(b, 1), y[:, :-1]], dim=1)
@@ -100,10 +108,12 @@ class _BranchingOnePole(torch.autograd.Function):
             lam_np[i] = carry
             carry = a_np[i] * carry
         lam = torch.from_numpy(lam_np.T.copy()).to(device=g.device, dtype=g.dtype)
-        grad_g = lam * (1.0 - a)
-        grad_a = lam * (y_prev - g)  # dy[i]/da[i]
-        grad_att = (grad_a * use_att).sum(-1)
-        grad_rel = (grad_a * ~use_att).sum(-1)
+        grad_g = lam * (1.0 - a) if need_g else None
+        grad_att = grad_rel = None
+        if need_att or need_rel:
+            grad_a = lam * (y_prev - g)  # dy[i]/da[i]
+            grad_att = (grad_a * use_att).sum(-1) if need_att else None
+            grad_rel = (grad_a * ~use_att).sum(-1) if need_rel else None
         return grad_g, grad_att, grad_rel
 
 
@@ -136,7 +146,10 @@ def compress(
 
     Implementation: peak detection, gain computer and smoothing run at the control rate
     ``sample_rate / CONTROL_HOP``; see the module docstring for the design and approximations.
-    ``ratio`` is clamped to ``>= 1`` and the time constants to ``>= 1 µs``.
+    ``ratio`` is clamped to ``>= 1`` and the time constants to ``>= 1 µs``. Each parameter must
+    have one element (broadcast to the batch) or shape ``(B,)``; otherwise, or if ``T == 0``,
+    a ``ValueError`` is raised. On CUDA the recursion copies control-rate tensors to the CPU and
+    synchronizes (see the module docstring).
     """
     if x.dim() != 2:
         raise ValueError(f"expected audio of shape (B, T), got {tuple(x.shape)}")
@@ -145,12 +158,22 @@ def compress(
     n_frames = -(-t // hop)
     pad = n_frames * hop - t
 
-    def as_batch(v: Tensor) -> Tensor:
-        v = torch.as_tensor(v, device=x.device, dtype=x.dtype)
-        return v.reshape(1).expand(b) if v.numel() == 1 else v
+    if t == 0:
+        raise ValueError("compress: audio has zero length (T == 0)")
 
-    threshold_db, ratio = as_batch(threshold_db), as_batch(ratio)
-    attack_ms, release_ms = as_batch(attack_ms), as_batch(release_ms)
+    def as_batch(v: Tensor, name: str) -> Tensor:
+        v = torch.as_tensor(v, device=x.device, dtype=x.dtype)
+        if v.numel() == 1:
+            return v.reshape(1).expand(b)
+        if v.shape != (b,):
+            raise ValueError(
+                f"compress: {name} must have one element or shape ({b},), got {tuple(v.shape)}"
+            )
+        return v
+
+    threshold_db, ratio = as_batch(threshold_db, "threshold_db"), as_batch(ratio, "ratio")
+    attack_ms = as_batch(attack_ms, "attack_ms")
+    release_ms = as_batch(release_ms, "release_ms")
 
     peak = F.max_pool1d(F.pad(x.abs(), (0, pad)).unsqueeze(1), hop, hop).squeeze(1)  # (B, N)
     level_db = 20.0 * torch.log10(peak.clamp(min=_LEVEL_FLOOR))
@@ -165,5 +188,5 @@ def compress(
         smoothed.unsqueeze(1), size=n_frames * hop, mode="linear", align_corners=False
     ).squeeze(1)[:, :t]
     if makeup_db is not None:
-        gain_db = gain_db + as_batch(makeup_db).unsqueeze(-1)
+        gain_db = gain_db + as_batch(makeup_db, "makeup_db").unsqueeze(-1)
     return x * torch.pow(10.0, gain_db / 20.0)

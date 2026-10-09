@@ -92,3 +92,11 @@ def test_dtype_and_shape_checks():
     assert multi_resolution_stft_loss(x.double(), x.double()).dtype == torch.float64
     with pytest.raises(ValueError):
         multi_resolution_stft_loss(x, x[:, :-1])
+
+
+def test_too_short_signal_raises():
+    x = torch.randn(1, 1024)  # default max n_fft 2048 needs T > 1024
+    with pytest.raises(ValueError, match="reflect padding"):
+        multi_resolution_stft_loss(x, x)
+    y = torch.randn(1, 1025)
+    assert torch.isfinite(multi_resolution_stft_loss(y, y))
