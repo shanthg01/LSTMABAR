@@ -1,0 +1,2101 @@
+# LLM-drafted held-out gold instruction set (see README.md). Do not use for training templates.
+
+- id: g001
+  source: llm_draft
+  instruction: "make it sound cooler"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Very vague beginner request; mild drive is only a guess."
+
+- id: g002
+  source: llm_draft
+  instruction: "more gain"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Relative and terse; assumes stepping up into distortion territory."
+
+- id: g003
+  source: llm_draft
+  instruction: "TS9 into a cranked amp, tighten the low end"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: "Tube Screamer"
+  notes: "TS9 used as a tightening boost: bass cut plus mid hump."
+
+- id: g004
+  source: llm_draft
+  instruction: "i want that SRV texas blues tone, fat and warm but it should clean up when i roll back the volume knob"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: "Tube Screamer"
+  notes: "SRV implies TS808/TS9; volume cleanup implies modest gain."
+
+- id: g005
+  source: llm_draft
+  instruction: "Early Black Sabbath, Iommi on Paranoid. Thick, a bit woolly, heavy but not modern-saturated."
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_dark
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Originally treble booster into cranked amp; od vs distortion family is ambiguous."
+
+- id: g006
+  source: llm_draft
+  instruction: "90s shoegaze wall-of-fuzz, think Loveless"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: extreme
+    brightness: slightly_dark
+    mids: scooped
+    compression: heavy
+    clipping: hard
+    reference_pedal: "Big Muff"
+  notes: "Muff-style wall of fuzz; reverb/tremolo-arm aspects of shoegaze ignored."
+
+- id: g007
+  source: llm_draft
+  instruction: "Nashville clean country spank. snappy, squashed, chicken pickin ready"
+  target:
+    in_scope: true
+    family: clean
+    gain: none
+    brightness: bright
+    mids: neutral
+    compression: heavy
+    clipping: unknown
+    reference_pedal: null
+  notes: "Clean with heavy compression; spank = bright snappy attack."
+
+- id: g008
+  source: llm_draft
+  instruction: "Hendrix Fuzz Face tone, Foxy Lady era"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: "Fuzz Face"
+  notes: "Germanium Fuzz Face; asymmetric clipping typical."
+
+- id: g009
+  source: llm_draft
+  instruction: "grunge. just grunge."
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Genre-only; could be DS-1, RAT or Muff so no pedal assigned."
+
+- id: g010
+  source: llm_draft
+  instruction: "less fizzy, more creamy"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_dark
+    mids: neutral
+    compression: light
+    clipping: hard
+    reference_pedal: null
+  notes: "Relative; family assumed from an existing distorted tone."
+
+- id: g011
+  source: llm_draft
+  instruction: "its too bright and harsh, can u tame the top end a bit"
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "EQ-only correction; no drive requested."
+
+- id: g012
+  source: llm_draft
+  instruction: "Klon-style transparent boost, just push the amp a little, dont change the character"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: "Klon"
+  notes: "Transparent = minimal EQ change, though a real Klon has a slight mid lift."
+
+- id: g013
+  source: llm_draft
+  instruction: "RAT, distortion around 2 o'clock, filter backed off so it's not ice-picky"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: "RAT"
+  notes: "RAT filter direction is counterintuitive; intent is less harsh."
+
+- id: g014
+  source: llm_draft
+  instruction: "Big Muff Pi with the sustain cranked and tone at noon, that scooped sustain-for-days thing"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: extreme
+    brightness: neutral
+    mids: scooped
+    compression: heavy
+    clipping: hard
+    reference_pedal: "Big Muff"
+  notes: "Tone at noon gives the Muff scoop; sustain read as heavy compression."
+
+- id: g015
+  source: llm_draft
+  instruction: "boss ds-1, the nirvana nevermind sound"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_bright
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: "DS-1"
+  notes: "Cobain-era DS-1: bright, scooped, hard clipped."
+
+- id: g016
+  source: llm_draft
+  instruction: "warm"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "One word; could equally be EQ-only."
+
+- id: g017
+  source: llm_draft
+  instruction: "chimey jangly clean like Tom Petty or the Byrds"
+  target:
+    in_scope: true
+    family: clean
+    gain: none
+    brightness: bright
+    mids: neutral
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: "Chime = bright clean; jangle usually compressed. 12-string character not reproducible."
+
+- id: g018
+  source: llm_draft
+  instruction: "rockabilly: slapback delay and a bit of spring reverb on a slightly dirty clean"
+  target:
+    in_scope: false
+    family: overdrive
+    gain: low
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Core of the request is slapback and reverb."
+
+- id: g019
+  source: llm_draft
+  instruction: "make it sound like its underwater"
+  target:
+    in_scope: false
+    family: none
+    gain: none
+    brightness: dark
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "Needs chorus/vibrato or filter modulation."
+
+- id: g020
+  source: llm_draft
+  instruction: "Voodoo Child intro, wah sweeps and all"
+  target:
+    in_scope: false
+    family: fuzz
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: asymmetric
+    reference_pedal: "Fuzz Face"
+  notes: "Wah sweep is a moving filter; out of scope despite the fuzz."
+
+- id: g021
+  source: llm_draft
+  instruction: "purple haze solo, that octave-up fuzz"
+  target:
+    in_scope: false
+    family: fuzz
+    gain: high
+    brightness: bright
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: "Octavia"
+  notes: "Octave-up is the defining element."
+
+- id: g022
+  source: llm_draft
+  instruction: "Blues Driver, gain around 11 o'clock, a touch more treble than stock"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: "Blues Driver"
+  notes: "BD-2 is flatter in the mids than a TS; explicit treble lift."
+
+- id: g023
+  source: llm_draft
+  instruction: "OCD in HP mode, crunchy AC/DC-ish rhythm"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: "OCD"
+  notes: "OCD straddles od/distortion; MOSFET clipping read as hard."
+
+- id: g024
+  source: llm_draft
+  instruction: "my distortion is muddy, clean up the low mids"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Low-mid cut on existing distortion; mids field cannot express band precisely."
+
+- id: g025
+  source: llm_draft
+  instruction: "My overdrive sounds too honky and nasal, like a half-cocked wah. Fix that."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: scooped
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Reduce the mid peak; honky/nasal as negatives."
+
+- id: g026
+  source: llm_draft
+  instruction: "give me that nasal cocked-wah lead tone, Schenker style"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_bright
+    mids: pushed
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Static cocked wah approximated by mid push; borderline scope."
+
+- id: g027
+  source: llm_draft
+  instruction: "velcro fuzz. gated, sputtery, like the battery is almost dead"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: null
+  notes: "Starved/gated fuzz; Fuzz Factory-like but not named."
+
+- id: g028
+  source: llm_draft
+  instruction: "creamy singing lead, smooth sustain, gilmour-ish"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: slightly_dark
+    mids: neutral
+    compression: light
+    clipping: hard
+    reference_pedal: "Big Muff"
+  notes: "Gilmour lead implies Muff; his delay is ignored."
+
+- id: g029
+  source: llm_draft
+  instruction: "Comfortably Numb second solo exactly, big delay, the whole thing"
+  target:
+    in_scope: false
+    family: fuzz
+    gain: high
+    brightness: slightly_dark
+    mids: neutral
+    compression: light
+    clipping: hard
+    reference_pedal: "Big Muff"
+  notes: "Explicitly requires delay."
+
+- id: g030
+  source: llm_draft
+  instruction: "more crunch, think acdc back in black"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "AC/DC is amp crunch; approximated with medium overdrive."
+
+- id: g031
+  source: llm_draft
+  instruction: "glassy clean, little compression, Knopfler Sultans of Swing vibe"
+  target:
+    in_scope: true
+    family: clean
+    gain: none
+    brightness: bright
+    mids: neutral
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: "Glassy = bright clean."
+
+- id: g032
+  source: llm_draft
+  instruction: "can u make it spanky?? like funk strat in position 4 but with a hint of grit"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: bright
+    mids: neutral
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "Spanky = bright snappy; pickup selection not controllable."
+
+- id: g033
+  source: llm_draft
+  instruction: "Squash it with a Dyna Comp for funk rhythm, no dirt"
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: heavy
+    clipping: unknown
+    reference_pedal: "Dyna Comp"
+  notes: "Compression-only request."
+
+- id: g034
+  source: llm_draft
+  instruction: "make it woolly and vintage, like a sixties fuzz with bass rolled off a bit"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: null
+  notes: "Woolly = dark soft fuzz; bass cut slightly conflicts."
+
+- id: g035
+  source: llm_draft
+  instruction: "Tone Bender MkII, Jimmy Page on Led Zeppelin I"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: slightly_bright
+    mids: pushed
+    compression: none
+    clipping: asymmetric
+    reference_pedal: "Tone Bender"
+  notes: "Raspy, mid-forward germanium fuzz."
+
+- id: g036
+  source: llm_draft
+  instruction: "I like that saggy, spongy feel when you dig in, like a tube rectifier struggling"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_dark
+    mids: neutral
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "Sag is amp feel; approximated with soft clipping and light comp."
+
+- id: g037
+  source: llm_draft
+  instruction: "tight articulate high gain for djent, zero mud, chug should be super percussive"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_bright
+    mids: pushed
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Usually TS-into-amp plus gate; tight implies bass cut."
+
+- id: g038
+  source: llm_draft
+  instruction: "metal"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "One-word genre; scoop is a default, modern metal may be mid-forward."
+
+- id: g039
+  source: llm_draft
+  instruction: "master of puppets rhythm, scooped mids, chunky"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_bright
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Classic 80s thrash scoop."
+
+- id: g040
+  source: llm_draft
+  instruction: "less scooped, i'm disappearing in the band mix"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Relative; assumes existing scooped distortion."
+
+- id: g041
+  source: llm_draft
+  instruction: "cleaner but still with some bite"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Relative; low gain with a bright edge."
+
+- id: g042
+  source: llm_draft
+  instruction: "Crunchy rhythm but not too bright please, my amp is already pretty harsh"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Negated brightness."
+
+- id: g043
+  source: llm_draft
+  instruction: "I want it super clean but also really distorted"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Contradictory; medium gain as compromise (or parallel blend)."
+
+- id: g044
+  source: llm_draft
+  instruction: "dark but also bright, scooped but honky distortion"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Self-contradictory EQ cancels to neutral."
+
+- id: g045
+  source: llm_draft
+  instruction: "fuzz but not fuzzy? like a hairy overdrive"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: null
+  notes: "Boundary between low-gain fuzz and overdrive."
+
+- id: g046
+  source: llm_draft
+  instruction: "TS808 as a clean boost: level up, drive at zero, tone at noon"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: "Tube Screamer"
+  notes: "Even at zero drive a TS adds mid hump."
+
+- id: g047
+  source: llm_draft
+  instruction: "Muff into a RAT, everything dimed"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: extreme
+    brightness: neutral
+    mids: scooped
+    compression: heavy
+    clipping: hard
+    reference_pedal: "Big Muff"
+  notes: "Stacked fuzz + distortion; first pedal used as reference."
+
+- id: g048
+  source: llm_draft
+  instruction: "pls make my guitar sound like a real rock band and not my bedroom lol"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Vague beginner; generic rock crunch."
+
+- id: g049
+  source: llm_draft
+  instruction: "i dont know much about tone but it sounds thin and weak"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_dark
+    mids: pushed
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "Thin -> more body; could be EQ-only."
+
+- id: g050
+  source: llm_draft
+  instruction: "the high end on my distortion sounds like bees in a jar. kill the fizz but keep all the gain"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Fizz reduction via darker EQ; gain stays high."
+
+- id: g051
+  source: llm_draft
+  instruction: "Fuzz Face but silicon, a bit brighter and more aggressive than germanium"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: "Fuzz Face"
+  notes: "Silicon FF = brighter and more gain."
+
+- id: g052
+  source: llm_draft
+  instruction: "Gimme that Hendrix Band of Gypsys Machine Gun fuzz with the uni-vibe swirl"
+  target:
+    in_scope: false
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: "Fuzz Face"
+  notes: "Uni-Vibe modulation is essential."
+
+- id: g053
+  source: llm_draft
+  instruction: "just a tiny bit of hair on the clean, edge of breakup"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Lowest-gain overdrive."
+
+- id: g054
+  source: llm_draft
+  instruction: "john mayer gravity tone"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_dark
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: "Tube Screamer"
+  notes: "Mayer often uses TS-style drive into a big clean amp; loose reference."
+
+- id: g055
+  source: llm_draft
+  instruction: "Make it sound heavier."
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Heavier could mean more gain and/or more low end."
+
+- id: g056
+  source: llm_draft
+  instruction: "Dan Auerbach garage blues fuzz, trashy and loose"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: asymmetric
+    reference_pedal: null
+  notes: "Garage fuzz; no single canonical pedal."
+
+- id: g057
+  source: llm_draft
+  instruction: "Smells Like Teen Spirit verse, that watery chorus clean"
+  target:
+    in_scope: false
+    family: clean
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "Needs chorus modulation."
+
+- id: g058
+  source: llm_draft
+  instruction: "Super Fuzz and a Fender, Mudhoney Superfuzz Bigmuff style"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: extreme
+    brightness: slightly_bright
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: "Big Muff"
+  notes: "Mudhoney used a Univox Super-Fuzz and a Big Muff; reference ambiguous."
+
+- id: g059
+  source: llm_draft
+  instruction: "can you warm it up and add some sustain without making it distorted"
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: slightly_dark
+    mids: neutral
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: "EQ + comp; distortion explicitly excluded."
+
+- id: g060
+  source: llm_draft
+  instruction: "Modern country lead: hot overdrive, bright, compressed, Brad Paisley-ish"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: bright
+    mids: neutral
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "Bright compressed lead drive."
+
+- id: g061
+  source: llm_draft
+  instruction: "the low end gets flubby when I palm mute. tighten it"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Tighten = less bass before clipping; assumes existing high gain."
+
+- id: g062
+  source: llm_draft
+  instruction: "more mids, less bass, slightly more gain than now"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Compound relative request."
+
+- id: g063
+  source: llm_draft
+  instruction: "I'm going for a Keith Richards open G crunch, kind of raw and loose"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Raw loose crunch; amp-driven originally."
+
+- id: g064
+  source: llm_draft
+  instruction: "Satisfaction riff fuzz, Maestro FZ-1"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: slightly_bright
+    mids: pushed
+    compression: none
+    clipping: asymmetric
+    reference_pedal: "Maestro FZ-1"
+  notes: "Brassy buzzy fuzz with abrupt decay."
+
+- id: g065
+  source: llm_draft
+  instruction: "Jack White Seven Nation Army"
+  target:
+    in_scope: false
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: "Big Muff"
+  notes: "Riff depends on a Whammy octave-down."
+
+- id: g066
+  source: llm_draft
+  instruction: "give it some grit"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Short and vague."
+
+- id: g067
+  source: llm_draft
+  instruction: "Thick Queens of the Stone Age desert rock fuzz, kind of mid-heavy and grinding"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Mid-forward desert fuzz."
+
+- id: g068
+  source: llm_draft
+  instruction: "Kyuss stoner tone, fuzzy and huge, tuned way down"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: extreme
+    brightness: neutral
+    mids: pushed
+    compression: light
+    clipping: hard
+    reference_pedal: null
+  notes: "Kyuss used guitar through bass amps; reference ambiguous."
+
+- id: g069
+  source: llm_draft
+  instruction: "Electric Wizard doom, more fuzz, more bass, more everything"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: extreme
+    brightness: dark
+    mids: scooped
+    compression: heavy
+    clipping: hard
+    reference_pedal: null
+  notes: "Extreme doom; no single pedal."
+
+- id: g070
+  source: llm_draft
+  instruction: "sparkly crunch but not ice picky"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Negated harshness tempers brightness."
+
+- id: g071
+  source: llm_draft
+  instruction: "put a light compressor on it, just to even out the picking"
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: "Compression only."
+
+- id: g072
+  source: llm_draft
+  instruction: "add reverb"
+  target:
+    in_scope: false
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "Pure reverb request."
+
+- id: g073
+  source: llm_draft
+  instruction: "80s hair metal lead with lots of delay and chorus"
+  target:
+    in_scope: false
+    family: distortion
+    gain: high
+    brightness: bright
+    mids: neutral
+    compression: light
+    clipping: hard
+    reference_pedal: null
+  notes: "Drive in scope but request centers on delay/chorus."
+
+- id: g074
+  source: llm_draft
+  instruction: "Van Halen brown sound"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_bright
+    mids: neutral
+    compression: light
+    clipping: hard
+    reference_pedal: null
+  notes: "Variac'd Plexi; approximated with distortion."
+
+- id: g075
+  source: llm_draft
+  instruction: "that swooshy Phase 90 on a Van Halen lead"
+  target:
+    in_scope: false
+    family: distortion
+    gain: high
+    brightness: slightly_bright
+    mids: neutral
+    compression: light
+    clipping: hard
+    reference_pedal: "Phase 90"
+  notes: "Phaser is the point of the request."
+
+- id: g076
+  source: llm_draft
+  instruction: "ok so I play in a church band and the guitar needs to sit behind vocals, not too gainy, smooth, kind of ambient"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_dark
+    mids: neutral
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "Ambient hints at reverb/delay but main ask is smooth low drive; borderline."
+
+- id: g077
+  source: llm_draft
+  instruction: "Edge-style U2 dotted eighth delay"
+  target:
+    in_scope: false
+    family: overdrive
+    gain: low
+    brightness: bright
+    mids: neutral
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "Dotted-eighth delay is the core."
+
+- id: g078
+  source: llm_draft
+  instruction: "dirty blues, like a cheap amp turned all the way up, a bit broken sounding"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: asymmetric
+    reference_pedal: null
+  notes: "Broken cheap-amp breakup; asymmetric is a guess."
+
+- id: g079
+  source: llm_draft
+  instruction: "Klon into a Tube Screamer, both low gain, stacked for a medium crunch"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: "Klon"
+  notes: "Stacked; first-named pedal as reference."
+
+- id: g080
+  source: llm_draft
+  instruction: "Can it sound less like a fizzy digital amp and more like a real tube amp? I don't know what knob does that."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_dark
+    mids: neutral
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "Beginner; less fizz, softer clipping."
+
+- id: g081
+  source: llm_draft
+  instruction: "transparent overdrive, no mid hump, unity volume"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Explicitly flat mids."
+
+- id: g082
+  source: llm_draft
+  instruction: "mid-hump. big one. TS on steroids"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: "Tube Screamer"
+  notes: "Exaggerated TS mid push."
+
+- id: g083
+  source: llm_draft
+  instruction: "Too much compression, its lifeless, I want my dynamics back"
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "Relative decrease; remove compression."
+
+- id: g084
+  source: llm_draft
+  instruction: "Rat but less fuzzy and more like an overdrive, lower gain"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: "RAT"
+  notes: "Low-gain RAT behaves like hard-clipped od; family ambiguous."
+
+- id: g085
+  source: llm_draft
+  instruction: "Proco rat dimed, filter all the way down so its brightest, punk"
+  target:
+    in_scope: true
+    family: distortion
+    gain: extreme
+    brightness: bright
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: "RAT"
+  notes: "Filter fully CCW is brightest."
+
+- id: g086
+  source: llm_draft
+  instruction: "Ramones buzzsaw, all downstrokes, bright and wide"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: bright
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Amp-driven originally; buzzsaw = bright saturated."
+
+- id: g087
+  source: llm_draft
+  instruction: "Green Day Dookie crunch"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Modded Marshall; mid-forward pop punk."
+
+- id: g088
+  source: llm_draft
+  instruction: "blink-182 style pop punk, scooped and fizzy on purpose"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: bright
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Fizzy as a positive here."
+
+- id: g089
+  source: llm_draft
+  instruction: "make the fuzz less splatty and gated, i want it smoother and more musical"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: slightly_dark
+    mids: neutral
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "Relative; opposite of velcro."
+
+- id: g090
+  source: llm_draft
+  instruction: "Fuzz with the guitar volume rolled back for that cleanup, Hendrix style"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: medium
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: "Fuzz Face"
+  notes: "Rolled-back fuzz cleans up; medium gain."
+
+- id: g091
+  source: llm_draft
+  instruction: "Tone like Eric Johnson's violin lead, liquid and smooth"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: light
+    clipping: asymmetric
+    reference_pedal: "Fuzz Face"
+  notes: "EJ uses Fuzz Face and TS into Marshalls; ambiguous."
+
+- id: g092
+  source: llm_draft
+  instruction: "clapton woman tone"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: high
+    brightness: dark
+    mids: pushed
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "Cranked amp with guitar tone knob rolled off; very dark."
+
+- id: g093
+  source: llm_draft
+  instruction: "Gary Moore Still Got the Blues lead with that singing sustain"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "Singing high-gain lead; Guv'nor/TS sometimes cited."
+
+- id: g094
+  source: llm_draft
+  instruction: "dial in a crunch that sits between a JCM800 and a Plexi"
+  target:
+    in_scope: true
+    family: distortion
+    gain: medium
+    brightness: slightly_bright
+    mids: pushed
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Amp names approximated with a pedal; borderline amp-sim."
+
+- id: g095
+  source: llm_draft
+  instruction: "I need an amp sim of a Mesa Rectifier with a 4x12 Mesa cab and SM57 mic"
+  target:
+    in_scope: false
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Explicit amp/cab sim request."
+
+- id: g096
+  source: llm_draft
+  instruction: "slightly darker fuzz"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Minimal relative EQ request on a fuzz."
+
+- id: g097
+  source: llm_draft
+  instruction: "more sustain on the lead, but don't make it any more distorted"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: heavy
+    clipping: hard
+    reference_pedal: null
+  notes: "Sustain via compression; gain held at existing level."
+
+- id: g098
+  source: llm_draft
+  instruction: "Fat creamy humbucker neck lead, like a Dumble but as a pedal, kinda Robben Ford"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_dark
+    mids: pushed
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "Dumble-in-a-box; smooth mid-forward."
+
+- id: g099
+  source: llm_draft
+  instruction: "modern boutique fuzz, massive low end, gated a bit"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: extreme
+    brightness: dark
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Generic modern fuzz; no pedal named."
+
+- id: g100
+  source: llm_draft
+  instruction: "honestly just make it loud and angry"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Emotional; 'loud' is level not gain."
+
+- id: g101
+  source: llm_draft
+  instruction: "bluesy breakup, think a tweed deluxe cranked. hairy, compressed, a bit loose in the lows"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "Tweed character; loose lows means no bass cut."
+
+- id: g102
+  source: llm_draft
+  instruction: "loose and saggy fuzz like a Tone Bender MK1 with an old battery"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: slightly_dark
+    mids: neutral
+    compression: light
+    clipping: asymmetric
+    reference_pedal: "Tone Bender"
+  notes: "Old battery implies sag and some gating."
+
+- id: g103
+  source: llm_draft
+  instruction: "i want a tube screamer sound but with more low end, the stock one is too thin"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: "Tube Screamer"
+  notes: "TS with bass retained; mids still pushed."
+
+- id: g104
+  source: llm_draft
+  instruction: "Can you make it twangier"
+  target:
+    in_scope: true
+    family: clean
+    gain: none
+    brightness: bright
+    mids: neutral
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: "Twang = bright snappy; assumes clean."
+
+- id: g105
+  source: llm_draft
+  instruction: "telecaster chicken picking tone with a compressor and a slight bit of drive"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: bright
+    mids: neutral
+    compression: heavy
+    clipping: soft
+    reference_pedal: null
+  notes: "Compound: comp plus light drive."
+
+- id: g106
+  source: llm_draft
+  instruction: "my crunch needs a little more bite on the attack, the notes sound blurry"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_bright
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Articulation via upper-mid presence."
+
+- id: g107
+  source: llm_draft
+  instruction: "way too much gain, it's mush. back it off by half"
+  target:
+    in_scope: true
+    family: distortion
+    gain: medium
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Relative reduction; family assumed distortion."
+
+- id: g108
+  source: llm_draft
+  instruction: "Tool Adam Jones riff tone, thick and mid-heavy"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Mid-forward high gain; no single pedal."
+
+- id: g109
+  source: llm_draft
+  instruction: "sludgy"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: dark
+    mids: neutral
+    compression: light
+    clipping: hard
+    reference_pedal: null
+  notes: "One word; could equally be distortion."
+
+- id: g110
+  source: llm_draft
+  instruction: "DS-1 but less harsh, more like a mod with the mids filled in"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: hard
+    reference_pedal: "DS-1"
+  notes: "Modded DS-1 implied."
+
+- id: g111
+  source: llm_draft
+  instruction: "Billy Gibbons La Grange grind, lots of pinch harmonics"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Gritty mid-forward; pinch harmonics are technique."
+
+- id: g112
+  source: llm_draft
+  instruction: "Make it like a Marshall in a box, Guv'nor-ish"
+  target:
+    in_scope: true
+    family: distortion
+    gain: medium
+    brightness: slightly_bright
+    mids: pushed
+    compression: none
+    clipping: hard
+    reference_pedal: "Guv'nor"
+  notes: "Amp-in-a-box distortion."
+
+- id: g113
+  source: llm_draft
+  instruction: "chorus + compression clean like Andy Summers in the Police"
+  target:
+    in_scope: false
+    family: clean
+    gain: none
+    brightness: bright
+    mids: neutral
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: "Chorus essential."
+
+- id: g114
+  source: llm_draft
+  instruction: "tremolo on a clean surf tone with drippy spring reverb"
+  target:
+    in_scope: false
+    family: clean
+    gain: none
+    brightness: bright
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "Tremolo and reverb."
+
+- id: g115
+  source: llm_draft
+  instruction: "pitch it down a whole step"
+  target:
+    in_scope: false
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "Pitch shift."
+
+- id: g116
+  source: llm_draft
+  instruction: "Something like Mark Tremonti tone but less processed"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Vague artist ref; 'less processed' is ambiguous."
+
+- id: g117
+  source: llm_draft
+  instruction: "Want an overdriven tone that's warm, not fizzy, mids forward, medium gain, minimal compression. Think classic rock rhythm."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_dark
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Fully specified; low ambiguity."
+
+- id: g118
+  source: llm_draft
+  instruction: "brighter + more gain + less compression than what's there now"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Compound relative."
+
+- id: g119
+  source: llm_draft
+  instruction: "asymmetric clipping, germanium diodes, like a slightly dirty amp"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: null
+  notes: "Explicit clipping spec."
+
+- id: g120
+  source: llm_draft
+  instruction: "make it sound more expensive"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "Vague; mild polish."
+
+- id: g121
+  source: llm_draft
+  instruction: "Dimebag. scooped, tight, insane gain"
+  target:
+    in_scope: true
+    family: distortion
+    gain: extreme
+    brightness: bright
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Solid-state high gain plus graphic EQ scoop."
+
+- id: g122
+  source: llm_draft
+  instruction: "Soundgarden Badmotorfinger drop D crunch, heavy but not scooped"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Grunge-metal with mids kept."
+
+- id: g123
+  source: llm_draft
+  instruction: "Smashing Pumpkins Siamese Dream fuzz. Layers of it. Op-amp Muff."
+  target:
+    in_scope: true
+    family: fuzz
+    gain: extreme
+    brightness: slightly_dark
+    mids: scooped
+    compression: heavy
+    clipping: hard
+    reference_pedal: "Big Muff"
+  notes: "Corgan used an op-amp Big Muff."
+
+- id: g124
+  source: llm_draft
+  instruction: "Pearl Jam Alive solo, Mike McCready"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "Strat into cranked amp."
+
+- id: g125
+  source: llm_draft
+  instruction: "tighter"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Single-word relative; bass cut + mids."
+
+- id: g126
+  source: llm_draft
+  instruction: "the distortion sounds really cheap and thin. fatten it up, more low mids, less fizz up top"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_dark
+    mids: pushed
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Compound EQ relative."
+
+- id: g127
+  source: llm_draft
+  instruction: "Can you give me that bluesy Joe Bonamassa tone with a Tube Screamer pushing a Marshall but less mid hump than usual"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: "Tube Screamer"
+  notes: "Conflicts with the TS's defining mid hump."
+
+- id: g128
+  source: llm_draft
+  instruction: "i want it to sound like a kazoo lol"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: bright
+    mids: pushed
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Joke-ish; nasal buzzy fuzz."
+
+- id: g129
+  source: llm_draft
+  instruction: "Fuzz that sounds like a blown speaker, 60s garage, Nuggets compilation style"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: null
+  notes: "Garage-era fuzz; no single pedal implied."
+
+- id: g130
+  source: llm_draft
+  instruction: "I've got a Strat, single coils. I play mostly blues-rock and some classic rock covers. Right now the tone is too clean and a bit sterile. I'd like something with more grit and sustain, but I still want to hear the pick attack and I don't want it to turn to mush on chords. Medium gain I guess?"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "Long multi-sentence; articulate medium od."
+
+- id: g131
+  source: llm_draft
+  instruction: "Long story short, recording a demo, rhythm guitar needs to be huge like Foo Fighters, the leads sit on top later. Don't make it scooped, mixing engineer will kill me."
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Long; negated scoop."
+
+- id: g132
+  source: llm_draft
+  instruction: "I want it saturated but also dynamic and touch sensitive and crystal clear"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Mildly contradictory: saturation vs clarity."
+
+- id: g133
+  source: llm_draft
+  instruction: "lower gain, more compression, darker. jazz-ish but with a bit of hair"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_dark
+    mids: neutral
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "Compound."
+
+- id: g134
+  source: llm_draft
+  instruction: "jazz clean, round and dark, no dirt at all"
+  target:
+    in_scope: true
+    family: clean
+    gain: none
+    brightness: dark
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "Archtop-style clean."
+
+- id: g135
+  source: llm_draft
+  instruction: "Its to distorted, i want it cleen"
+  target:
+    in_scope: true
+    family: clean
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "Typos; remove drive."
+
+- id: g136
+  source: llm_draft
+  instruction: "more distorsion pls and less treble"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Typo; compound relative."
+
+- id: g137
+  source: llm_draft
+  instruction: "crunchy"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "One word; crunch = medium od."
+
+- id: g138
+  source: llm_draft
+  instruction: "Bass knob up, treble down, mids scooped. thats it, no drive"
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: slightly_dark
+    mids: scooped
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "EQ-only, explicit."
+
+- id: g139
+  source: llm_draft
+  instruction: "fuzzy but still articulate enough for fast single note lines"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: medium
+    brightness: slightly_bright
+    mids: pushed
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Articulate fuzz; mids help."
+
+- id: g140
+  source: llm_draft
+  instruction: "give it a wall of sound heavy fuzz like Dinosaur Jr"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: extreme
+    brightness: neutral
+    mids: scooped
+    compression: heavy
+    clipping: hard
+    reference_pedal: "Big Muff"
+  notes: "J Mascis = Big Muff."
+
+- id: g141
+  source: llm_draft
+  instruction: "subtle drive to thicken up chords, mostly clean"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Low-gain thickener."
+
+- id: g142
+  source: llm_draft
+  instruction: "Blues Driver into a RAT for leads"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: "RAT"
+  notes: "Stacked; RAT dominates the combined tone."
+
+- id: g143
+  source: llm_draft
+  instruction: "Klone but with more gain than a real klon has"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: "Klon"
+  notes: "Klon clone pushed past stock gain."
+
+- id: g144
+  source: llm_draft
+  instruction: "80s Swedish death metal, HM-2 chainsaw tone"
+  target:
+    in_scope: true
+    family: distortion
+    gain: extreme
+    brightness: bright
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: "HM-2"
+  notes: "Boss HM-2 with knobs maxed."
+
+- id: g145
+  source: llm_draft
+  instruction: "hard rock solo tone, singing and sustaining, but not too scooped and not too bright"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: light
+    clipping: hard
+    reference_pedal: null
+  notes: "Double negation."
+
+- id: g146
+  source: llm_draft
+  instruction: "make it sound vintage"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_dark
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Era is unspecified."
+
+- id: g147
+  source: llm_draft
+  instruction: "make it sound more modern"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_bright
+    mids: pushed
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "Ambiguous."
+
+- id: g148
+  source: llm_draft
+  instruction: "clean boost, +6dB, completely flat EQ"
+  target:
+    in_scope: true
+    family: clean
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "Boost only; no clipping intended."
+
+- id: g149
+  source: llm_draft
+  instruction: "Muff but with the mids put back in, so it cuts through a live mix"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: light
+    clipping: hard
+    reference_pedal: "Big Muff"
+  notes: "Muff with mids restored."
+
+- id: g150
+  source: llm_draft
+  instruction: "Fuzzy, but like... warm fuzzy, not like buzzy fuzzy. Does that make sense"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: medium
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Informal; warm soft fuzz."
