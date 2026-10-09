@@ -51,7 +51,7 @@ Losses: initial median 1.7972; final median 0.0048, max 0.1122. Not audio-matche
 
 ### Exempted (degenerate) knobs
 
-`drive.asymmetry`, `drive.bias` both set the clipper's even-harmonic content (negative-half ceiling vs operating point), and a magnitude-only loss cannot tell which produced it. Evidence from this run: their signed errors are rank-correlated (r = +0.99), and the trials that miss *only* these knobs ([0, 2, 9, 11, 14, 17, 20]) still end at loss [0.0055, 0.0028, 0.0028, 0.0115, 0.0048, 0.0099, 0.0067] — as low as trials that recover every knob — so the audio really is (near-)identical along that direction.
+`drive.asymmetry`, `drive.bias` both set the clipper's even-harmonic content (negative-half ceiling vs operating point), and a magnitude-only loss cannot tell which produced it. Evidence from this run: their signed errors are rank-correlated (r = +0.99), and the trials that miss *only* these knobs ([0, 2, 9, 11, 14, 17, 20]) still end at loss [0.0055, 0.0028, 0.0028, 0.0115, 0.0048, 0.0099, 0.0067] — comparably low to trials that recover every knob — so the audio is near-identical along that direction.
 
 ### Trials that miss a non-exempt knob
 
@@ -70,7 +70,7 @@ Physical target → estimate for each missed knob, the final loss, and the loss 
 
 Path shapes:
 
-- **barrier** — the loss rises away from the estimate, then falls below it near the target: the estimate is a *local minimum* separated from the target's lower basin. These are not unidentifiable settings; the optimizer got stuck.
+- **barrier** — the loss rises away from the estimate, then falls below it near the target: along that straight line the estimate is not the minimum, so it is likely a *local minimum* separated from the target's lower basin (a 1-D probe cannot prove this) rather than an unidentifiable setting.
 - **coupled** — the loss rises all the way: the missed knobs are tied to compensating ones (shelves, `drive.tone_db` tilt, `drive.level_db`), so correcting them alone is worse. The estimate's loss is still well above the target's (0), so this is either another local minimum or a slowly converging valley; this probe cannot tell which.
 - **flat** — the missed knobs barely change the loss at the estimate (a near-degenerate direction, e.g. a peak frequency when its gain is ~0 dB).
 - **descending** — the loss falls straight toward the target: not yet converged.

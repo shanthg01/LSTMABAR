@@ -380,8 +380,8 @@ def format_report(r: RecoveryResult) -> str:
         "from this run: their signed errors are rank-correlated "
         f"({_pair_r(r, *ps['exempt'])}), and the trials that miss *only* these knobs "
         f"({ps['only_degenerate_missed_trials'] or 'none'}) still end at loss "
-        f"{_fmt_list(ps['only_degenerate_missed_losses'])} — as low as trials that recover "
-        "every knob — so the audio really is (near-)identical along that direction.",
+        f"{_fmt_list(ps['only_degenerate_missed_losses'])} — comparably low to trials that "
+        "recover every knob — so the audio is near-identical along that direction.",
         "",
         "### Trials that miss a non-exempt knob",
         "",
@@ -397,8 +397,9 @@ def format_report(r: RecoveryResult) -> str:
         "Path shapes:",
         "",
         "- **barrier** — the loss rises away from the estimate, then falls below it near the "
-        "target: the estimate is a *local minimum* separated from the target's lower basin. "
-        "These are not unidentifiable settings; the optimizer got stuck.",
+        "target: along that straight line the estimate is not the minimum, so it is likely a "
+        "*local minimum* separated from the target's lower basin (a 1-D probe cannot prove "
+        "this) rather than an unidentifiable setting.",
         "- **coupled** — the loss rises all the way: the missed knobs are tied to compensating "
         "ones (shelves, `drive.tone_db` tilt, `drive.level_db`), so correcting them alone is "
         "worse. The estimate's loss is still well above the target's (0), so this is either "
