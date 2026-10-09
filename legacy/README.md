@@ -1,3 +1,5 @@
+> **Archived v1 (W266 submission, tag `v1-w266`).** Kept for reference only. See [../docs/design.md](../docs/design.md) §1 for the audit of this version and the v2 redesign.
+
 # Two-Tower Model Architecture: LSTMABAR (Language-to-Sound Transformation Model using Archetype-Based Audio Representation)
 
 *Contributions: project ideation, project outline, literature review, architecture design, text_tower, audio_tower, contrastive_alignment, ddsp_transformation, archetype_predictor, musiccaps_loader, model training and experimentation*

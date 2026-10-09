@@ -1,21 +1,28 @@
-# Ignore specific subdirectories under scripts/
-scripts/musiccaps_audio/
-scripts/checkpoints/
-
-# Ignore test results
-scripts/evaluation_results_comparison.csv
-scripts/evaluation_results.csv
-scripts/musiccaps_training_data_test.npz
-scripts/musiccaps_training_data_train.npz
-scripts/musiccaps_training_data_val.npz
-scripts/test_results.csv
-
-# (optional) Ignore all Python cache folders anywhere in repo
+# Python
 __pycache__/
-
-# (optional) Ignore compiled files
 *.pyc
-
-# (optional) Ignore virtual environments if they exist
+*.egg-info/
+.venv/
 venv/
 .env/
+.pytest_cache/
+.ruff_cache/
+
+# Data, renders, runs, checkpoints (large / regenerable)
+data/raw/
+data/rendered/
+data/cache/
+runs/
+*.pth
+*.pt
+*.ckpt
+
+# v1 artefacts (legacy)
+legacy/scripts/musiccaps_audio/
+legacy/scripts/checkpoints/
+legacy/scripts/*.npz
+legacy/scripts/*.csv
+
+# Tooling
+.claude/worktrees/
+.claude/settings.local.json
