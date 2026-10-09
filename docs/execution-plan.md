@@ -51,6 +51,13 @@ Critical path: P0 → P1 → P2 → P4 → P6. Solo, so the "parallel" phases ar
 
 **Exit gate:** CI green; Colab smoke run works; ≥150 gold instructions committed; spike notes written.
 
+**Status (2026-10-09): P0 exit gate passed.**
+- CI green (Python 3.11 + 3.13).
+- Colab smoke run OK on a Tesla T4 (Python 3.13, torch 2.11 + CUDA 13.0, commit 3bc4a7b).
+- Gold set: 600 items across four files, all LLM-written; real `human` items are still to be added.
+- Spike A ([CLAP findings](../spikes/clap_vocab/FINDINGS.md)) and spike B ([data licenses](data-licenses.md)) are done.
+- Open follow-ups: license emails (see data-licenses.md), optional own DI recordings, rerun spike A on real DI.
+
 ## P1 — Differentiable DSP core (weeks 2–4) → M1
 
 | # | Task | Where | Output |
