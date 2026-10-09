@@ -41,6 +41,19 @@ def cmd_smoke(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_demo(args: argparse.Namespace) -> int:
+    """Launch the Gradio demo (needs the ``demo`` extra)."""
+    try:
+        from lstmabar.demo.app import build_app
+
+        app = build_app()
+    except ImportError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    app.launch(server_port=args.port, share=args.share)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="lstmabar")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -52,6 +65,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_smoke.add_argument("--config", default="configs/base.yaml")
     p_smoke.add_argument("overrides", nargs="*", help="dotlist overrides, e.g. seed=1")
     p_smoke.set_defaults(func=cmd_smoke)
+
+    p_demo = sub.add_parser("demo", help="launch the Gradio pedalboard demo")
+    p_demo.add_argument("--port", type=int, default=7860)
+    p_demo.add_argument("--share", action="store_true", help="create a public gradio link")
+    p_demo.set_defaults(func=cmd_demo)
 
     return parser
 
