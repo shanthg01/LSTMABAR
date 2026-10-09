@@ -1,0 +1,1204 @@
+{
+  "laion/clap-htsat-unfused": {
+    "sanity": {
+      "top1_acc": 1.0,
+      "sims": [
+        [
+          0.6639999747276306,
+          0.17800000309944153,
+          0.06400000303983688
+        ],
+        [
+          0.27900001406669617,
+          0.3930000066757202,
+          -0.12300000339746475
+        ],
+        [
+          0.041999999433755875,
+          -0.10199999809265137,
+          0.2709999978542328
+        ]
+      ]
+    },
+    "audio_spread": {
+      "mean_offdiag_cos": 0.7103214859962463,
+      "min_offdiag_cos": 0.4505993723869324
+    },
+    "vocab": {
+      "word": {
+        "mean_auc": 0.5953141534391534,
+        "top1_hit_rate": 0.23333333333333334,
+        "per_word": {
+          "clean": {
+            "auc": 0.4583333333333333,
+            "top1_tone": "lofi",
+            "top1_hit": false
+          },
+          "glassy": {
+            "auc": 0.875,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "sparkly": {
+            "auc": 0.5972222222222222,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "bright": {
+            "auc": 0.5694444444444444,
+            "top1_tone": "dark",
+            "top1_hit": false
+          },
+          "twangy": {
+            "auc": 0.8194444444444444,
+            "top1_tone": "bright",
+            "top1_hit": true
+          },
+          "dark": {
+            "auc": 0.3194444444444444,
+            "top1_tone": "metal_scooped",
+            "top1_hit": false
+          },
+          "muddy": {
+            "auc": 0.4861111111111111,
+            "top1_tone": "lofi",
+            "top1_hit": false
+          },
+          "warm": {
+            "auc": 0.7361111111111112,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "smooth": {
+            "auc": 0.8333333333333334,
+            "top1_tone": "dark",
+            "top1_hit": true
+          },
+          "overdriven": {
+            "auc": 0.6666666666666666,
+            "top1_tone": "fuzz",
+            "top1_hit": false
+          },
+          "crunchy": {
+            "auc": 0.6666666666666666,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "distorted": {
+            "auc": 0.9270833333333334,
+            "top1_tone": "fuzz",
+            "top1_hit": true
+          },
+          "heavy": {
+            "auc": 0.71875,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "aggressive": {
+            "auc": 0.9444444444444444,
+            "top1_tone": "fuzz",
+            "top1_hit": false
+          },
+          "fuzzy": {
+            "auc": 0.9,
+            "top1_tone": "fuzz",
+            "top1_hit": true
+          },
+          "fizzy": {
+            "auc": 0.5,
+            "top1_tone": "bright",
+            "top1_hit": false
+          },
+          "gritty": {
+            "auc": 0.6770833333333334,
+            "top1_tone": "metal_scooped",
+            "top1_hit": false
+          },
+          "saturated": {
+            "auc": 0.8392857142857143,
+            "top1_tone": "metal_scooped",
+            "top1_hit": true
+          },
+          "creamy": {
+            "auc": 0.325,
+            "top1_tone": "hard_dist",
+            "top1_hit": false
+          },
+          "mid-heavy": {
+            "auc": 0.65,
+            "top1_tone": "soft_od",
+            "top1_hit": true
+          },
+          "scooped": {
+            "auc": 0.475,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "chugging metal": {
+            "auc": 0.2,
+            "top1_tone": "chorus",
+            "top1_hit": false
+          },
+          "compressed": {
+            "auc": 0.025,
+            "top1_tone": "chorus",
+            "top1_hit": false
+          },
+          "squashed": {
+            "auc": 0.0,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "lo-fi": {
+            "auc": 0.825,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "shimmering": {
+            "auc": 0.25,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "watery": {
+            "auc": 0.75,
+            "top1_tone": "chorus",
+            "top1_hit": true
+          },
+          "spacious": {
+            "auc": 0.65,
+            "top1_tone": "hard_dist",
+            "top1_hit": false
+          },
+          "ambient": {
+            "auc": 0.5,
+            "top1_tone": "dark",
+            "top1_hit": false
+          },
+          "Tube Screamer": {
+            "auc": 0.675,
+            "top1_tone": "bright",
+            "top1_hit": false
+          }
+        }
+      },
+      "tone": {
+        "mean_auc": 0.5341501322751322,
+        "top1_hit_rate": 0.26666666666666666,
+        "per_word": {
+          "clean": {
+            "auc": 0.7583333333333333,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "glassy": {
+            "auc": 0.875,
+            "top1_tone": "bright",
+            "top1_hit": true
+          },
+          "sparkly": {
+            "auc": 0.6805555555555556,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "bright": {
+            "auc": 0.5,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "twangy": {
+            "auc": 0.875,
+            "top1_tone": "bright",
+            "top1_hit": true
+          },
+          "dark": {
+            "auc": 0.3888888888888889,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "muddy": {
+            "auc": 0.5138888888888888,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "warm": {
+            "auc": 0.8611111111111112,
+            "top1_tone": "dark",
+            "top1_hit": true
+          },
+          "smooth": {
+            "auc": 0.8541666666666666,
+            "top1_tone": "bright",
+            "top1_hit": false
+          },
+          "overdriven": {
+            "auc": 0.5833333333333334,
+            "top1_tone": "soft_od",
+            "top1_hit": true
+          },
+          "crunchy": {
+            "auc": 0.5138888888888888,
+            "top1_tone": "soft_od",
+            "top1_hit": true
+          },
+          "distorted": {
+            "auc": 0.5416666666666666,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "heavy": {
+            "auc": 0.0625,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "aggressive": {
+            "auc": 0.2222222222222222,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "fuzzy": {
+            "auc": 0.325,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "fizzy": {
+            "auc": 0.05555555555555555,
+            "top1_tone": "bright",
+            "top1_hit": false
+          },
+          "gritty": {
+            "auc": 0.53125,
+            "top1_tone": "soft_od",
+            "top1_hit": true
+          },
+          "saturated": {
+            "auc": 0.35714285714285715,
+            "top1_tone": "soft_od",
+            "top1_hit": true
+          },
+          "creamy": {
+            "auc": 0.825,
+            "top1_tone": "bright",
+            "top1_hit": false
+          },
+          "mid-heavy": {
+            "auc": 0.9,
+            "top1_tone": "soft_od",
+            "top1_hit": true
+          },
+          "scooped": {
+            "auc": 0.0,
+            "top1_tone": "bright",
+            "top1_hit": false
+          },
+          "chugging metal": {
+            "auc": 0.25,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "compressed": {
+            "auc": 0.8,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "squashed": {
+            "auc": 0.825,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "lo-fi": {
+            "auc": 0.375,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "shimmering": {
+            "auc": 0.325,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "watery": {
+            "auc": 0.475,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "spacious": {
+            "auc": 0.475,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "ambient": {
+            "auc": 0.475,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "Tube Screamer": {
+            "auc": 0.8,
+            "top1_tone": "bright",
+            "top1_hit": false
+          }
+        }
+      },
+      "sound": {
+        "mean_auc": 0.5208564814814816,
+        "top1_hit_rate": 0.23333333333333334,
+        "per_word": {
+          "clean": {
+            "auc": 0.725,
+            "top1_tone": "bright",
+            "top1_hit": true
+          },
+          "glassy": {
+            "auc": 0.8055555555555556,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "sparkly": {
+            "auc": 0.5833333333333334,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "bright": {
+            "auc": 0.4305555555555556,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "twangy": {
+            "auc": 0.8472222222222222,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "dark": {
+            "auc": 0.4583333333333333,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "muddy": {
+            "auc": 0.4027777777777778,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "warm": {
+            "auc": 0.8333333333333334,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "smooth": {
+            "auc": 0.8645833333333334,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "overdriven": {
+            "auc": 0.6527777777777778,
+            "top1_tone": "soft_od",
+            "top1_hit": true
+          },
+          "crunchy": {
+            "auc": 0.5694444444444444,
+            "top1_tone": "soft_od",
+            "top1_hit": true
+          },
+          "distorted": {
+            "auc": 0.3645833333333333,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "heavy": {
+            "auc": 0.14583333333333334,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "aggressive": {
+            "auc": 0.25,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "fuzzy": {
+            "auc": 0.2,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "fizzy": {
+            "auc": 0.06944444444444445,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "gritty": {
+            "auc": 0.5104166666666666,
+            "top1_tone": "soft_od",
+            "top1_hit": true
+          },
+          "saturated": {
+            "auc": 0.4375,
+            "top1_tone": "soft_od",
+            "top1_hit": true
+          },
+          "creamy": {
+            "auc": 0.85,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "mid-heavy": {
+            "auc": 0.975,
+            "top1_tone": "soft_od",
+            "top1_hit": true
+          },
+          "scooped": {
+            "auc": 0.05,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "chugging metal": {
+            "auc": 0.225,
+            "top1_tone": "chorus",
+            "top1_hit": false
+          },
+          "compressed": {
+            "auc": 0.65,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "squashed": {
+            "auc": 0.45,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "lo-fi": {
+            "auc": 0.4,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "shimmering": {
+            "auc": 0.35,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "watery": {
+            "auc": 0.525,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "spacious": {
+            "auc": 0.65,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "ambient": {
+            "auc": 0.55,
+            "top1_tone": "dark",
+            "top1_hit": false
+          },
+          "Tube Screamer": {
+            "auc": 0.8,
+            "top1_tone": "soft_od",
+            "top1_hit": true
+          }
+        }
+      }
+    },
+    "top_words_per_tone": {
+      "clean": [
+        "clean",
+        "warm",
+        "fizzy",
+        "bright",
+        "smooth"
+      ],
+      "dark": [
+        "ambient",
+        "lo-fi",
+        "smooth",
+        "spacious",
+        "warm"
+      ],
+      "bright": [
+        "fizzy",
+        "twangy",
+        "Tube Screamer",
+        "glassy",
+        "dark"
+      ],
+      "soft_od": [
+        "aggressive",
+        "muddy",
+        "heavy",
+        "gritty",
+        "crunchy"
+      ],
+      "hard_dist": [
+        "distorted",
+        "Tube Screamer",
+        "overdriven",
+        "squashed",
+        "gritty"
+      ],
+      "fuzz": [
+        "distorted",
+        "squashed",
+        "Tube Screamer",
+        "gritty",
+        "overdriven"
+      ],
+      "metal_scooped": [
+        "distorted",
+        "overdriven",
+        "crunchy",
+        "aggressive",
+        "gritty"
+      ],
+      "compressed": [
+        "scooped",
+        "compressed",
+        "saturated",
+        "ambient",
+        "creamy"
+      ],
+      "chorus": [
+        "chugging metal",
+        "distorted",
+        "squashed",
+        "watery",
+        "gritty"
+      ],
+      "reverb": [
+        "sparkly",
+        "bright",
+        "shimmering",
+        "warm",
+        "watery"
+      ],
+      "lofi": [
+        "scooped",
+        "clean",
+        "twangy",
+        "sparkly",
+        "lo-fi"
+      ]
+    },
+    "sweeps": {
+      "gain:distorted": [
+        0.5428571428571429,
+        -0.7714285714285715
+      ],
+      "gain:clean": [
+        -1.0,
+        -0.942857142857143
+      ],
+      "gain:distorted-clean": [
+        1.0,
+        1.0
+      ],
+      "cutoff:bright": [
+        -1.0,
+        0.8285714285714287
+      ],
+      "cutoff:dark": [
+        -1.0,
+        0.8285714285714287
+      ],
+      "cutoff:bright-dark": [
+        0.942857142857143,
+        -0.3142857142857143
+      ]
+    }
+  },
+  "laion/larger_clap_general": {
+    "sanity": {
+      "top1_acc": 1.0,
+      "sims": [
+        [
+          0.35499998927116394,
+          0.07100000232458115,
+          0.07199999690055847
+        ],
+        [
+          0.009999999776482582,
+          0.12999999523162842,
+          -0.1469999998807907
+        ],
+        [
+          -0.0860000029206276,
+          -0.1509999930858612,
+          0.24500000476837158
+        ]
+      ]
+    },
+    "audio_spread": {
+      "mean_offdiag_cos": 0.7265452146530151,
+      "min_offdiag_cos": 0.43155285716056824
+    },
+    "vocab": {
+      "word": {
+        "mean_auc": 0.5232440476190476,
+        "top1_hit_rate": 0.2,
+        "per_word": {
+          "clean": {
+            "auc": 0.6583333333333333,
+            "top1_tone": "reverb",
+            "top1_hit": true
+          },
+          "glassy": {
+            "auc": 0.6111111111111112,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "sparkly": {
+            "auc": 0.5972222222222222,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "bright": {
+            "auc": 0.3611111111111111,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "twangy": {
+            "auc": 0.6666666666666666,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "dark": {
+            "auc": 0.4305555555555556,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "muddy": {
+            "auc": 0.4861111111111111,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "warm": {
+            "auc": 0.7916666666666666,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "smooth": {
+            "auc": 0.7604166666666666,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "overdriven": {
+            "auc": 0.6805555555555556,
+            "top1_tone": "hard_dist",
+            "top1_hit": true
+          },
+          "crunchy": {
+            "auc": 0.6944444444444444,
+            "top1_tone": "hard_dist",
+            "top1_hit": true
+          },
+          "distorted": {
+            "auc": 1.0,
+            "top1_tone": "hard_dist",
+            "top1_hit": true
+          },
+          "heavy": {
+            "auc": 0.4791666666666667,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "aggressive": {
+            "auc": 0.7777777777777778,
+            "top1_tone": "fuzz",
+            "top1_hit": false
+          },
+          "fuzzy": {
+            "auc": 0.525,
+            "top1_tone": "compressed",
+            "top1_hit": false
+          },
+          "fizzy": {
+            "auc": 0.1111111111111111,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "gritty": {
+            "auc": 0.5625,
+            "top1_tone": "hard_dist",
+            "top1_hit": true
+          },
+          "saturated": {
+            "auc": 0.30357142857142855,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "creamy": {
+            "auc": 0.425,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "mid-heavy": {
+            "auc": 0.65,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "scooped": {
+            "auc": 0.1,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "chugging metal": {
+            "auc": 0.225,
+            "top1_tone": "chorus",
+            "top1_hit": false
+          },
+          "compressed": {
+            "auc": 0.25,
+            "top1_tone": "hard_dist",
+            "top1_hit": false
+          },
+          "squashed": {
+            "auc": 0.525,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "lo-fi": {
+            "auc": 0.9,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "shimmering": {
+            "auc": 0.125,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "watery": {
+            "auc": 0.3,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "spacious": {
+            "auc": 0.725,
+            "top1_tone": "reverb",
+            "top1_hit": true
+          },
+          "ambient": {
+            "auc": 0.7,
+            "top1_tone": "compressed",
+            "top1_hit": false
+          },
+          "Tube Screamer": {
+            "auc": 0.275,
+            "top1_tone": "metal_scooped",
+            "top1_hit": false
+          }
+        }
+      },
+      "tone": {
+        "mean_auc": 0.5946626984126985,
+        "top1_hit_rate": 0.36666666666666664,
+        "per_word": {
+          "clean": {
+            "auc": 0.4,
+            "top1_tone": "reverb",
+            "top1_hit": true
+          },
+          "glassy": {
+            "auc": 0.5694444444444444,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "sparkly": {
+            "auc": 0.5694444444444444,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "bright": {
+            "auc": 0.6805555555555556,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "twangy": {
+            "auc": 0.5694444444444444,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "dark": {
+            "auc": 0.16666666666666666,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "muddy": {
+            "auc": 0.5,
+            "top1_tone": "hard_dist",
+            "top1_hit": false
+          },
+          "warm": {
+            "auc": 0.5,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "smooth": {
+            "auc": 0.19791666666666666,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "overdriven": {
+            "auc": 0.7222222222222222,
+            "top1_tone": "hard_dist",
+            "top1_hit": true
+          },
+          "crunchy": {
+            "auc": 0.6944444444444444,
+            "top1_tone": "hard_dist",
+            "top1_hit": true
+          },
+          "distorted": {
+            "auc": 0.9583333333333334,
+            "top1_tone": "hard_dist",
+            "top1_hit": true
+          },
+          "heavy": {
+            "auc": 0.875,
+            "top1_tone": "fuzz",
+            "top1_hit": true
+          },
+          "aggressive": {
+            "auc": 0.8611111111111112,
+            "top1_tone": "fuzz",
+            "top1_hit": false
+          },
+          "fuzzy": {
+            "auc": 0.75,
+            "top1_tone": "fuzz",
+            "top1_hit": true
+          },
+          "fizzy": {
+            "auc": 0.625,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "gritty": {
+            "auc": 0.7395833333333334,
+            "top1_tone": "hard_dist",
+            "top1_hit": true
+          },
+          "saturated": {
+            "auc": 0.7857142857142857,
+            "top1_tone": "hard_dist",
+            "top1_hit": true
+          },
+          "creamy": {
+            "auc": 0.625,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "mid-heavy": {
+            "auc": 0.8,
+            "top1_tone": "soft_od",
+            "top1_hit": true
+          },
+          "scooped": {
+            "auc": 0.375,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "chugging metal": {
+            "auc": 0.025,
+            "top1_tone": "chorus",
+            "top1_hit": false
+          },
+          "compressed": {
+            "auc": 0.325,
+            "top1_tone": "fuzz",
+            "top1_hit": false
+          },
+          "squashed": {
+            "auc": 0.575,
+            "top1_tone": "hard_dist",
+            "top1_hit": false
+          },
+          "lo-fi": {
+            "auc": 0.675,
+            "top1_tone": "fuzz",
+            "top1_hit": false
+          },
+          "shimmering": {
+            "auc": 0.375,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "watery": {
+            "auc": 0.45,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "spacious": {
+            "auc": 0.925,
+            "top1_tone": "reverb",
+            "top1_hit": true
+          },
+          "ambient": {
+            "auc": 0.925,
+            "top1_tone": "reverb",
+            "top1_hit": true
+          },
+          "Tube Screamer": {
+            "auc": 0.6,
+            "top1_tone": "chorus",
+            "top1_hit": false
+          }
+        }
+      },
+      "sound": {
+        "mean_auc": 0.5689847883597884,
+        "top1_hit_rate": 0.36666666666666664,
+        "per_word": {
+          "clean": {
+            "auc": 0.6833333333333333,
+            "top1_tone": "dark",
+            "top1_hit": false
+          },
+          "glassy": {
+            "auc": 0.8472222222222222,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "sparkly": {
+            "auc": 0.5694444444444444,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "bright": {
+            "auc": 0.4722222222222222,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "twangy": {
+            "auc": 0.875,
+            "top1_tone": "dark",
+            "top1_hit": false
+          },
+          "dark": {
+            "auc": 0.5277777777777778,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "muddy": {
+            "auc": 0.5972222222222222,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "warm": {
+            "auc": 0.9444444444444444,
+            "top1_tone": "dark",
+            "top1_hit": true
+          },
+          "smooth": {
+            "auc": 0.8333333333333334,
+            "top1_tone": "dark",
+            "top1_hit": true
+          },
+          "overdriven": {
+            "auc": 0.6805555555555556,
+            "top1_tone": "soft_od",
+            "top1_hit": true
+          },
+          "crunchy": {
+            "auc": 0.6527777777777778,
+            "top1_tone": "soft_od",
+            "top1_hit": true
+          },
+          "distorted": {
+            "auc": 0.5833333333333334,
+            "top1_tone": "fuzz",
+            "top1_hit": true
+          },
+          "heavy": {
+            "auc": 0.2604166666666667,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "aggressive": {
+            "auc": 0.3333333333333333,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "fuzzy": {
+            "auc": 0.55,
+            "top1_tone": "hard_dist",
+            "top1_hit": false
+          },
+          "fizzy": {
+            "auc": 0.1388888888888889,
+            "top1_tone": "compressed",
+            "top1_hit": false
+          },
+          "gritty": {
+            "auc": 0.6666666666666666,
+            "top1_tone": "soft_od",
+            "top1_hit": true
+          },
+          "saturated": {
+            "auc": 0.42857142857142855,
+            "top1_tone": "soft_od",
+            "top1_hit": true
+          },
+          "creamy": {
+            "auc": 0.625,
+            "top1_tone": "bright",
+            "top1_hit": false
+          },
+          "mid-heavy": {
+            "auc": 0.9,
+            "top1_tone": "soft_od",
+            "top1_hit": true
+          },
+          "scooped": {
+            "auc": 0.075,
+            "top1_tone": "clean",
+            "top1_hit": false
+          },
+          "chugging metal": {
+            "auc": 0.075,
+            "top1_tone": "chorus",
+            "top1_hit": false
+          },
+          "compressed": {
+            "auc": 0.625,
+            "top1_tone": "compressed",
+            "top1_hit": true
+          },
+          "squashed": {
+            "auc": 0.575,
+            "top1_tone": "hard_dist",
+            "top1_hit": false
+          },
+          "lo-fi": {
+            "auc": 0.7,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "shimmering": {
+            "auc": 0.15,
+            "top1_tone": "reverb",
+            "top1_hit": false
+          },
+          "watery": {
+            "auc": 0.625,
+            "top1_tone": "chorus",
+            "top1_hit": true
+          },
+          "spacious": {
+            "auc": 0.625,
+            "top1_tone": "dark",
+            "top1_hit": false
+          },
+          "ambient": {
+            "auc": 0.65,
+            "top1_tone": "soft_od",
+            "top1_hit": false
+          },
+          "Tube Screamer": {
+            "auc": 0.8,
+            "top1_tone": "soft_od",
+            "top1_hit": true
+          }
+        }
+      }
+    },
+    "top_words_per_tone": {
+      "clean": [
+        "chugging metal",
+        "mid-heavy",
+        "scooped",
+        "lo-fi",
+        "warm"
+      ],
+      "dark": [
+        "mid-heavy",
+        "lo-fi",
+        "scooped",
+        "chugging metal",
+        "twangy"
+      ],
+      "bright": [
+        "chugging metal",
+        "lo-fi",
+        "scooped",
+        "glassy",
+        "warm"
+      ],
+      "soft_od": [
+        "chugging metal",
+        "mid-heavy",
+        "scooped",
+        "Tube Screamer",
+        "twangy"
+      ],
+      "hard_dist": [
+        "distorted",
+        "compressed",
+        "overdriven",
+        "squashed",
+        "muddy"
+      ],
+      "fuzz": [
+        "compressed",
+        "distorted",
+        "overdriven",
+        "gritty",
+        "squashed"
+      ],
+      "metal_scooped": [
+        "squashed",
+        "distorted",
+        "muddy",
+        "gritty",
+        "overdriven"
+      ],
+      "compressed": [
+        "chugging metal",
+        "Tube Screamer",
+        "scooped",
+        "mid-heavy",
+        "squashed"
+      ],
+      "chorus": [
+        "chugging metal",
+        "Tube Screamer",
+        "watery",
+        "scooped",
+        "squashed"
+      ],
+      "reverb": [
+        "shimmering",
+        "smooth",
+        "sparkly",
+        "creamy",
+        "warm"
+      ],
+      "lofi": [
+        "lo-fi",
+        "saturated",
+        "creamy",
+        "ambient",
+        "compressed"
+      ]
+    },
+    "sweeps": {
+      "gain:distorted": [
+        1.0,
+        1.0
+      ],
+      "gain:clean": [
+        -0.5428571428571429,
+        0.4285714285714286
+      ],
+      "gain:distorted-clean": [
+        0.7714285714285715,
+        0.7714285714285715
+      ],
+      "cutoff:bright": [
+        0.028571428571428574,
+        0.942857142857143
+      ],
+      "cutoff:dark": [
+        0.3142857142857143,
+        0.942857142857143
+      ],
+      "cutoff:bright-dark": [
+        -0.08571428571428573,
+        -0.6
+      ]
+    }
+  }
+}

@@ -124,7 +124,7 @@ Critical path: P0 → P1 → P2 → P4 → P6. Solo, so the "parallel" phases ar
 |---|---|---|---|
 | 6.1 | Adapters on cached CLAP embeddings; parameter predictor + gates; physics mapping | L | `models/` |
 | 6.2 | Stage 1: `L_param` only on cached embeddings (cheap) | L | first model |
-| 6.3 | Stage 2: add `L_audio` (and `L_clap` per spike A) through the oversampled pedalboard | C | full model |
+| 6.3 | Stage 2: add `L_audio` (plus optional drive-amount-only `L_clap`, per spike A) through the oversampled pedalboard | C | full model |
 | 6.4 | 5 seeds of the main config | C | `runs/main/` |
 | 6.5 | Ablations: text-only, audio-only, shuffled audio, unconstrained vs physics mapping | C (stage-1 ablations L) | `runs/ablations/` |
 | 6.6 | Small listening test (5–8 friends): model vs best baseline vs no-op on gold items | L | ratings |
