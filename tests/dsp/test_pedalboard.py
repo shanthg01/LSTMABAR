@@ -77,6 +77,41 @@ def test_gate_semantics(board):
     torch.testing.assert_close(mixed[1], wet[1])
 
 
+def test_backward_works_when_all_gates_are_zero(board):
+    x = riff(2, 0.3)
+    p = board.random_params(2, generator=torch.Generator().manual_seed(0), p_enabled=0.0)
+    v = board.to_vector(p).requires_grad_()
+    y = board(x, board.from_vector(v))
+    assert torch.equal(y, x)
+    y.pow(2).mean().backward()
+    assert v.grad is not None and torch.isfinite(v.grad).all()
+    # knobs of bypassed blocks get exactly zero gradient; the gates get a non-zero one
+    gates = [j for j, (_, k) in enumerate(board.layout()) if k == "enabled"]
+    knobs = [j for j in range(v.shape[1]) if j not in gates]
+    assert (v.grad[:, knobs] == 0).all()
+    assert (v.grad[:, gates].abs().sum(0) > 0).any()
+
+
+def test_gate_is_clamped_to_unit_interval(board):
+    x = riff(1, 0.3)
+
+    def only_drive(g):
+        return {
+            "compressor": {"enabled": torch.zeros(1)},
+            "eq": {"enabled": torch.zeros(1)},
+            "drive": {"enabled": torch.tensor([g])},
+        }
+
+    torch.testing.assert_close(board(x, only_drive(1.7)), board(x, only_drive(1.0)))
+    assert torch.equal(board(x, only_drive(-0.4)), x)
+    # gradient still flows at the boundary values 0 and 1
+    g = torch.tensor([1.0], requires_grad=True)
+    p = only_drive(1.0)
+    p["drive"]["enabled"] = g
+    board(x, p).pow(2).mean().backward()
+    assert g.grad.abs().item() > 0
+
+
 def test_missing_blocks_and_knobs_use_defaults(board):
     x = riff(1, 0.5)
     full = board.default_params(1)

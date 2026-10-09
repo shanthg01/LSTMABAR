@@ -151,7 +151,12 @@ class Pedalboard(nn.Module):
     # -- processing -----------------------------------------------------------------------
 
     def forward(self, x: Tensor, params: BoardParams | None = None) -> Tensor:
-        """``(B, T)`` → ``(B, T)``; missing blocks/knobs use defaults (gates default to 1)."""
+        """``(B, T)`` → ``(B, T)``; missing blocks/knobs use defaults (gates default to 1).
+
+        Gates are clamped to [0, 1]. A block whose gate is 0 for the whole batch is skipped
+        unless autograd needs it (a knob or the gate requires grad), so ``backward()`` always
+        reaches the parameters.
+        """
         if x.dim() != 2:
             raise ValueError(f"expected audio of shape (B, T), got {tuple(x.shape)}")
         params = params or {}
@@ -167,7 +172,13 @@ class Pedalboard(nn.Module):
                 g = g.reshape(1).expand(x.shape[0])
             if g.shape != (x.shape[0],):
                 raise ValueError(f"{name}.enabled: expected shape ({x.shape[0]},), got {g.shape}")
-            if not g.requires_grad and bool((g == 0).all()):
+            # Clamp to [0, 1] but keep the gradient *at* 0 and 1 (plain clamp zeroes it there,
+            # which would freeze hard 0./1. gates that a model is learning).
+            g = torch.where((g < 0) | (g > 1), g.clamp(0.0, 1.0), g)
+            needs_grad = torch.is_grad_enabled() and (
+                g.requires_grad or any(torch.is_tensor(v) and v.requires_grad for v in p.values())
+            )
+            if not needs_grad and bool((g == 0).all()):
                 continue  # whole batch bypassed: skip the work (output would equal x exactly)
             g = g.unsqueeze(-1)
             x = g * block(x, p) + (1.0 - g) * x
