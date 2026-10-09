@@ -110,11 +110,42 @@ def test_apply_filters_matches_lfilter(kind):
     x = torch.randn(len(CASES), n, dtype=torch.float64)
     b, a = biquad_coeffs(kind, f, q, g, SR)
     y = apply_filters(x, [(b, a)])
-    skip = int(0.005 * SR)
+    # From sample 0: checks causality / zero initial state, not just steady state.
     for i in range(len(CASES)):
         y_ref = scipy.signal.lfilter(b[i].numpy(), a[i].numpy(), x[i].numpy())
-        err = np.abs(y[i, skip:].numpy() - y_ref[skip:]).max()
-        assert err <= 1e-3 * np.abs(y_ref[skip:]).max(), (kind, CASES[i], err)
+        np.testing.assert_allclose(y[i].numpy(), y_ref, rtol=1e-8, atol=1e-8 * np.abs(y_ref).max())
+
+
+def test_single_element_params_broadcast():
+    x = torch.randn(3, 2048, dtype=torch.float64)
+    f = torch.tensor([700.0], dtype=torch.float64)
+    y = biquad(x, "peak", f, SR, q=torch.tensor(1.2), gain_db=torch.tensor([4.0]))
+    y_full = biquad(
+        x, "peak", f.expand(3), SR, q=torch.full((3,), 1.2), gain_db=torch.full((3,), 4.0)
+    )
+    assert torch.allclose(y, y_full)
+    b, a = biquad_coeffs("lowpass", torch.tensor(500.0), torch.ones(4), torch.zeros(1), SR)
+    assert b.shape == a.shape == (4, 3)
+    assert torch.allclose(b, b[:1].expand(4, 3))
+    with pytest.raises(ValueError):
+        biquad(x, "peak", torch.ones(2) * 500.0, SR)
+    with pytest.raises(ValueError):
+        biquad_coeffs("peak", torch.ones(3), torch.ones(2), torch.ones(3), SR)
+    with pytest.raises(ValueError):
+        biquad_coeffs("peak", torch.ones(2, 2), torch.ones(1), torch.ones(1), SR)
+
+
+def test_float32_params_computed_in_float64():
+    f32 = torch.tensor([37.3, 1234.5], dtype=torch.float32)
+    q = torch.tensor([0.7, 3.0], dtype=torch.float32)
+    g = torch.tensor([5.0, -5.0], dtype=torch.float32)
+    b, a = biquad_coeffs("lowshelf", f32, q, g, SR)
+    assert b.dtype == a.dtype == torch.float64
+    b64, a64 = biquad_coeffs("lowshelf", f32.double(), q.double(), g.double(), SR)
+    assert torch.equal(b, b64) and torch.equal(a, a64)
+    x = torch.randn(2, 1024, dtype=torch.float64)
+    assert torch.equal(biquad(x, "lowpass", f32, SR), biquad(x, "lowpass", f32.double(), SR))
+    assert biquad(x.float(), "lowpass", f32, SR).dtype == torch.float32
 
 
 def test_cascade_matches_sequential_lfilter_float32():
@@ -196,7 +227,7 @@ def test_gradients_finite_nonzero(kind):
         assert p.grad.abs().sum() > 0
 
 
-@pytest.mark.parametrize("kind", ["lowpass", "peak", "highshelf"])
+@pytest.mark.parametrize("kind", KINDS)
 def test_gradcheck(kind):
     torch.manual_seed(4)
     sr = 8000

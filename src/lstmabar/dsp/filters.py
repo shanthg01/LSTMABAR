@@ -45,18 +45,27 @@ def biquad_coeffs(
     (shelf slope via Q). ``freq_hz`` is clamped to (0, Nyquist).
 
     Concretely ``freq_hz`` is clamped to ``[1 Hz, 0.499 * sample_rate]`` and ``q`` to
-    ``>= 1e-3``; clamping zeroes the gradient outside those ranges. ``freq_hz`` sets the
-    batch size; ``q``/``gain_db`` may be ``(B,)`` or single-element (broadcast). Output
-    dtype/device follow ``freq_hz``. Built purely from torch ops, so it is differentiable
-    w.r.t. all three parameters.
+    ``>= 1e-3``; clamping zeroes the gradient outside those ranges.
+
+    Each parameter is ``(B,)`` or single-element (broadcast to ``(B,)``); ``B`` is taken
+    from whichever parameters are not single-element, and any other shape raises
+    ``ValueError``. Coefficients are computed in at least float64 (parameters are promoted)
+    and returned in that dtype on ``freq_hz``'s device, so float32 parameters do not cost
+    precision; :func:`apply_filters` casts them to the audio's dtype. Built purely from
+    torch ops, so it is differentiable w.r.t. all three parameters.
     """
     if kind not in _KINDS:
         raise ValueError(f"unknown filter kind {kind!r}; expected one of {_KINDS}")
-    if freq_hz.dim() != 1:
-        raise ValueError(f"freq_hz: expected shape (B,), got {tuple(freq_hz.shape)}")
-    batch = freq_hz.shape[0]
-    q = _as_batch(q.to(freq_hz), batch, "q")
-    gain_db = _as_batch(gain_db.to(freq_hz), batch, "gain_db")
+    named = {"freq_hz": freq_hz, "q": q, "gain_db": gain_db}
+    sizes = {v.numel() for v in named.values() if v.numel() != 1}
+    if len(sizes) > 1:
+        shapes = {k: tuple(v.shape) for k, v in named.items()}
+        raise ValueError(f"biquad_coeffs: inconsistent batch sizes {shapes}")
+    batch = sizes.pop() if sizes else 1
+    dtype = torch.promote_types(freq_hz.dtype, torch.float64)
+    freq_hz, q, gain_db = (
+        _as_batch(v.to(device=freq_hz.device, dtype=dtype), batch, k) for k, v in named.items()
+    )
 
     f = freq_hz.clamp(_MIN_FREQ_HZ, _MAX_FREQ_FRAC * sample_rate)
     q = q.clamp_min(_MIN_Q)
@@ -163,10 +172,16 @@ def biquad(
     q: Tensor | None = None,
     gain_db: Tensor | None = None,
 ) -> Tensor:
-    """Convenience: single biquad. Defaults: ``q = 1/sqrt(2)``, ``gain_db = 0``."""
-    freq_hz = freq_hz.to(x)
+    """Convenience: single biquad. Defaults: ``q = 1/sqrt(2)``, ``gain_db = 0``.
+
+    Parameters may be ``(B,)`` or single-element (broadcast to ``x``'s batch); other shapes
+    raise ``ValueError``. Coefficients are computed in float64, then cast to ``x``'s dtype.
+    """
+    if x.dim() != 2:
+        raise ValueError(f"expected audio of shape (B, T), got {tuple(x.shape)}")
+    freq_hz = _as_batch(freq_hz.to(device=x.device), x.shape[0], "freq_hz")
     if q is None:
-        q = torch.full_like(freq_hz, 1.0 / math.sqrt(2.0))
+        q = torch.full_like(freq_hz, 1.0 / math.sqrt(2.0), dtype=torch.float64)
     if gain_db is None:
         gain_db = torch.zeros_like(freq_hz)
     return apply_filters(x, [biquad_coeffs(kind, freq_hz, q, gain_db, sample_rate)])
@@ -178,9 +193,11 @@ def tilt(x: Tensor, tilt_db: Tensor, sample_rate: int, pivot_hz: float = 1000.0)
     Both shelves use ``q = 1/sqrt(2)``. Positive ``tilt_db`` brightens, negative darkens;
     0 dB is (near) identity.
     """
-    tilt_db = _as_batch(tilt_db.to(x), x.shape[0], "tilt_db")
-    freq = torch.full_like(tilt_db, pivot_hz)
-    q = torch.full_like(tilt_db, 1.0 / math.sqrt(2.0))
+    if x.dim() != 2:
+        raise ValueError(f"expected audio of shape (B, T), got {tuple(x.shape)}")
+    tilt_db = _as_batch(tilt_db.to(device=x.device), x.shape[0], "tilt_db")
+    freq = torch.full_like(tilt_db, pivot_hz, dtype=torch.float64)
+    q = torch.full_like(tilt_db, 1.0 / math.sqrt(2.0), dtype=torch.float64)
     low = biquad_coeffs("lowshelf", freq, q, -tilt_db / 2.0, sample_rate)
     high = biquad_coeffs("highshelf", freq, q, tilt_db / 2.0, sample_rate)
     return apply_filters(x, [low, high])
