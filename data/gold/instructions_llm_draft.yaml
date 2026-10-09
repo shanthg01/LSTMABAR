@@ -80,7 +80,7 @@
     brightness: slightly_dark
     mids: scooped
     compression: heavy
-    clipping: hard
+    clipping: soft
     reference_pedal: "Big Muff"
   notes: "Muff-style wall of fuzz; reverb/tremolo-arm aspects of shoegaze ignored."
 
@@ -164,7 +164,7 @@
     brightness: neutral
     mids: neutral
     compression: none
-    clipping: soft
+    clipping: hard
     reference_pedal: "Klon"
   notes: "Transparent = minimal EQ change, though a real Klon has a slight mid lift."
 
@@ -192,7 +192,7 @@
     brightness: neutral
     mids: scooped
     compression: heavy
-    clipping: hard
+    clipping: soft
     reference_pedal: "Big Muff"
   notes: "Tone at noon gives the Muff scoop; sustain read as heavy compression."
 
@@ -388,7 +388,7 @@
     brightness: slightly_dark
     mids: neutral
     compression: light
-    clipping: hard
+    clipping: soft
     reference_pedal: "Big Muff"
   notes: "Gilmour lead implies Muff; his delay is ignored."
 
@@ -402,7 +402,7 @@
     brightness: slightly_dark
     mids: neutral
     compression: light
-    clipping: hard
+    clipping: soft
     reference_pedal: "Big Muff"
   notes: "Explicitly requires delay."
 
@@ -656,7 +656,7 @@
     compression: heavy
     clipping: hard
     reference_pedal: "Big Muff"
-  notes: "Stacked fuzz + distortion; first pedal used as reference."
+  notes: "Stacked fuzz + distortion; Muff kept as reference_pedal (first named) but the dimed RAT is last in chain and sets the final clipping, so hard (cf. g142); Muff soft convention not applied."
 
 - id: g048
   source: llm_draft
@@ -808,9 +808,9 @@
     brightness: slightly_bright
     mids: scooped
     compression: none
-    clipping: hard
+    clipping: soft
     reference_pedal: "Big Muff"
-  notes: "Mudhoney used a Univox Super-Fuzz and a Big Muff; reference ambiguous."
+  notes: "Mudhoney used a Univox Super-Fuzz and a Big Muff; reference ambiguous. Clipping follows reference_pedal (Big Muff -> soft); Super-Fuzz alone would be hard."
 
 - id: g059
   source: llm_draft
@@ -906,7 +906,7 @@
     brightness: neutral
     mids: neutral
     compression: none
-    clipping: hard
+    clipping: soft
     reference_pedal: "Big Muff"
   notes: "Riff depends on a Whammy octave-down."
 
@@ -1104,7 +1104,7 @@
     compression: none
     clipping: soft
     reference_pedal: "Klon"
-  notes: "Stacked; first-named pedal as reference."
+  notes: "Stacked; Klon kept as reference_pedal (first named) but the TS is last in chain and sets the final clipping and mid push, so soft (cf. g142); Klon hard convention not applied."
 
 - id: g080
   source: llm_draft
@@ -1718,7 +1718,7 @@
     brightness: slightly_dark
     mids: scooped
     compression: heavy
-    clipping: hard
+    clipping: soft
     reference_pedal: "Big Muff"
   notes: "Corgan used an op-amp Big Muff."
 
@@ -1956,7 +1956,7 @@
     brightness: neutral
     mids: scooped
     compression: heavy
-    clipping: hard
+    clipping: soft
     reference_pedal: "Big Muff"
   notes: "J Mascis = Big Muff."
 
@@ -1998,7 +1998,7 @@
     brightness: neutral
     mids: pushed
     compression: none
-    clipping: soft
+    clipping: hard
     reference_pedal: "Klon"
   notes: "Klon clone pushed past stock gain."
 
@@ -2082,7 +2082,7 @@
     brightness: neutral
     mids: pushed
     compression: light
-    clipping: hard
+    clipping: soft
     reference_pedal: "Big Muff"
   notes: "Muff with mids restored."
 
