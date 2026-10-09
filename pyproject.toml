@@ -1,0 +1,53 @@
+[project]
+name = "lstmabar"
+version = "0.2.0.dev0"
+description = "Text-driven guitar tone transformation grounded in pedal circuit physics"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Shanth Gopalswamy" }]
+dependencies = [
+    "torch>=2.2",
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "omegaconf>=2.3",
+    "soundfile>=0.12",
+]
+
+[project.optional-dependencies]
+dsp = ["auraloss>=0.4", "dasp-pytorch>=0.0.1"]
+analysis = ["librosa>=0.10"]
+clap = ["laion-clap>=1.1"]
+demo = ["gradio>=4.0"]
+quantum = ["pennylane>=0.35"]
+dev = ["pytest>=8.0", "ruff>=0.5"]
+
+[project.scripts]
+lstmabar = "lstmabar.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lstmabar"]
+
+# CPU-only torch wheels for local dev and CI (Colab installs with pip and keeps its CUDA torch).
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["legacy"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
