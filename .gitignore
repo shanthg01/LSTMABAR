@@ -26,3 +26,4 @@ legacy/scripts/*.csv
 # Tooling
 .claude/worktrees/
 .claude/settings.local.json
+spikes/*/results/audio/

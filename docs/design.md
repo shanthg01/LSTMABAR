@@ -142,7 +142,7 @@ So the archetypes stop being a *control space* (v1) and become a *measurement sp
 **Losses** (weights in config):
 - `L_param` — L1 on normalized params (synthetic data only), with gating BCE.
 - `L_audio` — multi-resolution STFT loss (auraloss) between rendered output and target wet audio.
-- `L_clap` — 1 − cos(CLAP_audio(render), CLAP_text(instruction)), for text without paired audio.
+- `L_clap` (optional, low weight) — CLAP distorted-vs-clean contrast on the render, for the drive-amount direction only. Spike A ([findings](../spikes/clap_vocab/FINDINGS.md)) showed that only the drive-amount contrast is robust across CLAP checkpoints. Brightness is model-dependent, and mids and guitar jargon fail, so it is not used as a general text-to-tone loss.
 - `L_desc` (optional) — descriptor/archetype-shift consistency with the target.
 
 **Procedure:**
@@ -209,7 +209,7 @@ legacy/                  # v1 code, read-only reference for the paper
 
 | Risk | Mitigation |
 |---|---|
-| CLAP barely knows guitar-tone words ("fizzy", "mid hump") | Early spike (plan P0.4): measure CLAP's ranking of rendered tones before relying on `L_clap`; fallback is to fine-tune the text adapter on KB/review text |
+| CLAP barely knows guitar-tone words ("fizzy", "mid hump") | **Confirmed by spike A** (mean word AUC ≈ 0.6 in both checkpoints; jargon fails; brightness is model-dependent; only the drive-amount contrast is robust). Text side is learned from paired synthetic data into parameter space; `L_clap` is restricted to drive amount; evaluation leans on descriptors, the gold set and listening tests |
 | Sim-to-real gap | White-box data + NAM captures; dedicated real-pedal test set |
 | Template captions reintroduce circularity | Gold human set as the headline metric; held-out vocabulary audit |
 | Aliasing / vanishing gradients in clipping | Oversampling, smooth surrogates, gradient-flow tests |

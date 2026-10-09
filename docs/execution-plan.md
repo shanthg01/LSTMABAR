@@ -41,7 +41,7 @@ Critical path: P0 → P1 → P2 → P4 → P6. Solo, so the "parallel" phases ar
 | # | Task | Where | Output |
 |---|---|---|---|
 | 0.1 | Tag current state `v1-w266`; move v1 `scripts/` + `notebooks/` to `legacy/` | L | Clean tree; v1 reproducible from the tag |
-| 0.2 | `uv` env on Python 3.11/3.12; `pyproject.toml` + `uv.lock` with torch (CPU wheel locally), omegaconf, pytest, ruff; heavier deps (auraloss, dasp-pytorch, laion-clap, librosa, gradio, pennylane) as optional extras, added to core only when a phase needs them | L | `uv sync` + `uv run pytest` work |
+| 0.2 | `uv` env on Python 3.11/3.12; `pyproject.toml` + `uv.lock` with torch (CPU wheel locally), omegaconf, pytest, ruff; heavier deps (auraloss, dasp-pytorch, transformers for CLAP, librosa, gradio, pennylane) as optional extras, added to core only when a phase needs them | L | `uv sync` + `uv run pytest` work |
 | 0.3 | `src/lstmabar/` skeleton (design §8); seed utility; config loading; run-dir convention; GitHub Actions running ruff + pytest | L | CI green |
 | 0.4 | `colab/bootstrap.ipynb`: clone repo, `pip install -e .`, mount Drive for data/runs, run a CLI command on GPU | C | Smoke run on a Colab GPU |
 | 0.5 | **Write the gold instructions now (~150), before any template exists.** For each: free text + a rough target description (pedal family, gain level, brightness). Store in `data/gold/instructions_raw.yaml`. Recruit ~5 guitarist friends to contribute ~50 more later | L | Uncontaminated gold text |
@@ -124,7 +124,7 @@ Critical path: P0 → P1 → P2 → P4 → P6. Solo, so the "parallel" phases ar
 |---|---|---|---|
 | 6.1 | Adapters on cached CLAP embeddings; parameter predictor + gates; physics mapping | L | `models/` |
 | 6.2 | Stage 1: `L_param` only on cached embeddings (cheap) | L | first model |
-| 6.3 | Stage 2: add `L_audio` (and `L_clap` per spike A) through the oversampled pedalboard | C | full model |
+| 6.3 | Stage 2: add `L_audio` (plus optional drive-amount-only `L_clap`, per spike A) through the oversampled pedalboard | C | full model |
 | 6.4 | 5 seeds of the main config | C | `runs/main/` |
 | 6.5 | Ablations: text-only, audio-only, shuffled audio, unconstrained vs physics mapping | C (stage-1 ablations L) | `runs/ablations/` |
 | 6.6 | Small listening test (5–8 friends): model vs best baseline vs no-op on gold items | L | ratings |
