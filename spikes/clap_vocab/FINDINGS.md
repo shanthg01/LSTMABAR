@@ -26,14 +26,14 @@ Per-word AUCs below use the `tone` template for both models.
 
 **Unfused model:**
 - **Distortion words fail:** "distorted" 0.56, "heavy" 0.08, "aggressive" 0.22, "fizzy" 0.15. Its single-word "distorted" sweep is mixed (+0.49 / −0.60); only the distorted−clean *contrast* tracks drive.
-- **Some adjectives score high:** "warm" 0.94, "creamy" 0.95, "mid-heavy" 0.93, "smooth" 0.86, "twangy" 0.85, "Tube Screamer" 0.85. However, this model ranks `soft_od` top for 27 of 30 words, a hub effect. The high scores occur where `soft_od` is among the expected tones, so they are not evidence of real vocabulary knowledge.
+- **Some adjectives score high:** "warm" 0.94, "creamy" 0.95, "mid-heavy" 0.93, "smooth" 0.86, "Tube Screamer" 0.85 (also "twangy" 0.85, despite missing its top-1). However, this model ranks `soft_od` top for 27 of 30 words, a hub effect. Most of the high scores are for words whose expected tones include `soft_od`, so they are weak evidence of real vocabulary knowledge.
 
 **Both models fail:**
 - **Guitar jargon:** "scooped" 0.03 / 0.40, "chugging metal" 0.23 / 0.12, "compressed" 0.65 / 0.30.
 - **"dark":** 0.40 / 0.12, below chance in both.
 - **Agreement:** the two models agree on little beyond broad drive and space.
 
-**Effect of loudness matching:** an earlier run with imperfect loudness matching (compressed and bright clips 3–8 dB quieter) gave the unfused brightness contrast as +0.94 / −0.31. With exact matching it is +0.94 / +0.83, so level was confounding brightness judgements.
+**Effect of loudness matching:** an earlier run with imperfect loudness matching (compressed clips ~6–8 dB, bright ~2–6 dB and one clean clip ~1 dB quieter) gave the unfused brightness contrast as +0.94 / −0.31. With exact matching it is +0.94 / +0.83, so level was confounding brightness judgements.
 
 ## Conclusions
 
