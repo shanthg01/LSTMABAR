@@ -62,6 +62,24 @@ def test_block_rejects_unknown_params_and_bad_shapes():
         block(torch.ones(4))
 
 
+def test_block_broadcasts_scalar_params_and_rejects_bad_shapes():
+    block = _Gain()
+    x = torch.ones(3, 4)
+    y = block(x, {"gain_db": torch.tensor(0.5 + 6 / 48)})
+    assert torch.allclose(y, x * 10 ** (6 / 20))
+    with pytest.raises(ValueError):
+        block(x, {"gain_db": torch.full((3, 1), 0.5)})
+    with pytest.raises(ValueError):
+        block(x, {"gain_db": torch.full((2,), 0.5)})
+
+
+def test_block_follows_input_dtype():
+    block = _Gain()
+    x = torch.ones(2, 4, dtype=torch.float64)
+    assert block(x).dtype == torch.float64
+    assert block(x, {"gain_db": torch.full((2,), 0.5)}).dtype == torch.float64
+
+
 def test_block_is_differentiable_wrt_normalized_params():
     block = _Gain()
     u = torch.full((1,), 0.6, requires_grad=True)

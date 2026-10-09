@@ -34,8 +34,10 @@ def freqz(b: Tensor, a: Tensor, n_fft: int) -> Tensor:
 def apply_filters(x: Tensor, coeffs: list[tuple[Tensor, Tensor]]) -> Tensor:
     """Apply a cascade of biquads to ``x`` ``(B, T)`` by multiplying their responses.
 
-    Uses an FFT size of at least ``2 * T`` (zero-padded) so circular wrap of the truncated
-    impulse response is negligible; output is trimmed back to ``(B, T)``.
+    Every ``(b, a)`` is ``(B, 3)`` with the same ``B`` as ``x``. FFT size is the next power
+    of two >= ``2 * T`` (zero-padded) so circular wrap of the truncated impulse response is
+    negligible; output is trimmed back to ``(B, T)``. Note: ``freq_hz`` clamping in
+    :func:`biquad_coeffs` zeroes its gradient at the edges.
     """
     raise NotImplementedError
 
@@ -55,6 +57,7 @@ def biquad(
 def tilt(x: Tensor, tilt_db: Tensor, sample_rate: int, pivot_hz: float = 1000.0) -> Tensor:
     """Tone tilt: low shelf of ``-tilt_db/2`` and high shelf of ``+tilt_db/2`` at ``pivot_hz``.
 
-    Positive ``tilt_db`` brightens, negative darkens; 0 dB is (near) identity.
+    Both shelves use ``q = 1/sqrt(2)``. Positive ``tilt_db`` brightens, negative darkens;
+    0 dB is (near) identity.
     """
     raise NotImplementedError

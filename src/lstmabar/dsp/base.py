@@ -8,6 +8,11 @@ Conventions used across ``lstmabar.dsp``:
   to physical units through their :class:`ParamSpec`. Low-level functions in
   ``filters``/``waveshaper``/``oversample``/``compressor`` take **physical** units.
 - Everything is differentiable with respect to audio and parameters, and runs on any device.
+- Parameters are constant per example over the clip (no per-sample automation).
+- Processing is zero-latency: outputs are time-aligned with inputs (no latency reporting).
+- Wet/dry gating and block ordering belong to the pedalboard, not to individual blocks.
+- ``ParamSpec.denormalize`` clamps to [0, 1], which zeroes gradients outside that range;
+  optimize logits through a sigmoid rather than raw normalized values.
 """
 
 import math
@@ -78,30 +83,47 @@ class EffectBlock(nn.Module, ABC):
     def param_names(self) -> list[str]:
         return [s.name for s in self.param_specs]
 
-    def default_params(self, batch_size: int, device: torch.device | str = "cpu") -> Params:
+    def default_params(
+        self,
+        batch_size: int,
+        device: torch.device | str = "cpu",
+        dtype: torch.dtype = torch.float32,
+    ) -> Params:
         """Normalized default parameters, each of shape ``(batch_size,)``."""
         return {
-            s.name: torch.full((batch_size,), s.default_normalized, device=device)
+            s.name: torch.full((batch_size,), s.default_normalized, device=device, dtype=dtype)
             for s in self.param_specs
         }
 
-    def physical(
-        self, params: Params | None, batch_size: int, device: torch.device | str = "cpu"
-    ) -> Params:
-        """Denormalize a (possibly partial) normalized parameter dict, filling defaults."""
+    def physical(self, params: Params | None, like: Tensor) -> Params:
+        """Denormalize a (possibly partial) normalized parameter dict, filling defaults.
+
+        ``like`` is the ``(B, T)`` audio: params are cast to its dtype/device, scalars and
+        single-element tensors are broadcast to ``(B,)``, and any other shape raises.
+        """
         params = params or {}
         unknown = set(params) - set(self.param_names)
         if unknown:
             raise KeyError(f"{type(self).__name__}: unknown params {sorted(unknown)}")
-        defaults = self.default_params(batch_size, device)
-        return {
-            s.name: s.denormalize(params.get(s.name, defaults[s.name])) for s in self.param_specs
-        }
+        batch = like.shape[0]
+        defaults = self.default_params(batch, like.device, like.dtype)
+        out = {}
+        for s in self.param_specs:
+            v = params.get(s.name, defaults[s.name]).to(device=like.device, dtype=like.dtype)
+            if v.numel() == 1:
+                v = v.reshape(1).expand(batch)
+            if v.shape != (batch,):
+                raise ValueError(
+                    f"{type(self).__name__}.{s.name}: expected shape ({batch},), "
+                    f"got {tuple(v.shape)}"
+                )
+            out[s.name] = s.denormalize(v)
+        return out
 
     def forward(self, x: Tensor, params: Params | None = None) -> Tensor:
         if x.dim() != 2:
             raise ValueError(f"expected audio of shape (B, T), got {tuple(x.shape)}")
-        return self.process(x, self.physical(params, x.shape[0], x.device))
+        return self.process(x, self.physical(params, x))
 
     @abstractmethod
     def process(self, x: Tensor, p: Params) -> Tensor:
