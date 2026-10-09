@@ -97,8 +97,9 @@ def test_freqz_matches_scipy(kind):
     h = freqz(b, a, n_fft)
     assert h.shape == (len(CASES), n_fft // 2 + 1)
     for i in range(len(CASES)):
-        _, h_ref = scipy.signal.freqz(b[i].numpy(), a[i].numpy(), worN=n_fft // 2 + 1,
-                                      include_nyquist=True)
+        _, h_ref = scipy.signal.freqz(
+            b[i].numpy(), a[i].numpy(), worN=n_fft // 2 + 1, include_nyquist=True
+        )
         np.testing.assert_allclose(h[i].numpy(), h_ref, rtol=1e-9, atol=1e-12)
 
 
@@ -187,8 +188,9 @@ def test_peak_gain_at_center():
     n = sr
     t = torch.arange(n, dtype=torch.float64) / sr
     x = torch.sin(2 * math.pi * center * t).unsqueeze(0)
-    b, a = biquad_coeffs("peak", torch.tensor([center]), torch.tensor([1.0]),
-                         torch.tensor([6.0]), sr)
+    b, a = biquad_coeffs(
+        "peak", torch.tensor([center]), torch.tensor([1.0]), torch.tensor([6.0]), sr
+    )
     y = apply_filters(x, [(b, a)])
     sl = slice(4800, 4800 + 48 * 800)
     assert _rms_db(y[:, sl]) - _rms_db(x[:, sl]) == pytest.approx(6.0, abs=0.1)

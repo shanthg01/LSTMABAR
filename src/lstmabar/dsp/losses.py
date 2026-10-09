@@ -7,8 +7,14 @@ from torch import Tensor
 def _stft_mag(x: Tensor, n_fft: int, hop: int, eps: float) -> Tensor:
     window = torch.hann_window(n_fft, device=x.device, dtype=x.dtype)
     spec = torch.stft(
-        x, n_fft, hop_length=hop, win_length=n_fft, window=window, center=True,
-        pad_mode="reflect", return_complex=True,
+        x,
+        n_fft,
+        hop_length=hop,
+        win_length=n_fft,
+        window=window,
+        center=True,
+        pad_mode="reflect",
+        return_complex=True,
     )
     # Clamp the power before sqrt so silent bins have finite gradients.
     return (spec.real.square() + spec.imag.square()).clamp(min=eps).sqrt()
