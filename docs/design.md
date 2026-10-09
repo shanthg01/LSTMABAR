@@ -122,10 +122,10 @@ So the archetypes stop being a *control space* (v1) and become a *measurement sp
 
 | Source | Content | Role |
 |---|---|---|
-| DI guitar corpora (IDMT-SMT-Guitar, GuitarSet, EGDB DI tracks; licenses to verify) | Clean input audio | Dry inputs |
+| DI guitar: Guitar-TECHS (CC BY 4.0, primary), EGFxSet clean notes (CC BY 4.0), own DI recordings; IDMT-SMT-Guitar private-only (CC BY-NC-ND); EGDB pending license confirmation | Clean input audio | Dry inputs |
 | Synthetic renders | dry × pedal preset × random knob settings → wet, via **white-box** sims (primary) and grey-box (secondary) | Training pairs with **ground-truth params** |
-| Real pedal recordings (EGFxSet, IDMT-SMT-Audio-Effects) | Real hardware outputs | Sim-to-real test set |
-| Neural Amp Modeler / ToneHunt captures (license/ToS check) | Named community captures of real pedals | Extra realistic renders + names for text grounding |
+| Real pedal recordings: EGFxSet (CC BY 4.0, primary), pOD-set (CC BY-NC 4.0, gain sweeps), ToneTwist AFx analog subset (internal numbers only) | Real hardware outputs | Sim-to-real test set |
+| TONE3000 (ex-ToneHunt) NAM captures, hand-picked (~20–50; site ToS forbids bulk/scripted download); manifest in repo, `.nam` files never redistributed | Named community captures of real pedals | Extra realistic renders + names for text grounding |
 | Pedal knowledge base + reviews | Specs, schematics, descriptive text | Text vocabulary, priors, explanations |
 | **Gold instruction set** | ~150 human-written instructions with matching target tones. Written by the owner **before** any caption template exists, plus ~50 from guitarist friends/volunteers who never see the templates | **Primary text test set** |
 
@@ -136,6 +136,8 @@ So the archetypes stop being a *control space* (v1) and become a *measurement sp
   2. caption-generator vocabulary is audited against the gold set.
 - Splits are disjoint by DI recording/performer, and there is a **held-out pedal** split (unseen circuits) to test generalization.
 - Every dataset version is frozen with a content hash and a data card.
+
+Licensing details, conditions and open questions: [data-licenses.md](data-licenses.md).
 
 ## 6. Training
 

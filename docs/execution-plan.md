@@ -46,7 +46,7 @@ Critical path: P0 → P1 → P2 → P4 → P6. Solo, so the "parallel" phases ar
 | 0.4 | `colab/bootstrap.ipynb`: clone repo, `pip install -e .`, mount Drive for data/runs, run a CLI command on GPU | C | Smoke run on a Colab GPU |
 | 0.5 | **Write the gold instructions now (~150), before any template exists.** For each: free text + a rough target description (pedal family, gain level, brightness). Store in `data/gold/instructions_raw.yaml`. Recruit ~5 guitarist friends to contribute ~50 more later | L | Uncontaminated gold text |
 | 0.6 | **Spike A — CLAP vocabulary:** render ~5 tones (clean, soft OD, hard dist, fuzz, dark) with Spotify `pedalboard`; score against ~30 tone words with LAION-CLAP | L | Note: can CLAP rank them? Sets how much P6 leans on `L_clap` |
-| 0.7 | **Spike B — licenses** for IDMT-SMT-Guitar, GuitarSet, EGDB, EGFxSet, IDMT-SMT-Audio-Effects, ToneHunt/NAM | L | Dataset → license → allowed use table |
+| 0.7 | **Spike B — licenses** for DI, real-pedal and capture sources | L | Done: [data-licenses.md](data-licenses.md). Follow-up emails to Fraunhofer, EGDB, TONE3000, GuitarML, EGFxSet authors |
 | 0.8 | Update `CLAUDE.md` for the v2 layout and commands | L | — |
 
 **Exit gate:** CI green; Colab smoke run works; ≥150 gold instructions committed; spike notes written.
@@ -95,10 +95,10 @@ Critical path: P0 → P1 → P2 → P4 → P6. Solo, so the "parallel" phases ar
 
 | # | Task | Where | Output |
 |---|---|---|---|
-| 4.1 | Ingest licensed DI corpora → mono 44.1 kHz, 2–4 s onset-aligned clips + manifest | L | `data/sources/`, manifest |
+| 4.1 | Ingest licensed DI corpora (Guitar-TECHS, EGFxSet clean notes, ~30–60 min own DI recordings) → mono 44.1 kHz, 2–4 s onset-aligned clips + manifest | L | `data/sources/`, manifest |
 | 4.2 | Renderer: dry × pedal × sampled knobs → wet (white-box for 2 pedals, NAM/grey-box for the rest); store params, pedal id, descriptors, archetype readout. Multiprocess; resumable shards | L (C if slow) | `data/render.py` |
 | 4.3 | Caption generator: templates from params/descriptors/KB vocab + LLM paraphrase (Claude API), with no numeric leakage. **Do not look at the gold set while writing templates** | L | `data/captions.py` |
-| 4.4 | Real-pedal test set (EGFxSet / IDMT effects) | L | `test_real` |
+| 4.4 | Real-pedal test set (EGFxSet primary; pOD-set gain sweeps; ToneTwist internal only) | L | `test_real` |
 | 4.5 | Pair each gold instruction with a target tone (pick the closest render / real recording); add friend-written instructions | L | `test_gold` |
 | 4.6 | Splits disjoint by recording/performer + `test_unseen_pedal`; content hashes; data card | L | `data/splits.py`, `DATA_CARD.md` |
 | 4.7 | Leakage tests: no shared recordings across splits, no param numbers in captions, gold-vs-template vocab overlap report | L | `tests/data/` |
