@@ -1,0 +1,2112 @@
+# Persona-based LLM gold instructions (held-out eval).
+# source: llm_persona -- written by an LLM simulating 8 guitarists; NOT human-written.
+# Personas:
+#   persona-1: Tyler, 16, Columbus OH, metalcore/djent, ~2 yrs playing, Ibanez GRG + Line 6 Spider 15; types all lowercase, slang, short bursts, no punctuation
+#   persona-2: Earl, 61, Austin TX, Texas blues, 45 yrs playing, '62 reissue Strat + '65 Twin reissue; full sentences, references 60s/70s records, chatty, a few typos
+#   persona-3: Dana, 44, Los Angeles, session guitarist (TV/jingles/records), expert; terse, technical shorthand (dB, Hz, ratios), names circuits
+#   persona-4: Mia, 19, Manchester UK uni student, bedroom pop, 8 months playing, Squier Strat into a laptop interface; doesn't know pedal names, describes feelings, 'lol', 'idk'
+#   persona-5: Rafael, 34, Belo Horizonte BR, hard rock/classic rock/MPB covers band, intermediate, Les Paul copy + small transistor amp; non-native English, Portuguese-influenced grammar
+#   persona-6: Sam, 28, Glasgow, shoegaze/noise, 10 yrs playing, Jazzmaster + stacks of fuzz; lowercase-ish, British spelling, dry humour, band references
+#   persona-7: Wade, 38, Nashville TN, country bar-band & demo sessions, advanced, Telecaster + Deluxe Reverb; Southern drawl in text ('lil', 'gimme', dropped g's), practical
+#   persona-8: Beth, 45, suburban Michigan, church worship team leader, intermediate, PRS SE + AC30; polite, exclamation marks, mentions Sunday sets/pastor/congregation
+
+- id: p001
+  source: llm_persona
+  author: persona-1
+  instruction: "need a tight djent tone like periphery, my ibanez sounds mushy af on the low chugs"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_bright
+    mids: pushed
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "tight modern djent rhythm, fix mushy palm mutes"
+- id: p002
+  source: llm_persona
+  author: persona-1
+  instruction: "make it sound like the breakdown in our bands second song, we tune to drop c and it needs to hit HARD"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "heavy breakdown tone for drop C original"
+- id: p003
+  source: llm_persona
+  author: persona-1
+  instruction: "too much fizz rn, sounds like a bee in a can when i palm mute"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "keep high gain but tame top-end fizz"
+- id: p004
+  source: llm_persona
+  author: persona-1
+  instruction: "i want the boss ds1 sound but heavier like everything cranked to max"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: bright
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: "Boss DS-1"
+  notes: "maxed-out DS-1"
+- id: p005
+  source: llm_persona
+  author: persona-1
+  instruction: "scoop the mids like old metallica master of puppets era"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_bright
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "80s thrash scooped rhythm"
+- id: p006
+  source: llm_persona
+  author: persona-1
+  instruction: "my low E sounds flubby in drop c can u tighten up the bottom so the chugs are punchy"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_bright
+    mids: pushed
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "tighten low end for downtuned chugs"
+- id: p007
+  source: llm_persona
+  author: persona-1
+  instruction: "less gain than before its getting messy when i do the fast riffs"
+  target:
+    in_scope: true
+    family: distortion
+    gain: medium
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "relative: back off gain for clarity on fast riffing"
+- id: p008
+  source: llm_persona
+  author: persona-1
+  instruction: "something like a tube screamer in front of the amp to tighten it, ppl on reddit say thats the move"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: "Ibanez Tube Screamer"
+  notes: "TS as a tight boost in front of a high-gain amp"
+- id: p009
+  source: llm_persona
+  author: persona-1
+  instruction: "BRUTAL. like deathcore brutal"
+  target:
+    in_scope: true
+    family: distortion
+    gain: extreme
+    brightness: neutral
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "vague: maximum-gain deathcore"
+- id: p010
+  source: llm_persona
+  author: persona-1
+  instruction: "my solos are kinda quiet and get lost, make them pop more but keep it heavy"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_bright
+    mids: pushed
+    compression: light
+    clipping: hard
+    reference_pedal: null
+  notes: "high-gain lead that cuts through"
+- id: p011
+  source: llm_persona
+  author: persona-1
+  instruction: "make my amp sound like a mesa rectifier, i only have a spider 15 lol"
+  target:
+    in_scope: false
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "wants an amp simulation of a Rectifier"
+- id: p012
+  source: llm_persona
+  author: persona-1
+  instruction: "clean tone for the intro part, kinda sparkly, no distortion at all"
+  target:
+    in_scope: true
+    family: clean
+    gain: none
+    brightness: bright
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "sparkly clean intro"
+- id: p013
+  source: llm_persona
+  author: persona-1
+  instruction: "rat pedal sound, my friend has one and it rips"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: "ProCo RAT"
+  notes: "RAT distortion"
+- id: p014
+  source: llm_persona
+  author: persona-1
+  instruction: "idk just make it heavier"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "vague relative: more gain"
+- id: p015
+  source: llm_persona
+  author: persona-1
+  instruction: "thall"
+  target:
+    in_scope: true
+    family: distortion
+    gain: extreme
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "vague one-word djent meme: extreme low-tuned gain"
+- id: p016
+  source: llm_persona
+  author: persona-1
+  instruction: "chug tone that doesnt hiss like crazy between the riffs, my amp is so noisy when i stop"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "high-gain rhythm with less noise/hiss"
+- id: p017
+  source: llm_persona
+  author: persona-1
+  instruction: "old school thrash like slayer reign in blood, raw and kinda trebley"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: bright
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "raw trebly 80s thrash"
+- id: p018
+  source: llm_persona
+  author: persona-1
+  instruction: "nu metal korn type tone super low and dark and scooped"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: dark
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "dark scooped nu-metal"
+- id: p019
+  source: llm_persona
+  author: persona-1
+  instruction: "can u make the lead part sound like a guitar hero solo lmao, like shreddy and smooth"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: light
+    clipping: hard
+    reference_pedal: null
+  notes: "smooth saturated shred lead"
+- id: p020
+  source: llm_persona
+  author: persona-2
+  instruction: "Looking for that tone Stevie had on Texas Flood. I know thats '83 not the 70s but you get the idea. Fat, round, lots of mids, Strat through a Tube Screamer into a loud amp."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: "Ibanez Tube Screamer"
+  notes: "SRV Texas Flood TS-into-amp"
+- id: p021
+  source: llm_persona
+  author: persona-2
+  instruction: "I want my guitar to sound like Billy Gibbons on Tres Hombres. Thick and a little hairy but not a lot of gain."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_dark
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "early-70s ZZ Top thick crunch"
+- id: p022
+  source: llm_persona
+  author: persona-2
+  instruction: "Johnny Winter, Captured Live, 1976. Piercing and nasty, I play slide on most of the second set."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: high
+    brightness: bright
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "aggressive bright slide tone"
+- id: p023
+  source: llm_persona
+  author: persona-2
+  instruction: "My Strat sounds thin and ice-picky through the Twin at low volume. Need to warm it up some, no fuzz no distortion, just fatten it."
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: slightly_dark
+    mids: pushed
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: "EQ/comp only: fatten thin Strat at low volume"
+- id: p024
+  source: llm_persona
+  author: persona-2
+  instruction: "Fuzz Face like Hendrix at the Fillmore East, Band of Gypsys record. Needs to clean up when I roll the volume knob back."
+  target:
+    in_scope: true
+    family: fuzz
+    gain: medium
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: "Dunlop Fuzz Face"
+  notes: "Hendrix Fuzz Face that cleans up"
+- id: p025
+  source: llm_persona
+  author: persona-2
+  instruction: "Peter Green, Need Your Love So Bad. Barely any dirt, sweet and woody."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_dark
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "sweet barely-driven late-60s blues"
+- id: p026
+  source: llm_persona
+  author: persona-2
+  instruction: "Robin Trower, Bridge of Sighs. I dont own a Univibe so forget the swirl, just get me that heavy thick dirt underneath it."
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: dark
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: null
+  notes: "Trower's heavy dark drive minus the Univibe"
+- id: p027
+  source: llm_persona
+  author: persona-2
+  instruction: "I want the cry baby wah sound from the start of Voodoo Child (Slight Return)"
+  target:
+    in_scope: false
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "wants a wah effect"
+- id: p028
+  source: llm_persona
+  author: persona-2
+  instruction: "Not quite as much gain as the last setting. I like to dig in and have it clean up on the softer notes, like Freddie King."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "relative: less gain, dynamic edge of breakup"
+- id: p029
+  source: llm_persona
+  author: persona-2
+  instruction: "Albert King, Born Under a Bad Sign. Stinging and bright, squeezed a little like the amp is working hard."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: bright
+    mids: neutral
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "stinging bright low-gain with amp compression"
+- id: p030
+  source: llm_persona
+  author: persona-2
+  instruction: "Give me Duane's tone off the Fillmore record, Les Paul into the Marshalls. I play a Strat so do what you can with it."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Allman Brothers Fillmore cranked-Marshall drive"
+- id: p031
+  source: llm_persona
+  author: persona-2
+  instruction: "La Grange"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "vague: just a song title, ZZ Top crunch"
+- id: p032
+  source: llm_persona
+  author: persona-2
+  instruction: "Rory Gallagher with the treble booster into the Vox. That bark when he hits it."
+  target:
+    in_scope: true
+    family: clean
+    gain: low
+    brightness: bright
+    mids: pushed
+    compression: none
+    clipping: unknown
+    reference_pedal: "Dallas Rangemaster"
+  notes: "treble booster into a cranked amp"
+- id: p033
+  source: llm_persona
+  author: persona-2
+  instruction: "Just a touch of hair for the slow blues in the second set. The room at the VFW is small and I cant crank the amp."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "low-gain drive at low volume"
+- id: p034
+  source: llm_persona
+  author: persona-2
+  instruction: "Everything sounds too modern and processed these days. I want it to sound like a record from 1972, not 2022."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "vague: vintage early-70s character"
+- id: p035
+  source: llm_persona
+  author: persona-2
+  instruction: "A fella at the jam keeps telling me to get a Klon. Whats all the fuss, set me up with one of those."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: "Klon Centaur"
+  notes: "Klon-style transparent drive"
+- id: p036
+  source: llm_persona
+  author: persona-2
+  instruction: "Clapton on the Beano album, Les Paul through the Bluesbreaker. Thick, singing sustain that goes on forever."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: high
+    brightness: slightly_dark
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Beano cranked-combo singing sustain"
+- id: p037
+  source: llm_persona
+  author: persona-2
+  instruction: "Need it cleaner and fatter for rhythm behind the harp player. He says I keep stepping on him."
+  target:
+    in_scope: true
+    family: clean
+    gain: none
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "clean fatter rhythm that leaves room for harmonica"
+- id: p038
+  source: llm_persona
+  author: persona-2
+  instruction: "A little more bite on the top end than what you had before. Bass player says Im mud."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "relative: brighter than previous"
+- id: p039
+  source: llm_persona
+  author: persona-3
+  instruction: "Edge-of-breakup, Dumble-ish, gain around 3. Low mids intact, roll off above 5k."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_dark
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "smooth low-gain with treble rolloff"
+- id: p040
+  source: llm_persona
+  author: persona-3
+  instruction: "Klon-ish. Mostly clean blend, slight hair, transparent."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: "Klon Centaur"
+  notes: "transparent Klon-style"
+- id: p041
+  source: llm_persona
+  author: persona-3
+  instruction: "DI'd Tele, 4:1, slow attack, fast release. Touch of grit, nothing obvious."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "compressed Tele with very subtle drive"
+- id: p042
+  source: llm_persona
+  author: persona-3
+  instruction: "Fuzz, gated, splatty, octave up on top."
+  target:
+    in_scope: false
+    family: fuzz
+    gain: extreme
+    brightness: neutral
+    mids: scooped
+    compression: none
+    clipping: asymmetric
+    reference_pedal: null
+  notes: "needs an octave-up fuzz"
+- id: p043
+  source: llm_persona
+  author: persona-3
+  instruction: "Plexi on 7, bright cap engaged. Mid gain."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: bright
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "cranked Plexi-style crunch"
+- id: p044
+  source: llm_persona
+  author: persona-3
+  instruction: "Less low end than v2. Tighter under 100Hz, everything else same."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "relative: tighten lows vs previous version"
+- id: p045
+  source: llm_persona
+  author: persona-3
+  instruction: "Hard-clip distortion, scooped, modern rock rhythm. Will double-track."
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "modern rock double-tracked rhythm"
+- id: p046
+  source: llm_persona
+  author: persona-3
+  instruction: "Ross-style comp, light, just evening out fingerpicked arps. Clean."
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: light
+    clipping: unknown
+    reference_pedal: "Ross Compressor"
+  notes: "light comp for clean arpeggios"
+- id: p047
+  source: llm_persona
+  author: persona-3
+  instruction: "SD-1 into a crunchy amp, 80s LA rock rhythm."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_bright
+    mids: pushed
+    compression: none
+    clipping: asymmetric
+    reference_pedal: "Boss SD-1"
+  notes: "SD-1 pushed 80s rock"
+- id: p048
+  source: llm_persona
+  author: persona-3
+  instruction: "Rotary speaker emu, fast rotor, slight drive."
+  target:
+    in_scope: false
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "needs Leslie/rotary emulation"
+- id: p049
+  source: llm_persona
+  author: persona-3
+  instruction: "Tone Bender MkII. Thick, saturated, has to cut a dense mix."
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: asymmetric
+    reference_pedal: "Sola Sound Tone Bender"
+  notes: "MkII fuzz for dense mix"
+- id: p050
+  source: llm_persona
+  author: persona-3
+  instruction: "Clean boost only, about +6dB, flat EQ."
+  target:
+    in_scope: true
+    family: clean
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "transparent clean boost"
+- id: p051
+  source: llm_persona
+  author: persona-3
+  instruction: "Same crunch patch as before, cut 2-3dB around 800, add a touch of presence."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_bright
+    mids: scooped
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "relative EQ tweak on prior crunch"
+- id: p052
+  source: llm_persona
+  author: persona-3
+  instruction: "Jingle spot. Brief says 'gritty but friendly.' Client's words, not mine."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "vague client brief: mild friendly grit"
+- id: p053
+  source: llm_persona
+  author: persona-3
+  instruction: "Square-wave synthy fuzz, gated decay, sputters on release."
+  target:
+    in_scope: true
+    family: fuzz
+    gain: extreme
+    brightness: bright
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "gated synth-like fuzz"
+- id: p054
+  source: llm_persona
+  author: persona-3
+  instruction: "Matchless-type chime. Low gain, mild compression."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: bright
+    mids: neutral
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "chimey class-A edge of breakup"
+- id: p055
+  source: llm_persona
+  author: persona-3
+  instruction: "Ram's Head Muff. Mids scooped, sustain for days."
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: scooped
+    compression: none
+    clipping: soft
+    reference_pedal: "Electro-Harmonix Big Muff Pi"
+  notes: "Ram's Head Big Muff"
+- id: p056
+  source: llm_persona
+  author: persona-3
+  instruction: "Clean, squashed hard, fast attack, Dyna Comp style for funk 16ths."
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: slightly_bright
+    mids: neutral
+    compression: heavy
+    clipping: unknown
+    reference_pedal: "MXR Dyna Comp"
+  notes: "heavy comp for clean funk rhythm"
+- id: p057
+  source: llm_persona
+  author: persona-4
+  instruction: "i want it to sound soft and kinda warm like clairo but i dont know any pedal names sorry"
+  target:
+    in_scope: true
+    family: clean
+    gain: none
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "soft warm clean bedroom pop"
+- id: p058
+  source: llm_persona
+  author: persona-4
+  instruction: "my guitar sounds really harsh when i record it on my laptop, can it be warmer??"
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "EQ only: tame harsh DI recording"
+- id: p059
+  source: llm_persona
+  author: persona-4
+  instruction: "a little bit crunchy but cute? like not rock rock lol"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "light cute crunch"
+- id: p060
+  source: llm_persona
+  author: persona-4
+  instruction: "how do i get that wobbly warbly sound like mac demarco"
+  target:
+    in_scope: false
+    family: clean
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "wants chorus/vibrato warble"
+- id: p061
+  source: llm_persona
+  author: persona-4
+  instruction: "can u make it sound like a 90s grunge song but quieter lol i live in a flat and my neighbour bangs on the wall"
+  target:
+    in_scope: true
+    family: distortion
+    gain: medium
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "grunge distortion at low volume"
+- id: p062
+  source: llm_persona
+  author: persona-4
+  instruction: "the notes go loud and quiet randomly when i strum, can it be more even"
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: "compression only: even out strumming"
+- id: p063
+  source: llm_persona
+  author: persona-4
+  instruction: "kinda fuzzy and warm like an old cassette tape"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: dark
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "lo-fi warm saturation"
+- id: p064
+  source: llm_persona
+  author: persona-4
+  instruction: "less scratchy than before pls"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "relative: smoother, less harsh"
+- id: p065
+  source: llm_persona
+  author: persona-4
+  instruction: "my friend said i need a 'tube screamer'?? is that a real thing lol. if it makes it sound good then yes"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: "Ibanez Tube Screamer"
+  notes: "Tube Screamer suggested by friend"
+- id: p066
+  source: llm_persona
+  author: persona-4
+  instruction: "cleaner. just cleaner."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "vague relative: less dirt than before"
+- id: p067
+  source: llm_persona
+  author: persona-4
+  instruction: "sad and pretty, like quiet but a little bit broken sounding"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "vague emotional: delicate slightly broken-up tone"
+- id: p068
+  source: llm_persona
+  author: persona-4
+  instruction: "it sounds kind of boring and flat, can it sparkle more and maybe be a tiny bit crunchy"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: bright
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "brighter with a hint of crunch"
+- id: p069
+  source: llm_persona
+  author: persona-4
+  instruction: "i want the big loud part at the end of my song to sound HUGE and fuzzy!!"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "big fuzzy climax"
+- id: p070
+  source: llm_persona
+  author: persona-4
+  instruction: "something like beabadoobee's guitar, a bit grungy and sweet at the same time"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: medium
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "sweet grungy fuzz"
+- id: p071
+  source: llm_persona
+  author: persona-4
+  instruction: "too muddy now i cant hear the chords"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "relative: clearer, less muddy"
+- id: p072
+  source: llm_persona
+  author: persona-4
+  instruction: "not sure what i want honestly, something that makes me want to keep playing"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "vague: inspiring tone"
+- id: p073
+  source: llm_persona
+  author: persona-4
+  instruction: "my teacher played through this little yellow pedal and it sounded so good, sort of crunchy"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "unidentified yellow overdrive"
+- id: p074
+  source: llm_persona
+  author: persona-4
+  instruction: "jangly like a 60s recording, like the beatles, with a tiny bit of grit"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: bright
+    mids: neutral
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "60s jangle with slight grit"
+- id: p075
+  source: llm_persona
+  author: persona-5
+  instruction: "I want a distortion more heavy for play Iron Maiden songs in my band, but not lose the definition of the notes."
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: slightly_bright
+    mids: pushed
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "defined classic metal distortion"
+- id: p076
+  source: llm_persona
+  author: persona-5
+  instruction: "The sound is very thin, I need more body, more grave frequency and little more saturation also."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "more bass body plus slight drive"
+- id: p077
+  source: llm_persona
+  author: persona-5
+  instruction: "Is possible to make the sound like Slash in Sweet Child? Les Paul with Marshall, saturated but warm."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: high
+    brightness: slightly_dark
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "warm saturated Marshall lead"
+- id: p078
+  source: llm_persona
+  author: persona-5
+  instruction: "the fuzz of Os Mutantes, very crazy brazilian psychedelic from the 60s"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: bright
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: null
+  notes: "60s Tropicalia fuzz"
+- id: p079
+  source: llm_persona
+  author: persona-5
+  instruction: "I have a Boss DS-1 but it sound too much like a bee, make more smooth please"
+  target:
+    in_scope: true
+    family: distortion
+    gain: medium
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: "Boss DS-1"
+  notes: "smoother DS-1"
+- id: p080
+  source: llm_persona
+  author: persona-5
+  instruction: "For the solo I need more sustain, the note stay long time, but without many saturation"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: pushed
+    compression: heavy
+    clipping: soft
+    reference_pedal: null
+  notes: "sustain via compression with little drive"
+- id: p081
+  source: llm_persona
+  author: persona-5
+  instruction: "Sound of echo like The Edge from U2, the repetitions of the notes"
+  target:
+    in_scope: false
+    family: clean
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "needs dotted-eighth delay"
+- id: p082
+  source: llm_persona
+  author: persona-5
+  instruction: "Crunch for play AC/DC, not too much gain, the chords must sound open and clear"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_bright
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "AC/DC open-chord crunch"
+- id: p083
+  source: llm_persona
+  author: persona-5
+  instruction: "Less agressive than before, my wife say is too noisy for our apartment"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "relative: less aggressive"
+- id: p084
+  source: llm_persona
+  author: persona-5
+  instruction: "Rock nacional 80s style like Titãs or Legião Urbana, little distortion only. The chorus I have already in other pedal."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "80s Brazilian rock light drive"
+- id: p085
+  source: llm_persona
+  author: persona-5
+  instruction: "Clean sound for play bossa nova in electric guitar, very soft and round, no brightness"
+  target:
+    in_scope: true
+    family: clean
+    gain: none
+    brightness: dark
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "dark round clean for bossa"
+- id: p086
+  source: llm_persona
+  author: persona-5
+  instruction: "Overdrive for blues rock like Gary Moore in Still Got the Blues"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "singing blues-rock lead"
+- id: p087
+  source: llm_persona
+  author: persona-5
+  instruction: "I don't know the name, is the green pedal that everybody use"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: "Ibanez Tube Screamer"
+  notes: "implied Tube Screamer"
+- id: p088
+  source: llm_persona
+  author: persona-5
+  instruction: "Metal sound for Sepultura songs, Roots era, very low and agressive"
+  target:
+    in_scope: true
+    family: distortion
+    gain: extreme
+    brightness: slightly_dark
+    mids: scooped
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "downtuned groove metal"
+- id: p089
+  source: llm_persona
+  author: persona-5
+  instruction: "My amplifier is a cheap transistor, I want that it sounds like a valve amplifier"
+  target:
+    in_scope: false
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "wants tube amp simulation"
+- id: p090
+  source: llm_persona
+  author: persona-5
+  instruction: "More mid frequency please and little more gain, the guitar disappear when the keyboard play"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "push mids to cut past keyboards"
+- id: p091
+  source: llm_persona
+  author: persona-5
+  instruction: "Like Pink Floyd Comfortably Numb, the second solo, fuzz with very long sustain"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Gilmour sustaining fuzz lead"
+- id: p092
+  source: llm_persona
+  author: persona-5
+  instruction: "Make the attack more soft, the pick is too loud in the start of the notes"
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: slightly_dark
+    mids: neutral
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: "compression only: soften pick attack"
+- id: p093
+  source: llm_persona
+  author: persona-5
+  instruction: "Heavy but vintage, like Black Sabbath Paranoid"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: high
+    brightness: slightly_dark
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "early-70s heavy vintage drive"
+- id: p094
+  source: llm_persona
+  author: persona-6
+  instruction: "wall of fuzz, loveless-era mbv. i know half of it is reverse reverb and the trem arm but get the fuzz right at least"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: slightly_dark
+    mids: scooped
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "MBV wall of fuzz; ambient parts secondary"
+- id: p095
+  source: llm_persona
+  author: persona-6
+  instruction: "big muff, the green russian one, sustain full, tone at about 11 o'clock"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: slightly_dark
+    mids: scooped
+    compression: none
+    clipping: soft
+    reference_pedal: "Electro-Harmonix Big Muff Pi"
+  notes: "Green Russian Big Muff"
+- id: p096
+  source: llm_persona
+  author: persona-6
+  instruction: "want it to sound like a jet engine falling apart. gated, sputtery, dying battery fuzz"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: extreme
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: null
+  notes: "starved gated fuzz"
+- id: p097
+  source: llm_persona
+  author: persona-6
+  instruction: "psychocandy feedback squall, trebly as hell"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: extreme
+    brightness: bright
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "JAMC trebly fuzz squall"
+- id: p098
+  source: llm_persona
+  author: persona-6
+  instruction: "massive shimmer reverb like slowdive on souvlaki"
+  target:
+    in_scope: false
+    family: clean
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "needs shimmer reverb"
+- id: p099
+  source: llm_persona
+  author: persona-6
+  instruction: "less harsh up top than the last one, it was taking the paint off the walls at rehearsal"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "relative: darker fuzz"
+- id: p100
+  source: llm_persona
+  author: persona-6
+  instruction: "keep the muff but bring the mids back a touch, i vanish in the mix with the scooped thing"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: "Electro-Harmonix Big Muff Pi"
+  notes: "Big Muff with restored mids"
+- id: p101
+  source: llm_persona
+  author: persona-6
+  instruction: "ride, nowhere era. overdriven and jangly but nasty with it"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: bright
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "jangly nasty overdrive"
+- id: p102
+  source: llm_persona
+  author: persona-6
+  instruction: "noise. just noise. unlistenable in a good way"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: extreme
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "vague: harsh noise fuzz"
+- id: p103
+  source: llm_persona
+  author: persona-6
+  instruction: "ds-1 stacked into a muff. yes i know. dont judge"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: extreme
+    brightness: neutral
+    mids: scooped
+    compression: none
+    clipping: unknown
+    reference_pedal: "Electro-Harmonix Big Muff Pi"
+  notes: "stacked distortion into Big Muff"
+- id: p104
+  source: llm_persona
+  author: persona-6
+  instruction: "daydream nation, detuned jazzmasters into crunchy amps, more grit than fuzz"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: high
+    brightness: bright
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Sonic Youth gritty crunch"
+- id: p105
+  source: llm_persona
+  author: persona-6
+  instruction: "octave fuzz like purple haze solo but filthier"
+  target:
+    in_scope: false
+    family: fuzz
+    gain: extreme
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: asymmetric
+    reference_pedal: null
+  notes: "needs octave-up fuzz"
+- id: p106
+  source: llm_persona
+  author: persona-6
+  instruction: "near-clean for the verses, just a hint of grit so it's not lifeless"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "barely-driven verse tone"
+- id: p107
+  source: llm_persona
+  author: persona-6
+  instruction: "proper heavy doomgaze, jesu or nothing kind of thing, huge low end"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: dark
+    mids: scooped
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "dark heavy doomgaze fuzz"
+- id: p108
+  source: llm_persona
+  author: persona-6
+  instruction: "swervedriver - son of mustang ford"
+  target:
+    in_scope: true
+    family: distortion
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "vague: song reference only"
+- id: p109
+  source: llm_persona
+  author: persona-6
+  instruction: "tone bender into a cranked vox, fuzzy but still got the chime"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: medium
+    brightness: bright
+    mids: pushed
+    compression: none
+    clipping: asymmetric
+    reference_pedal: "Sola Sound Tone Bender"
+  notes: "Tone Bender into Vox chime"
+- id: p110
+  source: llm_persona
+  author: persona-6
+  instruction: "jazzmaster single coils hum like mad under the fuzz, can it be less hissy without losing the size"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "big fuzz with less hiss"
+- id: p111
+  source: llm_persona
+  author: persona-6
+  instruction: "the cocteau twins thing but i'll sort the chorus and verb myself, just want the slightly gritty clean underneath"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "gritty clean base; modulation handled elsewhere"
+- id: p112
+  source: llm_persona
+  author: persona-6
+  instruction: "compressed fuzz that just sits there and drones, no pick dynamics at all"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: heavy
+    clipping: soft
+    reference_pedal: null
+  notes: "squashed droning fuzz"
+- id: p113
+  source: llm_persona
+  author: persona-7
+  instruction: "chicken pickin tone, tele bridge pickup, need a comp squashin it so them notes pop"
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: bright
+    mids: neutral
+    compression: heavy
+    clipping: unknown
+    reference_pedal: null
+  notes: "compressed clean chicken pickin"
+- id: p114
+  source: llm_persona
+  author: persona-7
+  instruction: "brad paisley type lead, lil hair on it, lotta snap"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: bright
+    mids: pushed
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "snappy low-gain country lead"
+- id: p115
+  source: llm_persona
+  author: persona-7
+  instruction: "need a clean tele sound that dont spike the sound guys ears when i dig in on the bridge pickup"
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: slightly_dark
+    mids: neutral
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: "EQ/comp only: tame Tele bridge spikes"
+- id: p116
+  source: llm_persona
+  author: persona-7
+  instruction: "keith urban somebody like you but with a lil more grit than that"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: bright
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "modern country crunch"
+- id: p117
+  source: llm_persona
+  author: persona-7
+  instruction: "somethin for the rock covers set, we do sweet home and some skynyrd, tele cant get thick enough"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "thicker southern rock crunch on a Tele"
+- id: p118
+  source: llm_persona
+  author: persona-7
+  instruction: "amp tremolo like them old duane eddy records"
+  target:
+    in_scope: false
+    family: clean
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "needs tremolo"
+- id: p119
+  source: llm_persona
+  author: persona-7
+  instruction: "cali76 on a mild setting before a blues driver, that's my board, match that"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: light
+    clipping: soft
+    reference_pedal: "Boss BD-2 Blues Driver"
+  notes: "light comp into Blues Driver"
+- id: p120
+  source: llm_persona
+  author: persona-7
+  instruction: "dial it back a hair, too much gain from last time. im doin merle not metallica"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "relative: less gain"
+- id: p121
+  source: llm_persona
+  author: persona-7
+  instruction: "hot country rhythm, chris stapleton kinda crunchy"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_dark
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "bluesy country crunch"
+- id: p122
+  source: llm_persona
+  author: persona-7
+  instruction: "clean w a lil boost for solos, nothin fancy"
+  target:
+    in_scope: true
+    family: clean
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "clean boost"
+- id: p123
+  source: llm_persona
+  author: persona-7
+  instruction: "too twangy now, round off the drive some for the ballad"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "relative: darker drive for ballad"
+- id: p124
+  source: llm_persona
+  author: persona-7
+  instruction: "vince gill lead sound, smooth and singin, real musical"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: pushed
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "smooth singing country lead"
+- id: p125
+  source: llm_persona
+  author: persona-7
+  instruction: "gimme a timmy, real transparent, just enough to push my deluxe"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: "Paul Cochrane Timmy"
+  notes: "transparent Timmy push"
+- id: p126
+  source: llm_persona
+  author: persona-7
+  instruction: "danny gatton, crazy tele chops, need a lotta clarity so every note comes through"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: bright
+    mids: neutral
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "clear low-gain fast Tele lines"
+- id: p127
+  source: llm_persona
+  author: persona-7
+  instruction: "steel guitar-ish lead, smooth with lotsa sustain, ill do the bends myself"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: pushed
+    compression: heavy
+    clipping: soft
+    reference_pedal: null
+  notes: "sustaining compressed lead for steel-style bends"
+- id: p128
+  source: llm_persona
+  author: persona-7
+  instruction: "lil bit of dirt that cleans up when i lighten my pickin, tired of stompin on pedals every song"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "dynamic edge-of-breakup"
+- id: p129
+  source: llm_persona
+  author: persona-7
+  instruction: "tele sounds thin as a dime through this rental peavey, fix it and give it some hair"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_dark
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "fatten thin Tele with light drive"
+- id: p130
+  source: llm_persona
+  author: persona-7
+  instruction: "tight and spanky for funky country stuff, lil grit"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: bright
+    mids: scooped
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "spanky funky country"
+- id: p131
+  source: llm_persona
+  author: persona-7
+  instruction: "bakersfield twang with grit on the edges, kinda like a treble booster"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: bright
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "Bakersfield twang with edge"
+- id: p132
+  source: llm_persona
+  author: persona-8
+  instruction: "Hi! I need a tone for Sunday, mostly Hillsong and Elevation songs. Some drive that sits under the vocals and doesn't overpower the congregation singing."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "supportive low-gain worship rhythm"
+- id: p133
+  source: llm_persona
+  author: persona-8
+  instruction: "Ambient swells for prayer time, big pads with lots of reverb and delay please"
+  target:
+    in_scope: false
+    family: clean
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "needs reverb/delay pads"
+- id: p134
+  source: llm_persona
+  author: persona-8
+  instruction: "Our worship pastor says my drive is too bright in the in-ear mix, can you take some of the sizzle off?"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: slightly_dark
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "relative: less sizzle"
+- id: p135
+  source: llm_persona
+  author: persona-8
+  instruction: "Klon style drive for the bridge of Graves Into Gardens so it lifts but stays musical"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: "Klon Centaur"
+  notes: "Klon lift for song bridge"
+- id: p136
+  source: llm_persona
+  author: persona-8
+  instruction: "Bigger lead tone for the build, like the dotted eighth parts but with way more grit"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "gritty lead; delay secondary"
+- id: p137
+  source: llm_persona
+  author: persona-8
+  instruction: "Something gentle and clean for the acoustic set, maybe a light compressor?"
+  target:
+    in_scope: true
+    family: none
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: light
+    clipping: unknown
+    reference_pedal: null
+  notes: "light comp clean"
+- id: p138
+  source: llm_persona
+  author: persona-8
+  instruction: "Big fuzzy wall of sound for the climax, but still Sunday-appropriate haha"
+  target:
+    in_scope: true
+    family: fuzz
+    gain: high
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "big but controlled fuzz"
+- id: p139
+  source: llm_persona
+  author: persona-8
+  instruction: "Could you add a little more gain than last week? It felt a bit polite on the fast song."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "relative: more gain"
+- id: p140
+  source: llm_persona
+  author: persona-8
+  instruction: "Timmy into the AC30 please, chimey and transparent!"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: bright
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: "Paul Cochrane Timmy"
+  notes: "Timmy into chimey amp"
+- id: p141
+  source: llm_persona
+  author: persona-8
+  instruction: "Low gain drive stacked into a second drive for leads, like a lot of the worship guitar YouTubers do"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "stacked drives for lead"
+- id: p142
+  source: llm_persona
+  author: persona-8
+  instruction: "My drive sounds muddy whenever the keys player and I play together, can we fix that?"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "clear up low-mid mud in drive"
+- id: p143
+  source: llm_persona
+  author: persona-8
+  instruction: "Shimmer verb like a Strymon BigSky for the Oceans intro"
+  target:
+    in_scope: false
+    family: clean
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "needs shimmer reverb"
+- id: p144
+  source: llm_persona
+  author: persona-8
+  instruction: "Our youth band wants it heavier for their Skillet cover, nothing too crazy, the sanctuary is small"
+  target:
+    in_scope: true
+    family: distortion
+    gain: medium
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: hard
+    reference_pedal: null
+  notes: "moderate rock distortion"
+- id: p145
+  source: llm_persona
+  author: persona-8
+  instruction: "A warm, singing lead for the offering song, smooth with some sustain"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_dark
+    mids: pushed
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "warm sustaining lead"
+- id: p146
+  source: llm_persona
+  author: persona-8
+  instruction: "Just something nice? I'm not really a gear person, I play rhythm and lead worship"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "vague"
+- id: p147
+  source: llm_persona
+  author: persona-8
+  instruction: "Tremolo pulsing in time with the click for the Way Maker intro"
+  target:
+    in_scope: false
+    family: clean
+    gain: none
+    brightness: neutral
+    mids: neutral
+    compression: none
+    clipping: unknown
+    reference_pedal: null
+  notes: "needs synced tremolo"
+- id: p148
+  source: llm_persona
+  author: persona-8
+  instruction: "Less compression than last time please, my strumming felt squashed. Keep the little bit of drive."
+  target:
+    in_scope: true
+    family: overdrive
+    gain: low
+    brightness: neutral
+    mids: neutral
+    compression: light
+    clipping: soft
+    reference_pedal: null
+  notes: "relative: lighter compression"
+- id: p149
+  source: llm_persona
+  author: persona-8
+  instruction: "The Blues Driver sound everyone talks about, edgy crunch for rhythm"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: slightly_bright
+    mids: neutral
+    compression: none
+    clipping: soft
+    reference_pedal: "Boss BD-2 Blues Driver"
+  notes: "Blues Driver rhythm crunch"
+- id: p150
+  source: llm_persona
+  author: persona-8
+  instruction: "Lead tone that cuts through for the solo in King of Kings without being shrill"
+  target:
+    in_scope: true
+    family: overdrive
+    gain: medium
+    brightness: neutral
+    mids: pushed
+    compression: none
+    clipping: soft
+    reference_pedal: null
+  notes: "cutting non-shrill lead"
