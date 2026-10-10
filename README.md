@@ -30,7 +30,7 @@ uv sync --extra dev --extra demo
 uv run lstmabar demo                 # http://127.0.0.1:7860 (--port N)
 ```
 
-Upload or record a clip (trimmed to 15 s, uploads up to 25 MB), or pick a synthetic example riff. Knobs are generated from each effect block's parameter specs; log-taper knobs slide over their position and show the physical value underneath.
+Upload or record a clip (trimmed to 15 s, uploads up to 25 MB), or pick a synthetic example riff. Knobs are generated from each effect block's parameter specs; log-taper knobs slide over their position and show the physical value underneath. Any common format works (WAV, FLAC, MP3, OGG, M4A/AAC, WebM, ...): files are decoded with libsndfile, falling back to PyAV, which bundles its own ffmpeg, so no system ffmpeg is needed.
 
 `--share` creates a public URL that runs anyone's uploads on your machine; add `--auth user:pass` to require a login.
 
