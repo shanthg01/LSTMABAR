@@ -50,7 +50,9 @@ oversampled rate, which the decimation low-pass removes.
 (the zero-phase Kaiser-sinc prototype of :mod:`lstmabar.dsp.oversample`, ~90 dB stopband,
 applied in float64 with ``scipy.signal.upfirdn``, which is much faster than torch's
 float64 ``conv1d`` on CPU) → solver → downsample → ``post`` linear stages (base rate) →
-``out_gain``. Op-amps are ideal (no rails, slew or bandwidth limit).
+``out_gain``. With ``oversample_linear=True`` the ``pre``/``post`` stages run at the
+oversampled rate instead (between the resamplers). A shunt node may carry a resistive
+``R_load`` (folded into ``G``). Op-amps are ideal (no rails, slew or bandwidth limit).
 
 **Backends.** The time loop runs in Python with per-step NumPy over the batch (``"numpy"``),
 or, when the optional ``numba`` package is installed (``uv sync --extra whitebox``), in a
@@ -320,6 +322,7 @@ class ClipperCircuit:
     diodes: DiodePair
     R_gain: float | None = None  # feedback only
     C_gain: float | None = None  # feedback only
+    R_load: float | None = None  # shunt only: resistive load from the node to ground
 
     def __post_init__(self):
         if self.config not in CONFIGS:
@@ -329,12 +332,17 @@ class ClipperCircuit:
             if self.R_gain is None or self.C_gain is None:
                 raise ValueError("feedback config needs R_gain and C_gain")
             vals += [self.R_gain, self.C_gain]
+        if self.R_load is not None:
+            if self.config != "shunt":
+                raise ValueError("R_load is only supported in the shunt config")
+            vals.append(self.R_load)
         if not all(math.isfinite(x) and x > 0 for x in vals):
             raise ValueError(f"component values must be positive and finite: {vals}")
 
     @property
     def G(self) -> float:
-        return 1.0 / self.R
+        """Node conductance ``1/R`` (plus ``1/R_load`` for a loaded shunt node)."""
+        return 1.0 / self.R + (1.0 / self.R_load if self.R_load is not None else 0.0)
 
     def source(self) -> AnalogFilter:
         """Admittance from ``v_in`` to the source current ``j``."""
@@ -361,6 +369,10 @@ class DiodeClipper(WhiteBoxModel):
     sample_rate: int = 44100
     backend: str = "auto"
     notes: tuple[str, ...] = field(default=())
+    oversample_linear: bool = False
+    """Run ``pre``/``post`` at the oversampled rate too: less bilinear frequency warping of
+    their corners near the top of the band, for ``oversample``x the filtering work. Off by
+    default (``pre``/``post`` at ``sample_rate``)."""
 
     def __post_init__(self):
         if self.oversample not in OVERSAMPLE_FACTORS:
@@ -388,8 +400,13 @@ class DiodeClipper(WhiteBoxModel):
         x = np.asarray(v, dtype=np.float64)
         if x.ndim != 2:
             raise ValueError(f"expected (B, T) volts, got shape {x.shape}")
-        x = apply_chain(self.pre, x, self.sample_rate)
         k = self.oversample
+        if self.oversample_linear:
+            fs_up = self.sample_rate * k
+            u = apply_chain(self.pre, resample_up(x, k), fs_up)
+            y = resample_down(apply_chain(self.post, self.clip_stage(u, fs_up), fs_up), k)
+            return self.out_gain * y
+        x = apply_chain(self.pre, x, self.sample_rate)
         y = resample_down(self.clip_stage(resample_up(x, k), self.sample_rate * k), k)
         y = apply_chain(self.post, y, self.sample_rate)
         return self.out_gain * y
@@ -409,15 +426,27 @@ def shunt_clipper(
     oversample: int = 4,
     sample_rate: int = 44100,
     backend: str = "auto",
+    R_load: float | None = None,
+    oversample_linear: bool = False,
 ) -> DiodeClipper:
     """Series ``R`` from the source, ``C`` and diodes to ground (RAT / DS-1 clipping stage).
 
     Gain stages before the clipper (ideal op-amps) go in ``pre`` as linear filters (an
-    ``AnalogFilter`` with numerator scaled by the gain).
+    ``AnalogFilter`` with numerator scaled by the gain). ``R_load`` is an optional resistive
+    load on the clipping node (e.g. the input resistance of a following passive tone stack).
     """
-    circuit = ClipperCircuit("shunt", C=C, R=R, diodes=DiodePair(diode(part, device), n_pos, n_neg))
+    circuit = ClipperCircuit(
+        "shunt", C=C, R=R, diodes=DiodePair(diode(part, device), n_pos, n_neg), R_load=R_load
+    )
     return DiodeClipper(
-        circuit, tuple(pre), tuple(post), out_gain, oversample, sample_rate, backend
+        circuit,
+        tuple(pre),
+        tuple(post),
+        out_gain,
+        oversample,
+        sample_rate,
+        backend,
+        oversample_linear=oversample_linear,
     )
 
 
@@ -437,6 +466,7 @@ def feedback_clipper(
     oversample: int = 4,
     sample_rate: int = 44100,
     backend: str = "auto",
+    oversample_linear: bool = False,
 ) -> DiodeClipper:
     """Non-inverting op-amp stage with diodes in the feedback path (TS808 clipping stage)."""
     circuit = ClipperCircuit(
@@ -448,7 +478,14 @@ def feedback_clipper(
         C_gain=C_gain,
     )
     return DiodeClipper(
-        circuit, tuple(pre), tuple(post), out_gain, oversample, sample_rate, backend
+        circuit,
+        tuple(pre),
+        tuple(post),
+        out_gain,
+        oversample,
+        sample_rate,
+        backend,
+        oversample_linear=oversample_linear,
     )
 
 

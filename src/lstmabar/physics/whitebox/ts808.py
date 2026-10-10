@@ -1,32 +1,53 @@
 """Ibanez TS808 white-box model.
 
-Chain (component names from ``pedals/ts808.yaml``):
+Chain (component names from ``pedals/ts808.yaml``; op-amps ideal, transistors ideal unity
+followers):
 
-1. Clipping stage (feedback configuration of :mod:`.diode_clipper`): gain leg
-   ``R_gain`` + ``C_gain``, feedback ``R_fb`` + drive-pot resistance ∥ ``C_fb`` ∥ the
-   anti-parallel diodes of the first clipping entry (1S2473, :mod:`.devices`).
-2. Post-clip passive low-pass ``R_tone_lp`` / ``C_tone_lp`` (≈723 Hz).
-3. Level pot as a divider (taper fraction).
+1. Input coupling: ``C_clip_in`` into ``R_clip_bias`` (first-order high-pass, ≈16 Hz) at the
+   clipping op-amp's (+) input. The Q1 emitter follower is an ideal unity buffer.
+2. Clipping stage (feedback configuration of :mod:`.diode_clipper`): gain leg ``R_gain`` +
+   ``C_gain``, feedback ``R_fb`` + drive-pot resistance ∥ ``C_fb`` ∥ the anti-parallel
+   diodes of the first clipping entry (1S2473, :mod:`.devices`).
+3. Active tone stage (IC1b, ideal op-amp): the same transfer function the grey-box
+   derivation uses, :func:`lstmabar.physics.derive.ts808_tone_stage` (R7/C5 low-pass into
+   IC1b, tone pot between its inputs, R8/C6 wiper network, R_tone_fb feedback; derivation
+   in its docstring), so white-box and derived grey-box share one linear model. Checked
+   against an independent finite-gain nodal solve in the tests.
+4. Level: ``R_level_in`` in series with the level pot (a divider to ground), then the
+   ``R_out_series`` / ``R_out_shunt`` output divider; the output buffer is an ideal unity
+   follower.
 
-PROVISIONAL, like the TS808 deriver in :mod:`lstmabar.physics.derive`: the tone pot's active
-treble network, the input/output buffers and the coupling caps are not modelled yet (the
-tone knob has no effect); they are added once the tone-stage components land in the YAML.
-The post-clip low-pass is treated as unloaded.
+Not modelled (documented approximations): the ≈1.6 Hz output coupling, the 510 kΩ output
+buffer bias loading the level wiper (≤0.1 dB), buffer non-idealities, op-amp rails, slew and
+bandwidth. All linear stages run at the oversampled rate (``oversample_linear``).
 """
 
 from collections.abc import Mapping
 
+from lstmabar.physics.derive import ts808_tone_stage
 from lstmabar.physics.kb import Pedal
 from lstmabar.physics.whitebox.base import register_whitebox
 from lstmabar.physics.whitebox.devices import SUBSTITUTES
 from lstmabar.physics.whitebox.diode_clipper import DiodeClipper, feedback_clipper
-from lstmabar.physics.whitebox.linear import rc_lowpass
+from lstmabar.physics.whitebox.linear import AnalogFilter, from_tf, rc_highpass
 
 NOTES = (
-    "tone knob not modelled yet (fixed post-clip RC low-pass only)",
-    "input/output buffers and coupling caps not modelled",
-    "op-amp ideal (no rails, slew or bandwidth limit)",
+    "op-amps ideal (no rails, slew or bandwidth limit); transistor buffers ideal unity",
+    "output coupling (~1.6 Hz) and output-buffer loading of the level wiper not modelled",
 )
+
+
+def tone_stage(pedal: Pedal, tone: float) -> AnalogFilter:
+    """TS808 active tone stage at rotation ``tone`` (:func:`derive.ts808_tone_stage`)."""
+    return from_tf(ts808_tone_stage(pedal, tone))
+
+
+def level_gain(pedal: Pedal, level: float) -> float:
+    """Level pot fed through ``R_level_in``, then the ``R_out_series``/``R_out_shunt``
+    output divider (as in the derivation)."""
+    pot = pedal.pots["level"]
+    out = pedal.c("R_out_shunt") / (pedal.c("R_out_shunt") + pedal.c("R_out_series"))
+    return pot.fraction(level) * pot.value / (pot.value + pedal.c("R_level_in")) * out
 
 
 @register_whitebox("ts808")
@@ -50,11 +71,13 @@ def build_ts808(
         n_pos=clip.n_pos,
         n_neg=clip.n_neg,
         device=clip.device,
-        post=(rc_lowpass(pedal.c("R_tone_lp"), pedal.c("C_tone_lp")),),
-        out_gain=pedal.pots["level"].fraction(knobs["level"]),
+        pre=(rc_highpass(pedal.c("R_clip_bias"), pedal.c("C_clip_in")),),
+        post=(tone_stage(pedal, knobs["tone"]),),
+        out_gain=level_gain(pedal, knobs["level"]),
         oversample=oversample,
         sample_rate=sample_rate,
         backend=backend,
+        oversample_linear=True,
     )
     notes = list(NOTES)
     if clip.part.upper() in SUBSTITUTES:
@@ -63,4 +86,4 @@ def build_ts808(
     return model
 
 
-__all__ = ["NOTES", "build_ts808"]
+__all__ = ["NOTES", "build_ts808", "level_gain", "tone_stage"]

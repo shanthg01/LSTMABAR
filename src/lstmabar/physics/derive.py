@@ -398,6 +398,26 @@ def lp_hp_blend_tone_stack(
     return two_leg_blend(v_l, z_l + r_lw, v_h, z_h + r_wh, z_load)
 
 
+def ds1_booster_open_loop(pedal: Pedal) -> float:
+    """DS-1 Q2 open-loop gain ``R_boost_c / (R_boost_e + V_T/I_C)``,
+    ``I_C = (V_supply - V_boost_collector) / R_boost_c``."""
+    i_c = (pedal.c("V_supply") - pedal.c("V_boost_collector")) / pedal.c("R_boost_c")
+    return ce_open_loop_gain(pedal.c("R_boost_c"), pedal.c("R_boost_e"), i_c)
+
+
+def ds1_booster(pedal: Pedal) -> TF:
+    """DS-1 transistor booster (Q2), input buffer -> collector, magnitude (see :func:`_ds1`).
+
+    ``C_boost_in1``/``R_boost_in1`` Thevenin leg, then ``C_boost_in2`` into the shunt-feedback
+    stage (``Z_f = R_boost_fb ∥ 1/(sC_boost_fb)``, base bias ``R_boost_bias``,
+    :func:`ds1_booster_open_loop`).
+    """
+    v1, z1 = thevenin_cr_highpass(pedal.c("C_boost_in1"), pedal.c("R_boost_in1"))
+    z_s = z1 + cap(pedal.c("C_boost_in2"))
+    z_f = par(res(pedal.c("R_boost_fb")), cap(pedal.c("C_boost_fb")))
+    return v1 * shunt_feedback_gain(z_f, z_s, pedal.c("R_boost_bias"), ds1_booster_open_loop(pedal))
+
+
 # --- Pedals -------------------------------------------------------------------------------------
 
 
@@ -551,15 +571,7 @@ def _ds1(pedal: Pedal, knobs: dict[str, float], ctx: DeriveContext) -> Preset:
     (the output buffer's input), the voltage across the bias resistors, and the Level pot.
     """
     clip = pedal.clipping[0]
-    i_c = (pedal.c("V_supply") - pedal.c("V_boost_collector")) / pedal.c("R_boost_c")
-    a_ol = ce_open_loop_gain(pedal.c("R_boost_c"), pedal.c("R_boost_e"), i_c)
-    v1, z1 = thevenin_cr_highpass(pedal.c("C_boost_in1"), pedal.c("R_boost_in1"))
-    z_s = z1 + cap(pedal.c("C_boost_in2"))
-
-    def booster(z_f: TF) -> TF:
-        return v1 * shunt_feedback_gain(z_f, z_s, pedal.c("R_boost_bias"), a_ol)
-
-    r_fb = res(pedal.c("R_boost_fb"))
+    a_ol = ds1_booster_open_loop(pedal)
     r_dist = max(pedal.pots["dist"].resistance(knobs["dist"]), 1.0)
     z_g = res(pedal.c("R_gain")) + cap(pedal.c("C_gain"))
     h_in = rc_highpass_tf(pedal.c("R_in_bias"), pedal.c("C_in")) * rc_highpass_tf(
@@ -567,7 +579,7 @@ def _ds1(pedal: Pedal, knobs: dict[str, float], ctx: DeriveContext) -> Preset:
     )
     opamp_hp = noninverting_gain(res(r_dist), z_g)
     opamp_full = noninverting_gain(par(res(r_dist), cap(pedal.c("C_fb"))), z_g)
-    boost = booster(par(r_fb, cap(pedal.c("C_boost_fb"))))
+    boost = ds1_booster(pedal)
     h_gain = h_in * boost * opamp_hp
     pre = pre_clip_drive(h_gain)
     band = np.geomspace(*GAIN_BAND_HZ, 200)
@@ -860,6 +872,8 @@ __all__ = [
     "PreClip",
     "Preset",
     "derive",
+    "ds1_booster",
+    "ds1_booster_open_loop",
     "fuzz_face_small_signal",
     "lp_hp_blend_tone_stack",
     "pre_clip_drive",
