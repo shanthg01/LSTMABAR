@@ -1,0 +1,63 @@
+# ProCo RAT. Component values from the ElectroSmash analysis (read via the ElectroSmash
+# Archive mirror, see notes), cross-checked against the Aion FX Helios (RAT clone) parts list.
+# Names are semantic; the ElectroSmash designator is in the comment.
+id: rat
+name: ProCo RAT
+family: distortion
+topology: opamp_shunt_clip
+clipping:
+  - stage: clip
+    device: si
+    part: 1N914
+    location: shunt          # D1/D2 anti-parallel to ground after R6
+    n_pos: 1
+    n_neg: 1
+components:
+  V_supply: 9
+  V_bias: 4.5              # R11/R12 100k divider (virtual ground)
+  # Input
+  R_in_pulldown: 1M        # R1, input pull-down to ground
+  C_in: 22n                # C1, input coupling (with R2: 7.2 Hz)
+  R_in_bias: 1M            # R2, biases the op-amp (+) input to 4.5 V
+  R_in_series: 1k          # R3, op-amp input protection
+  C_in_shunt: 1n           # C2, input RF shunt to ground
+  # Clipper amplifier (LM308 non-inverting stage)
+  C_comp: 30p              # C3, LM308 compensation cap (sets slew rate / GBW)
+  C_fb: 100p               # C4, across the Distortion pot (16 kHz at full distortion)
+  R_gain_hf: 47            # R4, gain leg to ground (with C5: 1539 Hz)
+  C_gain_hf: 2.2u          # C5
+  R_gain_lf: 560           # R5, gain leg to ground (with C6: 60 Hz)
+  C_gain_lf: 4.7u          # C6
+  C_clip_couple: 4.7u      # C7, couples the op-amp output to the diodes
+  R_clip: 1k               # R6, diode current limit
+  # Filter (passive low-pass after the diodes)
+  R_filter: 1.5k           # R7, in series with the Filter pot (32 kHz .. 475 Hz)
+  C_filter: 3.3n           # C8
+  # Output (JFET source follower, 2N5458)
+  C_out_in: 22n            # C9, coupling into the JFET gate
+  R_jfet_bias: 1M          # R8, gate bias (~ stage input impedance)
+  R_jfet_source: 10k       # R9, source resistor (role per the Helios schematic)
+  C_out: 1u                # C10, output coupling
+pots:
+  distortion: {value: 100k, taper: A, default: 0.5, label: Distortion}
+  # Filter: more resistance = lower cutoff (darker); turning it up cuts treble.
+  filter: {value: 100k, taper: A, default: 0.5, label: Filter}
+  volume: {value: 100k, taper: A, default: 0.5, label: Volume}
+sources:
+  - https://www.electrosmash.com/proco-rat
+  - https://electrosmash.mas-effects.com/proco-rat
+  - https://aionfx.com/app/files/docs/helios_documentation.pdf
+descriptors: [gritty, hard-clipped, mid-forward, tight low end, sweepable treble]
+notes: >-
+  Gain: Gv = 1 + R_distortion / (R_gain_hf || R_gain_lf). The 67 dB figure
+  (1 + 100k / (47 || 560) ~ 2306) is only the high-frequency ceiling: the 47 ohm / 2.2 uF leg
+  turns on above ~1.5 kHz, below that the 560 ohm / 4.7 uF leg gives ~45 dB
+  (1 + 100k/560), and both legs roll off below ~60 Hz. The LM308's slew rate (0.3 V/us) and
+  gain-bandwidth further cap the high-frequency gain (ElectroSmash: no more than ~30 dB at
+  10 kHz at max gain). Drive's gain range tops out at 60 dB, so the derived gain is clamped
+  (P2 decision 4); derive.py must use the frequency-dependent legs, not 67 dB flat.
+  C3 is 30 pF in ElectroSmash and 33 pF in the Aion Helios notes (and omitted for the OP07,
+  which is internally compensated); ElectroSmash's value is used. All three pots are listed as
+  100K audio (100K-A) by ElectroSmash and Aion. Values were read on 2026-10-09 from the
+  ElectroSmash Archive mirror (electrosmash.mas-effects.com, rescued 2022 Wayback captures),
+  because electrosmash.com had no DNS A record that day; the canonical URL is kept.

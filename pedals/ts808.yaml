@@ -1,5 +1,6 @@
 # Ibanez TS808 Tube Screamer. Component values from the ElectroSmash analysis (cited below);
-# names are semantic, the schematic designator is in the comment.
+# names are semantic, the schematic designator is in the comment. Tone-stage parts whose
+# ElectroSmash designator is not given are from R.G. Keen's "Technology of the Tube Screamer".
 id: ts808
 name: Ibanez TS808 Tube Screamer
 family: overdrive
@@ -18,12 +19,48 @@ components:
   C_fb: 51p        # C4, across the feedback path (gain-path low-pass)
   R_tone_lp: 1k    # R7, post-clip low-pass
   C_tone_lp: 0.22u # C5, post-clip low-pass (~723 Hz)
+  V_supply: 9
+  V_bias: 4.5      # bias / virtual ground for all stages
+  # Input buffer (Q1 2SC1815 emitter follower) and clipping-stage input
+  R_in_bias: 510k       # R2, base bias to 4.5 V (sets Zin ~446k)
+  R_in_emitter: 10k     # emitter resistor (Geofex)
+  C_clip_in: 1u         # C2, 1 uF NP coupling into the clipping op-amp (+) input
+  R_clip_bias: 10k      # R5, (+) input bias to 4.5 V
+  # Active tone stage (IC1b, non-inverting, unity gain at mid-band). The Tone pot is strung
+  # from IC1b's (-) input to its (+) input (the R7/C5 node); its wiper goes to ground
+  # through R_tone_shunt + C_tone_shunt.
+  R_tone_shunt: 220     # R8, wiper RC to ground (with C6: ~3.2 kHz)
+  C_tone_shunt: 0.22u   # C6
+  R_tone_fb: 1k         # IC1b output to (-) input (Geofex tone schematic)
+  R_tone_bias: 10k      # IC1b (+) input to 4.5 V (Geofex tone schematic)
+  # Level and output buffer (Q3 2SC1815 emitter follower)
+  C_level_in: 1u        # C7, 1 uF NP from IC1b output
+  R_level_in: 1k        # series resistor from C7 to the Level pot's hot lug (Geofex)
+  R_out_bias: 510k      # R12, output buffer base bias to 4.5 V
+  R_out_emitter: 10k    # R13, emitter resistor
+  R_out_series: 100     # R_B, series output resistor (470 in the TS9)
+  C_out: 10u            # C9, output coupling
+  R_out_shunt: 10k      # R_C, output shunt to ground (100k in the TS9)
 pots:
   drive: {value: 500k, taper: A, default: 0.5, label: Drive}
-  tone: {value: 20k, taper: B, default: 0.5, label: Tone}
+  tone: {value: 20k, taper: B, default: 0.5, label: Tone}  # a "G" (W/S) taper, approximated as B
   level: {value: 100k, taper: A, default: 0.5, label: Level}
 sources:
   - https://www.electrosmash.com/tube-screamer-analysis
+  - https://electrosmash.mas-effects.com/tube-screamer-analysis
+  - http://www.geofex.com/article_folders/tstech/tsxtech.htm
+  - https://aionfx.com/app/files/docs/stratus_documentation.pdf
+descriptors: [warm, mid-forward, smooth, tight low end]
 notes: >-
   Clipping stage: JRC4558 non-inverting amplifier, anti-parallel Si diodes across the
-  feedback path. Tone stage components beyond R7/C5 are added with the tone derivation.
+  feedback path. Tone stage: the R7/C5 low-pass (723 Hz) feeds IC1b; with the Tone pot at
+  the (+) end the R8/C6 network adds a second low-pass pole (treble cut), at the (-) end it
+  shunts feedback above ~3.2 kHz and levels off the R7/C5 roll-off (treble restored). The
+  TS808, TS9 and TS9 reissue share the circuit board; the only differences are the op-amp and
+  the two output resistors (TS808 100 ohm / 10k, TS9 470 ohm / 100k), per Geofex. Pot tapers:
+  ElectroSmash calls the Tone pot a "G" taper (more control mid-sweep; the schema has no G, so
+  B), the Drive pot 500K log, and the Level pot audio in its text but 100K Lin in its BOM; the
+  Geofex tone schematic draws Level as 100KB; Aion FX says the original Drive is linear.
+  The existing A/A tapers are kept pending the owner's choice. Values were read on 2026-10-09
+  from the ElectroSmash Archive mirror (electrosmash.mas-effects.com, rescued 2022 Wayback
+  captures) because electrosmash.com had no DNS A record that day; the canonical URL is kept.

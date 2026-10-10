@@ -1,0 +1,92 @@
+# Electro-Harmonix Big Muff Pi, American V3 (1976-77, red/black graphics): the version analysed
+# by ElectroSmash. Component values from Kit Rae's trace of the most common V3 circuit ("V3
+# 76#3", Big Muff Page), which uses the same designators as the ElectroSmash BOM; differences
+# are listed in notes. Designators follow the original EHX PCB, where Q1-Q4 run from output
+# to input (Q4 = input booster, Q1 = output stage). Names are semantic; designator in comment.
+id: big_muff
+name: Electro-Harmonix Big Muff Pi (V3)
+family: fuzz
+topology: cascaded_transistor_clip
+clipping:
+  - stage: clip1           # Q3 with D3/D4 in series with C6, collector to base
+    device: si
+    part: 1N914
+    location: feedback
+    n_pos: 1
+    n_neg: 1
+  - stage: clip2           # Q2 with D1/D2 in series with C7, collector to base
+    device: si
+    part: 1N914
+    location: feedback
+    n_pos: 1
+    n_neg: 1
+components:
+  V_supply: 9
+  # Input booster (Q4 common emitter with collector-base shunt feedback)
+  R_in_series: 39k         # R2, input series resistor (sets the ~39k input impedance)
+  C_in: 10u                # C1, input coupling (ElectroSmash BOM: 1uF; see notes)
+  R_boost_fb: 470k         # R9, collector-base feedback resistor
+  C_boost_miller: 470p     # C10, collector-base Miller cap (~1.2 kHz roll-off)
+  R_boost_c: 15k           # R13, collector resistor
+  R_boost_bias: 47k        # R14, base to ground
+  R_boost_e: 100           # R22, emitter resistor
+  C_boost_out: 1u          # C4, coupling into the Sustain pot
+  V_boost_collector: 7     # Q4 collector DC bias (ElectroSmash: ~7 V, not 4.5 V)
+  R_sustain_floor: 1k      # R23, below the Sustain pot so the signal is never fully cut
+  # Clipping stage 1 (Q3)
+  C_clip1_in: 0.1u         # C5, coupling from the Sustain wiper
+  R_clip1_in: 10k          # R19, series input resistor
+  R_clip1_bias: 100k       # R20, base to ground
+  R_clip1_fb: 470k         # R17, collector-base feedback resistor
+  C_clip1_miller: 470p     # C12, collector-base Miller cap
+  C_clip1_diode: 1u        # C6, in series with D3/D4 (blocks DC, sets the clipped band)
+  R_clip1_c: 15k           # R18, collector resistor (10k on some V3s)
+  R_clip1_e: 150           # R21, emitter resistor
+  # Clipping stage 2 (Q2)
+  C_clip2_in: 0.1u         # C13, coupling from Q3's collector
+  R_clip2_in: 10k          # R12, series input resistor
+  R_clip2_bias: 100k       # R16, base to ground
+  R_clip2_fb: 470k         # R15, collector-base feedback resistor
+  C_clip2_miller: 470p     # C11, collector-base Miller cap
+  C_clip2_diode: 1u        # C7, in series with D1/D2
+  R_clip2_c: 15k           # R11, collector resistor (10k on some V3s)
+  R_clip2_e: 150           # R10, emitter resistor
+  # Passive tone stack (LP and HP legs blended by the Tone pot)
+  R_tone_lp: 39k           # R8, low-pass leg series resistor (with C8: ~408 Hz)
+  C_tone_lp: 0.01u         # C8, low-pass leg cap to ground
+  C_tone_hp: 0.004u        # C9, high-pass leg series cap (with R5: ~1.8 kHz)
+  R_tone_hp: 22k           # R5, high-pass leg resistor to ground
+  # Output stage (Q1 common emitter, no feedback; ~13 dB)
+  C_out_in: 0.1u           # C3, coupling from the Tone wiper
+  R_out_bias_hi: 430k      # R7, base bias to +9 V (390k and 470k also used)
+  R_out_bias_lo: 100k      # R3, base bias to ground
+  R_out_c: 15k             # R6, collector resistor
+  R_out_e: 3.3k            # R4, emitter resistor (gain R6/R4 = 4.5)
+  C_out: 0.1u              # C2, output coupling to the Volume pot
+pots:
+  sustain: {value: 100k, taper: B, default: 0.5, label: Sustain}  # R24
+  tone: {value: 100k, taper: B, default: 0.5, label: Tone}        # R25
+  volume: {value: 100k, taper: B, default: 0.5, label: Volume}    # R26
+sources:
+  - https://www.electrosmash.com/big-muff-pi-analysis
+  - https://electrosmash.mas-effects.com/big-muff-pi-analysis
+  - http://www.bigmuffpage.com/Big_Muff_Pi_versions_schematics_part2.html
+descriptors: [sustaining, scooped mids, thick, saturated, compressed]
+notes: >-
+  Four cascaded common emitter stages: input booster (calculated 19.6 dB, ~16.7 dB
+  simulated), two clipping stages (~23 dB and ~25 dB in the real circuit per ElectroSmash,
+  each clipped to about +-0.6 V by its collector-base diode pair), passive tone stack (~7 dB
+  overall loss, ~13.5 dB at the ~1 kHz mid-scoop with Tone centred) and an output stage
+  (R6/R4 ~ 13 dB). The Miller caps of Q4, Q3 and Q2 each roll off around 1-2 kHz, so the
+  clipped band is narrow (ElectroSmash: poles near 55 Hz / 1.78 kHz and 94 Hz / 1.17 kHz for
+  the two clipping stages). Drive is single-stage, so both clipping stages map onto one
+  Drive (P2 decision 4); no white-box is planned for this pedal. Q4's collector sits at ~7 V
+  because of R14 = 47k, which can make the booster clip asymmetrically for inputs above
+  ~0.2 Vpp (ElectroSmash). Differences between sources: the ElectroSmash BOM lists C1 as
+  1 uF and R11, R13, R18 as 10K (its gain calculations use 10K for stage 1 and 15K for stage
+  2), while Kit Rae's trace of the common V3 shows C1 10 uF and 15k for all three, noting
+  10k on some V3s; this file follows Kit Rae's trace. The ElectroSmash BOM also omits R7.
+  All pots are 100K linear (both sources). Transistors BC239 (NPN Si). ElectroSmash values
+  were read on 2026-10-09 from the ElectroSmash Archive mirror (electrosmash.mas-effects.com,
+  rescued 2022 Wayback captures) because electrosmash.com had no DNS A record that day; the
+  canonical URL is kept.

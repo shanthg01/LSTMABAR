@@ -1,0 +1,53 @@
+# Dallas Arbiter Fuzz Face, silicon version (NPN BC108C / BC109C / BC183L / BC209C, negative
+# ground). Fuzz Central documents that the only circuit change from the germanium version, other
+# than the transistors, is the 470 ohm resistor becoming 330 ohm; the topology and the other
+# values follow the ElectroSmash analysis of the germanium original. Names are semantic; the
+# ElectroSmash designator is in the comment.
+id: fuzz_face_si
+name: Dallas Arbiter Fuzz Face (silicon)
+family: fuzz
+topology: two_transistor_fuzz
+clipping:
+  - stage: fuzz
+    device: si_transistor
+    part: BC108C
+    location: transistor
+    n_pos: 1
+    n_neg: 1
+    # v_clip is referred to the Q2 collector, as for fuzz_face_ge. The usual bias target for
+    # the silicon build is again Q2 collector ~4.5 V on a 9 V supply (PedalParts NPN build
+    # notes), so Q2 can swing 4.5 V toward the supply rail before cutoff; the saturation side
+    # is bounded by Q2's emitter voltage (Q1 collector minus a ~0.6 V Si base-emitter drop)
+    # and is smaller. The grey-box +1 ceiling is the side that clips last: 4.5 V. A traced
+    # original (BC183, PedalParts "EE Jay" notes) measured 3.2 V at Q2's collector, so real
+    # units can sit lower; the fidelity fit decides.
+    v_clip: 4.5
+components:
+  V_supply: 9              # 9 V battery, negative ground
+  V_q2_collector: 4.5      # Q2 collector bias target (PedalParts NPN silicon notes)
+  C_in: 2.2u               # C1, input coupling
+  R_q1_c: 33k              # R1, Q1 collector resistor
+  R_out_lo: 330            # R2, supply-side part of Q2's split collector load (470 in Ge)
+  R_q2_c: 8.2k             # R3, Q2 collector resistor; output taken at the R2/R3 junction
+  R_fb: 100k               # R4, feedback from Q2 emitter to Q1 base
+  C_fuzz_bypass: 20u       # C2, from the Fuzz pot wiper to ground
+  C_out: 0.01u             # C3, output coupling
+pots:
+  fuzz: {value: 1k, taper: B, default: 0.5, label: Fuzz}       # 1KB (Fuzz Central)
+  volume: {value: 500k, taper: A, default: 0.5, label: Volume} # 500KA (Fuzz Central)
+sources:
+  - https://fuzzcentral.ssguitar.com/fuzzface.php
+  - https://www.electrosmash.com/fuzz-face
+  - https://electrosmash.mas-effects.com/fuzz-face
+  - http://www.geofex.com/Article_Folders/fuzzface/fftech.htm
+  - https://pedalparts.co.uk/docs/FuzzFace-Multi.pdf
+descriptors: [bright, harsh, aggressive, high-gain fuzz, touch-sensitive]
+notes: >-
+  Same two-transistor feedback topology as fuzz_face_ge (see its notes for the gain
+  structure); the R2 / (R2 + R3) output divider is 330 / 8530 (-28 dB) instead of 470 / 8670
+  (-25 dB). Silicon devices have much higher gain (BC108C typically ~500, Geofex) than the
+  germanium AC128s the values were chosen for, and ElectroSmash and Fuzz Central both
+  describe the silicon version as harsher and more aggressive with more high end. Builders
+  often bias silicon units with a trimmer (and Geofex mentions later silicon versions adding
+  a small collector-base capacitor); neither is part of the stock values here. Q1 collector
+  bias for the silicon version is not given by the sources and is omitted.
