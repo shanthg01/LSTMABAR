@@ -1,0 +1,60 @@
+# Dallas Arbiter Fuzz Face, original germanium version (PNP AC128 / NKT275, positive ground).
+# Component values from the ElectroSmash analysis (read via the ElectroSmash Archive mirror, see
+# notes), which covers this first germanium model; cross-checked against Fuzz Central and
+# R.G. Keen's "Technology of the Fuzz Face". Names are semantic; the ElectroSmash designator
+# is in the comment. Voltages are magnitudes (PNP: the circuit runs from -9 V).
+id: fuzz_face_ge
+name: Dallas Arbiter Fuzz Face (germanium)
+family: fuzz
+topology: two_transistor_fuzz
+clipping:
+  - stage: fuzz
+    device: ge_transistor
+    part: AC128
+    location: transistor
+    n_pos: 1
+    n_neg: 1
+    # v_clip is referred to the Q2 collector (where ElectroSmash measures the ~19.5 dB stage
+    # gain), not to the output jack. Q2's collector is biased to the 4.5 V target (half the
+    # 9 V supply), so it can swing 4.5 V toward the supply rail before Q2 cuts off. The other
+    # side (saturation) is smaller: the collector can only fall to about Q2's emitter voltage,
+    # i.e. Q1's collector (0.5-0.7 V target, ~1.6 V stock) minus a ~0.2 V Ge base-emitter
+    # drop, leaving ~3-4 V. The grey-box +1 ceiling is the side that clips last: 4.5 V.
+    # The asymmetry (cutoff vs saturation) is left to the deriver / fidelity fit.
+    v_clip: 4.5
+components:
+  V_supply: 9              # 9 V battery, positive ground
+  V_q2_collector: 4.5      # Q2 collector bias target (ElectroSmash: -4.5 V)
+  V_q1_collector: 0.6      # Q1 collector bias target (ElectroSmash: -0.5 to -0.7 V)
+  C_in: 2.2u               # C1, input coupling (with ~5k input impedance: 14 Hz)
+  R_q1_c: 33k              # R1, Q1 collector resistor (sets Q1 gain and bias)
+  R_out_lo: 470            # R2, supply-side part of Q2's split collector load
+  R_q2_c: 8.2k             # R3, Q2 collector resistor; output taken at the R2/R3 junction
+  R_fb: 100k               # R4, feedback from Q2 emitter to Q1 base (shunt-series feedback)
+  C_fuzz_bypass: 20u       # C2, from the Fuzz pot wiper to ground (7.9 Hz with 1k)
+  C_out: 0.01u             # C3, output coupling (with 500k Volume: 31 Hz)
+pots:
+  # Fuzz: Q2 emitter resistance; the part between the emitter end and the wiper stays
+  # unbypassed (local feedback), the rest is AC-grounded by C2. 1K linear.
+  fuzz: {value: 1k, taper: B, default: 0.5, label: Fuzz}
+  volume: {value: 500k, taper: A, default: 0.5, label: Volume}
+sources:
+  - https://www.electrosmash.com/fuzz-face
+  - https://electrosmash.mas-effects.com/fuzz-face
+  - https://fuzzcentral.ssguitar.com/fuzzface.php
+  - http://www.geofex.com/Article_Folders/fuzzface/fftech.htm
+descriptors: [warm, creamy, touch-sensitive, asymmetric, cleans up with guitar volume]
+notes: >-
+  Gain: Q1 common emitter (-gm * R1 ~ 290 / 49 dB open loop), Q2 common emitter with gain
+  ~(R2 + R3) / R_fuzz_unbypassed (8.2x minimum, ElectroSmash); the R4 feedback reduces the
+  total to ~19.5 dB at Q2's collector, and the R2 / (R2 + R3) output divider (-25 dB) leaves
+  about -5.5 dB at the output. The input impedance is low (~5k, varies with Fuzz), so the
+  pedal interacts with the guitar's pickups and volume control; a white-box model needs the
+  source impedance. Clipping is asymmetric by bias design: Q1 sits close to its emitter
+  (soft saturation on one polarity first), and Q2 then hard-clips at cutoff on the same
+  polarity (Geofex). ElectroSmash recommends hFE ~70-80 for Q1 and ~110-130 for Q2; its
+  simulation uses 85 and 120. The battery's internal resistance adds to R2 in practice.
+  Values were read on 2026-10-09 from the ElectroSmash Archive mirror
+  (electrosmash.mas-effects.com, rescued 2022 Wayback captures) because electrosmash.com had
+  no DNS A record that day; the canonical URL is kept. The ElectroSmash BOM prints R3 as
+  "8.K"; its text, Fuzz Central and Geofex give 8.2K.

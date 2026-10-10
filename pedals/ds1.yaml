@@ -1,0 +1,85 @@
+# Boss DS-1 Distortion, post-'94 "DS1-A" circuit (dual op-amp: BA728N / M5223AL / NJM2904L),
+# the revision analysed by ElectroSmash. Component values from the ElectroSmash analysis (read
+# via the ElectroSmash Archive mirror, see notes); R7, C4, R14, C10, R18 and C13 cross-checked
+# against Premier Guitar's DS-1 mods article. Names are semantic; the designator is in the
+# comment.
+id: ds1
+name: Boss DS-1 Distortion
+family: distortion
+topology: opamp_shunt_clip
+clipping:
+  - stage: clip
+    device: si
+    part: 1N4148             # D4/D5; originals 1S1588 / 1S2473
+    location: shunt          # anti-parallel to AC ground (4.5 V) after R14
+    n_pos: 1
+    n_neg: 1
+components:
+  V_supply: 9
+  V_bias: 4.5              # R24/R25 10k divider (virtual ground)
+  # Input buffer (Q1 2SC2240 emitter follower)
+  C_in: 47n                # C1, input coupling (7.2 Hz)
+  R_in_series: 1k          # R1, base protection
+  R_in_bias: 470k          # R2, base bias to 4.5 V (sets Zin ~470k)
+  R_in_emitter: 10k        # R3
+  # Transistor booster (Q2 2SC2240 common emitter with collector-base shunt feedback)
+  C_boost_in1: 0.47u       # C2, with R4: 3.3 Hz high-pass
+  R_boost_in1: 100k        # R4
+  C_boost_in2: 47n         # C3, with R5: 33 Hz high-pass
+  R_boost_bias: 100k       # R5
+  R_boost_fb: 470k         # R7, collector-base feedback resistor
+  C_boost_fb: 250p         # C4, collector-base feedback cap (high-frequency roll-off)
+  R_boost_c: 10k           # R8, collector resistor
+  R_boost_e: 22            # R9, emitter resistor (open-loop R8/R9 = 53 dB; ~35 dB with feedback)
+  V_boost_collector: 5.8   # Q2 collector DC bias (ElectroSmash)
+  # Op-amp gain stage (second op-amp half, non-inverting; first half is a unity buffer)
+  C_opamp_in: 68n          # C5, with R10: 23 Hz high-pass
+  R_opamp_bias: 100k       # R10, (+) input bias to 4.5 V
+  R_opamp_in: 47k          # R39, (+) input current limit
+  R_gain: 4.7k             # R13, gain leg to ground (with C8: 72 Hz pole at any Dist setting; the zero
+                           # at 1/(2*pi*C8*(R13 + VR1)) moves down to ~3 Hz at max)
+  C_gain: 0.47u            # C8
+  C_fb: 100p               # C7, across the feedback path (top-octave roll-off)
+  # Clipping network
+  C_clip_couple: 0.47u     # C9 (0.47u per BOM); placement as op-amp output coupling
+                           # ahead of R14 is inferred, not stated by the sources
+  R_clip: 2.2k             # R14, diode current limit; with C10: 7.2 kHz below clipping
+  C_clip: 0.01u            # C10, across D4/D5
+  # Tone stack (Big Muff style LP/HP blend, mixed by the Tone pot)
+  R_tone_lp: 6.8k          # R16, low-pass leg (with C12: 234 Hz)
+  C_tone_lp: 0.1u          # C12
+  C_tone_hp: 0.022u        # C11, high-pass leg (with R17: 1063 Hz)
+  R_tone_hp: 6.8k          # R17
+  R_tone_out: 10k          # R18, after the tone control (Premier Guitar)
+  # Output buffer (Q3 2SC2240 emitter follower)
+  C_out_in: 0.047u         # C13, with R20: 3.4 Hz
+  R_out_bias_a: 1M         # R19, base bias (R19 || R20 = 500k)
+  R_out_bias_b: 1M         # R20
+  R_out_emitter: 10k       # R21
+  C_out: 1u                # C14, output coupling (with R23: 1.6 Hz)
+  R_out_pulldown: 100k     # R23
+pots:
+  dist: {value: 100k, taper: B, default: 0.5, label: Dist}     # VR1, in the op-amp feedback path
+  tone: {value: 20k, taper: B, default: 0.5, label: Tone}      # VR3, blends LP/HP legs
+  level: {value: 100k, taper: B, default: 0.5, label: Level}   # VR2; B per ElectroSmash BOM
+sources:
+  - https://www.electrosmash.com/boss-ds1-analysis
+  - https://electrosmash.mas-effects.com/boss-ds1-analysis
+  - https://www.premierguitar.com/diy/pedal-projects/boss-ds-1-mods
+descriptors: [hard-clipped, scooped mids, bright, aggressive, crunchy]
+notes: >-
+  Gain structure: the Q2 booster has ~35 dB (gain ~56, ElectroSmash) with R7/C4 shunt
+  feedback, and the op-amp stage adds 0 to 26.5 dB (1 + VR1/R13 = 22.3 at max). The booster
+  is also a limiting element: with ~56x gain and its collector biased at ~5.8 V on a 9 V
+  supply it soft-clips asymmetrically for typical guitar levels (ElectroSmash: 200 mVpp in ->
+  9 Vpp clipped), adding even harmonics before the op-amp; it is not listed as a separate
+  clipping stage because the hard clip is D4/D5 (+-0.7 V) and Drive is single-stage (P2
+  decision 4, cascaded stages). The booster plus op-amp maximum (~61.5 dB) exceeds Drive's
+  60 dB and will be clamped. D8 (1N4148) only protects the op-amp (+) input against
+  below-rail swings; ElectroSmash notes the op-amp is already clipping by then, so it does not
+  shape the tone and is omitted. Not included: R15 (2.2K in the BOM) and R11 (100K), whose
+  roles are not described in the sources; the JFET bypass switching parts. Pot tapers follow
+  the ElectroSmash BOM (VR1, VR2 100KB, VR3 20KB); some builds use an audio taper for
+  Level. Values were read on 2026-10-09 from the ElectroSmash Archive mirror
+  (electrosmash.mas-effects.com, rescued 2022 Wayback captures) because electrosmash.com had
+  no DNS A record that day; the canonical URL is kept.
