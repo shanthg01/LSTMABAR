@@ -14,3 +14,5 @@ paths:
 physics:
   # Level calibration (P2 decision 3): 0 dBFS = this many volts peak at the pedal input.
   volts_per_full_scale: 1.0
+  # Guitar source impedance (ohms) seen by low-input-impedance pedals (Fuzz Face derivation).
+  source_ohms: 10000.0
