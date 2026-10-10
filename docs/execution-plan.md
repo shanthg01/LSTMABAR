@@ -2,9 +2,10 @@
 
 Companion to [design.md](design.md). This is a solo side project, assumed at ~8–12 h/week, with a demo as the main deliverable. Durations are relative sizing, not commitments.
 
-**Current status (2026-10-09):**
+**Current status (2026-10-10):**
 - **P0 and P1 are done; M1 is reached** (PRs #1–#17).
-- **Next: P2**, together with P3, which is independent and can run in parallel. Start from the [P2 kickoff brief](#p2-kickoff-brief).
+- **P2 and P3 are done; M2 is reached** (PRs #19–#26), pending the owner's manual browser check of the M2 demo. P2's gate passes for DS-1 and, via a documented deviation, for TS808 (see [P2 status](#p2-status)).
+- **Next: P4** (data pipeline). P2/P3 follow-ups are listed under the P2 status.
 
 Each phase ends with an **exit gate**: don't start dependent work until it passes. Each task is tagged with where it runs:
 - **[L]** local CPU
@@ -108,6 +109,46 @@ Post-M1 fix (PR #17, found in manual testing): non-WAV uploads (e.g. `.m4a`) fai
 
 Not in P2: NAM/Proteus captures (they are a P4 rendering source, pending license emails), Big Muff white-box, rail clipping and bandwidth limits of op-amps. A RAT clipping-stage sim may be built from the shunt solver, but with ideal op-amps it is **diagnostic only** and not part of the gate.
 
+### P2 status
+
+**Status (2026-10-10): P2 exit gate passed; M2 reached** (PRs #19–#26), pending the owner's manual browser check of the demo.
+
+| PR | Content |
+|---|---|
+| #19 | Plan refinement + confirmed kickoff decisions |
+| #20 | Wave 0: KB schema/validator (`physics/kb.py`), calibration, tone fit (`analog.py`), derive contract, white-box interface |
+| #21 | P3: harmonics, descriptors, archetype readout (`analysis/`) |
+| #22 | Diode-clipper white-box (trapezoidal + Newton, feedback + shunt), device table, TS808 model; optional `whitebox` extra (numba) |
+| #23 | Pedal KB: TS808, RAT, DS-1, Fuzz Face Si/Ge, Big Muff (`pedals/*.yaml`, sources cited) |
+| #24 | Derivations for all 6 pedals (`derive.py`, `networks.py`) |
+| #25 | DS-1 white-box, exact-network solver (`whitebox/port.py`), fidelity check (`lstmabar fidelity`) and [report](../reports/greybox_fidelity.md) |
+| #26 | M2 demo: pedal picker, grey-box vs white-box A/B, archetype panel |
+
+Gate ([report](../reports/greybox_fidelity.md); masked mean = H1 + dBc terms not floored on both sides, decision 6):
+
+| pedal | best-fit | per setting | derived | verdict |
+|---|---|---|---|---|
+| DS-1 | 1.13 dB | 0.61–2.17 | 1.78 | PASS |
+| TS808 | 3.48 dB | 2.54–4.02 | 5.35 | PASS via documented deviation (ceilings 4.1 dB mean / 4.5 dB per setting) |
+
+TS808 deviation cause: feedback clipping's unity clean path (`Drive` has no clean blend; decision 4) plus upper odd harmonics of the lowest notes that the grey-box under-produces.
+
+Other numbers: white-box 18–22× real time per core with numba at 4× oversampling (pure NumPy < 1×, so the `whitebox` extra is effectively required); the full fidelity run takes ~16–23 min on CPU.
+
+P2/P3 follow-ups (non-blocking; fold into P4 or later):
+- **TS808 `clean_db`** blend on `Drive` to close the clean-path gap (owner decision; requires an `lstmabar recover` re-pass and a design §4.3 update).
+- **Per-pedal calibration (P4):** fits want softer clippers than the derived priors (fitted softness mostly 0.06–0.17) and TS808 fits raise `eq.low_db` by 3–7 dB.
+- **Gain clamping at 60 dB** is common at 0 dBFS = 1 V (DS-1 above ~¼ Dist, Big Muff above ~½ Sustain, Fuzz Face Si at full, RAT at max); revisit if P4 renders need the extra range.
+- **Source model:** add pickup inductance (`DeriveContext.source_henries`) — the resistive 10 kΩ source inflates the Fuzz Face Si pre-HPF (411 Hz vs ~143 Hz with a pickup-like source); flag presets whose gain peak lands on the search-band edge.
+- **Finite transistor gain / interstage loading** (PR #24 A2): DS-1 booster −0.4…−1.2 dB, Big Muff ~−1.5 dB per stage plus interstage loading; hidden by the 60 dB clamp today.
+- **Fuzz Face assumptions:** transistor gain (h_FE) and source impedance are not in the KB; Q1 one-sided saturation not modelled.
+- **DS-1:** level-pot loading of the tone stack differs between white-box and derivation (0.2–0.8 dB); R11/R15 roles unconfirmed.
+- **TS808 pot tapers:** sources disagree (Drive A vs linear, Tone "G", Level A vs B); currently A/B/A.
+- **Fidelity:** switch the fit to the masked loss; parallelize across pedals/settings (full run ~16–23 min); RAT white-box (diagnostic) needs a solver without a capacitor at the diode node.
+- **Analysis:** MFCC deferred; pYIN dominates analysis time (track f0 once per dry clip in P4).
+- **Demo:** owner browser check (list in PR #26); readout wording for the narrow edit-then-move race; debounce re-derives during dial drags if hosted with `--share`.
+- **Sources:** electrosmash.com was down; values came from the ElectroSmash Archive mirror, cross-checked against Geofex, Kit Rae, Aion FX and Fuzz Central.
+
 ### P2 kickoff brief
 
 **What P2 builds on (already on `main`):**
@@ -179,6 +220,8 @@ Not in P2: NAM/Proteus captures (they are a P4 rendering source, pending license
 | 3.5 | Demo panel: before/after archetype bars + harmonic plot | L | demo update |
 
 **Exit gate:** oscillator tests pass; the demo shows the shift.
+
+**Status (2026-10-10): P3 exit gate passed** (PR #21, demo panel in #26). Pure oscillators classify as themselves with weight > 0.9; harmonic amplitudes at known f0 are accurate to ~0.01 dB; a Drive gain sweep moves the readout sine → triangle-like → square monotonically, and asymmetry raises even harmonics. MFCC deferred.
 
 ## P4 — Data pipeline (weeks 8–11)
 
