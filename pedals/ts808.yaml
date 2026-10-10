@@ -1,0 +1,29 @@
+# Ibanez TS808 Tube Screamer. Component values from the ElectroSmash analysis (cited below);
+# names are semantic, the schematic designator is in the comment.
+id: ts808
+name: Ibanez TS808 Tube Screamer
+family: overdrive
+topology: opamp_feedback_clip
+clipping:
+  - stage: clip
+    device: si
+    part: 1S2473
+    location: feedback
+    n_pos: 1
+    n_neg: 1
+components:
+  R_gain: 4.7k     # R4, gain-path leg to ground
+  C_gain: 0.047u   # C3, in series with R4 (gain path high-passed at ~720 Hz)
+  R_fb: 51k        # R6, feedback resistor in series with the Drive pot
+  C_fb: 51p        # C4, across the feedback path (gain-path low-pass)
+  R_tone_lp: 1k    # R7, post-clip low-pass
+  C_tone_lp: 0.22u # C5, post-clip low-pass (~723 Hz)
+pots:
+  drive: {value: 500k, taper: A, default: 0.5, label: Drive}
+  tone: {value: 20k, taper: B, default: 0.5, label: Tone}
+  level: {value: 100k, taper: A, default: 0.5, label: Level}
+sources:
+  - https://www.electrosmash.com/tube-screamer-analysis
+notes: >-
+  Clipping stage: JRC4558 non-inverting amplifier, anti-parallel Si diodes across the
+  feedback path. Tone stage components beyond R7/C5 are added with the tone derivation.
