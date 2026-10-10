@@ -19652,7 +19652,12 @@
       ],
       "passed": false,
       "verdict": "PASS (documented deviation)",
-      "deviation": "topology gap, P2 decision 4: feedback clipping's unity clean path (Drive has no clean blend), so the output level cannot follow the circuit across input levels (signed H1 error positive at -30 dBFS, negative at 0 dBFS); plus upper odd harmonics of the lowest notes that the grey-box puts below the -60 dBc floor. Evidence: per-level and worst-term tables of reports/greybox_fidelity.md. Fix if needed: Drive clean_db (requires an `lstmabar recover` re-pass and a design \u00a74.3 update).",
+      "deviation": {
+        "cause": "topology gap, P2 decision 4: feedback clipping's unity clean path (Drive has no clean blend), so the output level cannot follow the circuit across input levels (signed H1 error positive at -30 dBFS, negative at 0 dBFS); plus upper odd harmonics of the lowest notes that the grey-box puts below the -60 dBc floor. Evidence: per-level and worst-term tables of reports/greybox_fidelity.md. Fix if needed: Drive clean_db (requires an `lstmabar recover` re-pass and a design \u00a74.3 update).",
+        "max_mean_db": 4.1,
+        "max_setting_db": 4.5,
+        "basis": "measured 2026-10-09 (seed 0): mean 3.48 dB, settings 2.54-4.02 dB (spread 1.5 dB). Ceilings sit ~0.6 dB above the mean and ~0.5 dB above the worst setting (about a third of the setting spread): room for seed, start and derivation changes to move a fit, not for a new, unexplained gap. The derived error (5.35 dB mean) would fail them."
+      },
       "derived_mean_db": 5.346462664916265,
       "derived_all_terms_mean_db": 2.261392836306867
     }

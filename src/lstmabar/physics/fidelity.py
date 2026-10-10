@@ -72,18 +72,46 @@ TONE_KNOB = {"ts808": "tone", "ds1": "tone", "rat": "filter"}
 DIAGNOSTIC = ("rat",)
 """White-box pedals reported without a gate (P2: a RAT sim with ideal op-amps is diagnostic)."""
 GATED = ("ts808", "ds1")
-DOCUMENTED_DEVIATIONS: dict[str, str] = {
-    "ts808": (
-        "topology gap, P2 decision 4: feedback clipping's unity clean path (Drive has no clean "
-        "blend), so the output level cannot follow the circuit across input levels (signed H1 "
-        "error positive at -30 dBFS, negative at 0 dBFS); plus upper odd harmonics of the "
-        "lowest notes that the grey-box puts below the -60 dBc floor. Evidence: per-level and "
-        "worst-term tables of reports/greybox_fidelity.md. Fix if needed: Drive clean_db "
-        "(requires an `lstmabar recover` re-pass and a design §4.3 update)."
+
+
+@dataclass(frozen=True)
+class Deviation:
+    """A documented gate deviation with evidence-based ceilings: above either ceiling the
+    pedal FAILs, so the entry excuses only the measured gap, not any error size."""
+
+    cause: str
+    max_mean_db: float
+    """Ceiling on the best-fit masked mean averaged over settings."""
+    max_setting_db: float
+    """Ceiling on any single setting's best-fit masked mean."""
+    basis: str
+    """Why these ceilings (the evidence they were set from)."""
+
+
+DOCUMENTED_DEVIATIONS: dict[str, Deviation] = {
+    "ts808": Deviation(
+        cause=(
+            "topology gap, P2 decision 4: feedback clipping's unity clean path (Drive has no "
+            "clean blend), so the output level cannot follow the circuit across input levels "
+            "(signed H1 error positive at -30 dBFS, negative at 0 dBFS); plus upper odd "
+            "harmonics of the lowest notes that the grey-box puts below the -60 dBc floor. "
+            "Evidence: per-level and worst-term tables of reports/greybox_fidelity.md. Fix if "
+            "needed: Drive clean_db (requires an `lstmabar recover` re-pass and a design §4.3 "
+            "update)."
+        ),
+        max_mean_db=4.1,
+        max_setting_db=4.5,
+        basis=(
+            "measured 2026-10-09 (seed 0): mean 3.48 dB, settings 2.54-4.02 dB (spread "
+            "1.5 dB). Ceilings sit ~0.6 dB above the mean and ~0.5 dB above the worst "
+            "setting (about a third of the setting spread): room for seed, start and "
+            "derivation changes to move a fit, not for a new, unexplained gap. The derived "
+            "error (5.35 dB mean) would fail them."
+        ),
     ),
 }
 """Gated pedals whose best fit misses the threshold for a named, evidenced cause (the P2
-exit gate allows "deviation documented with its cause")."""
+exit gate allows "deviation documented with its cause"), each with ceilings."""
 
 
 @dataclass
@@ -580,19 +608,22 @@ def run_fidelity(cfg: FidelityConfig | None = None, log=_log) -> FidelityResult:
 
 def compute_gate(pedals: dict, cfg: FidelityConfig) -> dict:
     """Per-pedal gate summary. ``passed`` is the strict threshold test on the masked mean;
-    ``verdict`` is ``PASS``, ``PASS (documented deviation)`` (over the threshold, with the
-    cause in :data:`DOCUMENTED_DEVIATIONS` — the P2 exit gate allows this), ``FAIL`` or
-    ``diagnostic`` (ungated pedals)."""
+    ``verdict`` is ``PASS``, ``PASS (documented deviation)`` (over the threshold but within
+    the ceilings of its :data:`DOCUMENTED_DEVIATIONS` entry — the P2 exit gate allows a
+    documented deviation), ``FAIL`` (over the threshold without an entry, or above an entry's
+    ceilings) or ``diagnostic`` (ungated pedals)."""
     gate = {}
     for pid, p in pedals.items():
         means = [r["best"]["mean_db"] for r in p["settings"]]
         avg = float(np.mean(means))
         passed = bool(avg <= cfg.gate_db)
+        dev = DOCUMENTED_DEVIATIONS.get(pid)
+        within = dev is not None and avg <= dev.max_mean_db and max(means) <= dev.max_setting_db
         if pid not in GATED:
             verdict = "diagnostic"
         elif passed:
             verdict = "PASS"
-        elif pid in DOCUMENTED_DEVIATIONS:
+        elif within:
             verdict = "PASS (documented deviation)"
         else:
             verdict = "FAIL"
@@ -615,7 +646,7 @@ def compute_gate(pedals: dict, cfg: FidelityConfig) -> dict:
             ],
             "passed": passed,
             "verdict": verdict,
-            "deviation": DOCUMENTED_DEVIATIONS.get(pid) if verdict.endswith("deviation)") else None,
+            "deviation": (asdict(dev) if dev is not None and pid in GATED and not passed else None),
             "derived_mean_db": derived("mean_db"),
             "derived_all_terms_mean_db": derived("all_terms_mean_db"),
         }
@@ -702,7 +733,8 @@ def format_report(r: FidelityResult, discussion: str = "") -> str:
         "",
         f"Gate: best-fit **masked mean** harmonic error, averaged over the pedal's knob "
         f"settings, ≤ {c.gate_db:g} dB for {', '.join(GATED)}, or a deviation documented with "
-        "its cause (P2 exit gate). The masked mean counts every H1 term and every dBc term "
+        "its cause (P2 exit gate) that stays within that deviation's evidence-based ceilings "
+        "(listed below the table). The masked mean counts every H1 term and every dBc term "
         f"except those where *both* models are at or below {c.floor_dbc:g} dBc (decision 6: "
         "harmonics both models put in the noise don't count). The all-terms mean (every term, "
         "including those zero-by-construction floored pairs) is shown for reference only; it "
@@ -721,8 +753,16 @@ def format_report(r: FidelityResult, discussion: str = "") -> str:
             f"{_f(g['derived_all_terms_mean_db'])} | **{g['verdict']}** |"
         )
     for pid, g in r.gate.items():
-        if g.get("deviation"):
-            lines += ["", f"**{pid} deviation:** {g['deviation']}"]
+        dev = g.get("deviation")
+        if dev:
+            lines += [
+                "",
+                f"**{pid} documented deviation** (verdict {g['verdict']}). Ceilings: masked "
+                f"mean ≤ {dev['max_mean_db']:g} dB (measured {g['best_mean_db']:.2f}) and every "
+                f"setting ≤ {dev['max_setting_db']:g} dB (worst "
+                f"{g['worst_setting_mean_db']:.2f}); above either, FAIL. Ceiling basis: "
+                f"{dev['basis']} Cause: {dev['cause']}",
+            ]
     cmd = "lstmabar fidelity" + (" --quick" if c.quick else "") + f" --seed {c.seed}"
     lines += [
         "",
@@ -839,13 +879,16 @@ def format_report(r: FidelityResult, discussion: str = "") -> str:
 
 
 def load_result(path: str | Path) -> FidelityResult:
-    """Read a ``greybox_fidelity.json`` back (e.g. to re-render the Markdown)."""
+    """Read a ``greybox_fidelity.json`` back (e.g. to re-render the Markdown). The gate is
+    recomputed from the stored per-setting results with the current gate rules."""
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     c = data.pop("config")
     for k in ("pitches_hz", "levels_dbfs", "pedals", "settings"):
         if c.get(k) is not None:
             c[k] = tuple(c[k])
-    return FidelityResult(config=FidelityConfig(**c), **data)
+    cfg = FidelityConfig(**c)
+    data["gate"] = compute_gate(data["pedals"], cfg)
+    return FidelityResult(config=cfg, **data)
 
 
 def write_report(
@@ -867,6 +910,7 @@ def gate_passed(r: FidelityResult) -> bool:
 __all__ = [
     "DIAGNOSTIC",
     "DOCUMENTED_DEVIATIONS",
+    "Deviation",
     "GATED",
     "compute_gate",
     "counted_terms",

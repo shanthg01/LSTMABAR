@@ -12,6 +12,9 @@ roughly halves the error and should not be quoted as the result.
 - **DS-1 passes outright:** best-fit masked mean 1.13 dB (0.61–2.17 per setting).
 - **TS808 misses the 3 dB threshold:** 3.48 dB (2.54–4.02; four of five settings are over).
   It passes only via the exit gate's documented-deviation clause, with the two causes below.
+  The deviation has ceilings set from this measurement: masked mean ≤ 4.1 dB and every
+  setting ≤ 4.5 dB, roughly 0.5 dB above the measured values. A future run beyond either
+  ceiling FAILs instead of being excused.
   This is not a comfortable pass. The TS808 grey-box is a measurably worse match than the
   DS-1's.
 
@@ -66,6 +69,12 @@ linear transistor), so this result does not cover the booster's even-harmonic co
 fitted to. The question is how close the grey-box family can get (an expressiveness bound),
 not generalization, so the best-fit numbers are optimistic for unseen material by
 construction.
+
+**Fit objective (follow-up).** The fit loss is the all-terms L1, not the masked mean.
+Both-floored terms already contribute zero gradient. Masking would only rescale each start's
+loss by its count of counted terms, which changes as harmonics cross the floor, so the
+fitted optimum is not expected to move much. Switching the loss to the masked objective is
+left as a follow-up rather than refitting here.
 
 **Known model differences between white-box and derivation** (documented in code):
 - The DS-1 white-box loads the tone stack with the level pot (Premier Guitar's signal path).

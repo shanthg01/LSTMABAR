@@ -8,6 +8,7 @@ import torch
 
 from lstmabar.analysis.harmonics import harmonic_amplitudes
 from lstmabar.physics.fidelity import (
+    DOCUMENTED_DEVIATIONS,
     FidelityConfig,
     HarmonicProjector,
     compute_gate,
@@ -70,15 +71,29 @@ def test_masked_mean_excludes_terms_floored_on_both_sides():
 def test_gate_verdicts():
     cfg = FidelityConfig()
 
-    def pedal(mean):
-        row = {"label": "x", "best": {"mean_db": mean, "all_terms_mean_db": mean / 2}}
-        return {"has_deriver": False, "settings": [row]}
+    def pedal(*means):
+        rows = [
+            {"label": f"s{i}", "best": {"mean_db": m, "all_terms_mean_db": m / 2}}
+            for i, m in enumerate(means)
+        ]
+        return {"has_deriver": False, "settings": rows}
 
-    g = compute_gate({"ds1": pedal(1.0), "ts808": pedal(3.5), "rat": pedal(9.0)}, cfg)
-    assert g["ds1"]["verdict"] == "PASS" and g["ds1"]["deviation"] is None
-    assert g["ts808"]["verdict"] == "PASS (documented deviation)" and not g["ts808"]["passed"]
-    assert g["rat"]["verdict"] == "diagnostic"
-    assert compute_gate({"ds1": pedal(3.5)}, cfg)["ds1"]["verdict"] == "FAIL"
+    def verdict(pid, *means):
+        return compute_gate({pid: pedal(*means)}, cfg)[pid]
+
+    assert verdict("ds1", 1.0)["verdict"] == "PASS"
+    assert verdict("ds1", 1.0)["deviation"] is None
+    assert verdict("ds1", 3.5)["verdict"] == "FAIL"  # no documented deviation for DS-1
+    assert verdict("rat", 9.0)["verdict"] == "diagnostic"
+    # TS808 deviation: within its ceilings (mean 4.1, every setting 4.5) → documented PASS
+    g = verdict("ts808", 3.5)
+    assert g["verdict"] == "PASS (documented deviation)" and not g["passed"]
+    assert g["deviation"]["max_mean_db"] == DOCUMENTED_DEVIATIONS["ts808"].max_mean_db
+    # ... but the deviation is not a blank cheque
+    assert verdict("ts808", 9.0)["verdict"] == "FAIL"
+    assert verdict("ts808", 4.2)["verdict"] == "FAIL"  # mean above 4.1
+    assert verdict("ts808", 3.0, 3.0, 4.7)["verdict"] == "FAIL"  # one setting above 4.5
+    assert verdict("ts808", 2.54, 3.63, 4.02)["verdict"] == "PASS (documented deviation)"
 
 
 def test_torch_projector_matches_numpy_and_is_differentiable():
