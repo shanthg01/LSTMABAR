@@ -1,0 +1,1441 @@
+{
+  "config": {
+    "seed": 0,
+    "sample_rate": 22050,
+    "pitches_hz": [
+      82.41,
+      164.81,
+      329.63,
+      659.26
+    ],
+    "levels_dbfs": [
+      -30.0,
+      -20.0,
+      -10.0,
+      0.0
+    ],
+    "seconds": 0.5,
+    "settle": 0.15,
+    "tail": 0.02,
+    "fit_seconds": 0.2,
+    "fit_settle": 0.05,
+    "n_harmonics": 10,
+    "floor_dbc": -60.0,
+    "riff_seconds": 1.0,
+    "riff_peak": 0.5,
+    "riff_crop": 512,
+    "whitebox_oversample": 8,
+    "drive_oversample": 4,
+    "restarts": 2,
+    "steps": 100,
+    "lr": 0.05,
+    "mrstft_weight": 1.0,
+    "gate_db": 3.0,
+    "volts_per_fs": 1.0,
+    "pedals": null,
+    "settings": null,
+    "quick": false
+  },
+  "pedals": {
+    "ds1": {
+      "name": "Boss DS-1 Distortion",
+      "has_deriver": true,
+      "diagnostic": false,
+      "notes": [
+        "transistor booster linear (its soft asymmetric clipping is ignored)",
+        "op-amps ideal (no rails, slew or bandwidth limit); buffers ideal unity",
+        "level pot loads the tone stack (cited signal path; the derivation does not)",
+        "coupling high-passes below 10 Hz outside the booster, and C9, not modelled"
+      ],
+      "settings": [
+        {
+          "label": "gain min",
+          "knobs": {
+            "dist": 0.0,
+            "tone": 0.5,
+            "level": 0.5
+          },
+          "notes": [],
+          "derived": {
+            "mean_db": 1.5791475120479894,
+            "max_db": 20.338952369715585,
+            "h1_mean_db": 1.244287500967955,
+            "h1_max_db": 3.7180310273886796,
+            "dbc_mean_db": 1.6163541799457708,
+            "dbc_max_db": 20.338952369715585,
+            "per_level": {
+              "-30": {
+                "mean_db": 2.720833596954933,
+                "h1_mean_db": 2.330649940681387,
+                "h1_signed_db": 2.330649940681387,
+                "dbc_mean_db": 2.764187336540883
+              },
+              "-20": {
+                "mean_db": 2.4066376637163716,
+                "h1_mean_db": 1.3261798666457159,
+                "h1_signed_db": 1.3261798666457159,
+                "dbc_mean_db": 2.5266885300575557
+              },
+              "-10": {
+                "mean_db": 0.6863370003212869,
+                "h1_mean_db": 0.7711138721967115,
+                "h1_signed_db": 0.43743636479578685,
+                "dbc_mean_db": 0.6769173478906841
+              },
+              "0": {
+                "mean_db": 0.5027817871993665,
+                "h1_mean_db": 0.5492063243480056,
+                "h1_signed_db": -0.341365021014584,
+                "dbc_mean_db": 0.49762350529396215
+              }
+            },
+            "mrstft_riff": 0.7302646636962891
+          },
+          "derived_params": {
+            "drive.pre_hpf_hz": 220.5036276508943,
+            "drive.gain_db": 40.242565870285034,
+            "drive.softness": 0.5,
+            "drive.asymmetry": 0.0,
+            "drive.bias": 0.0,
+            "drive.tone_db": 0.40088510513305664,
+            "drive.level_db": -18.15506887435913,
+            "eq.low_db": 1.5646963119506836,
+            "eq.mid_db": -7.986371755599976,
+            "eq.mid_hz": 658.392308151911,
+            "eq.high_db": -1.615875005722046
+          },
+          "derive_notes": [
+            "booster and op-amp cascaded into one Drive (the booster's own soft clipping is not represented)",
+            "op-amp C_fb and R_clip/C_clip 7.2 kHz low-passes applied after the shaper; tone stack driven by the diode node as an ideal source (clipped regime)",
+            "booster: transistor base current (beta -> inf) and the C_opamp_in/R_opamp_bias collector load neglected (~1-2 dB high); R11 (100k, role unclear: possibly across the Dist pot, max op-amp gain 21.3 dB instead of 26.5 dB) and Level-pot loading of the tone stack not modelled"
+          ],
+          "starts": [
+            {
+              "init": "derived",
+              "final_loss": 1.903615951538086,
+              "mean_db": 1.2381819940751955
+            },
+            {
+              "init": "random 1",
+              "final_loss": 1.889042854309082,
+              "mean_db": 1.164140756279097
+            },
+            {
+              "init": "random 2",
+              "final_loss": 2.91090726852417,
+              "mean_db": 1.8399613730285094
+            }
+          ],
+          "best_start": "random 1",
+          "best": {
+            "mean_db": 1.164140756279097,
+            "max_db": 9.666932833611277,
+            "h1_mean_db": 0.943476643867552,
+            "h1_max_db": 2.1579669380379443,
+            "dbc_mean_db": 1.1886589909914909,
+            "dbc_max_db": 9.666932833611277,
+            "per_level": {
+              "-30": {
+                "mean_db": 1.6531112463805138,
+                "h1_mean_db": 1.183902254466246,
+                "h1_signed_db": 1.1463685355384987,
+                "dbc_mean_db": 1.7052455788154324
+              },
+              "-20": {
+                "mean_db": 1.8204663621517003,
+                "h1_mean_db": 0.8699407624183744,
+                "h1_signed_db": 0.8699407624183744,
+                "dbc_mean_db": 1.926080317677626
+              },
+              "-10": {
+                "mean_db": 0.7510236335465732,
+                "h1_mean_db": 0.6994497653920142,
+                "h1_signed_db": 0.4669478170891672,
+                "dbc_mean_db": 0.7567540633415243
+              },
+              "0": {
+                "mean_db": 0.4319617830376008,
+                "h1_mean_db": 1.0206137931935735,
+                "h1_signed_db": -0.2253042757937309,
+                "dbc_mean_db": 0.3665560041313816
+              }
+            },
+            "mrstft_riff": 0.7249062061309814
+          },
+          "best_params": {
+            "drive.pre_hpf_hz": 215.01891319487297,
+            "drive.gain_db": 37.71825671195984,
+            "drive.softness": 0.13862749934196472,
+            "drive.asymmetry": 0.07258221507072449,
+            "drive.bias": 0.0166853666305542,
+            "drive.tone_db": 1.0131139755249023,
+            "drive.level_db": -19.644429981708527,
+            "eq.low_db": 5.543859958648682,
+            "eq.mid_db": -6.303815245628357,
+            "eq.mid_hz": 825.4678925107991,
+            "eq.high_db": 0.7444252967834473
+          },
+          "white_h1_dbfs": {
+            "-30": -23.744070773631964,
+            "-20": -20.460924841653124,
+            "-10": -19.238430905520147,
+            "0": -18.432146028683917
+          },
+          "seconds": 93.42030130000785
+        },
+        {
+          "label": "gain mid",
+          "knobs": {
+            "dist": 0.5,
+            "tone": 0.5,
+            "level": 0.5
+          },
+          "notes": [],
+          "derived": {
+            "mean_db": 0.6138913203149147,
+            "max_db": 12.452703653996352,
+            "h1_mean_db": 1.01855130347362,
+            "h1_max_db": 2.659518370174837,
+            "dbc_mean_db": 0.5689290999639476,
+            "dbc_max_db": 12.452703653996352,
+            "per_level": {
+              "-30": {
+                "mean_db": 0.9593272878146571,
+                "h1_mean_db": 0.7599679841877003,
+                "h1_signed_db": 0.37417258145471743,
+                "dbc_mean_db": 0.9814783215509857
+              },
+              "-20": {
+                "mean_db": 0.4758322376496791,
+                "h1_mean_db": 0.6215542422435103,
+                "h1_signed_db": -0.3730152495911092,
+                "dbc_mean_db": 0.45964090380592004
+              },
+              "-10": {
+                "mean_db": 0.4932008838131464,
+                "h1_mean_db": 1.0421722223037415,
+                "h1_signed_db": -1.0421722223037415,
+                "dbc_mean_db": 0.4322040684253026
+              },
+              "0": {
+                "mean_db": 0.5272048719821762,
+                "h1_mean_db": 1.6505107651595274,
+                "h1_signed_db": -1.6505107651595274,
+                "dbc_mean_db": 0.4023931060735817
+              }
+            },
+            "mrstft_riff": 0.8652257323265076
+          },
+          "derived_params": {
+            "drive.pre_hpf_hz": 265.4229037051521,
+            "drive.gain_db": 60.0,
+            "drive.softness": 0.5,
+            "drive.asymmetry": 0.0,
+            "drive.bias": 0.0,
+            "drive.tone_db": 0.46353578567504883,
+            "drive.level_db": -18.13058567047119,
+            "eq.low_db": 1.5744209289550781,
+            "eq.mid_db": -7.9971617460250854,
+            "eq.mid_hz": 659.9091129677769,
+            "eq.high_db": -1.8706233501434326
+          },
+          "derive_notes": [
+            "booster and op-amp cascaded into one Drive (the booster's own soft clipping is not represented)",
+            "op-amp C_fb and R_clip/C_clip 7.2 kHz low-passes applied after the shaper; tone stack driven by the diode node as an ideal source (clipped regime)",
+            "booster: transistor base current (beta -> inf) and the C_opamp_in/R_opamp_bias collector load neglected (~1-2 dB high); R11 (100k, role unclear: possibly across the Dist pot, max op-amp gain 21.3 dB instead of 26.5 dB) and Level-pot loading of the tone stack not modelled",
+            "drive.gain_db 61.56 clamped to 60 dB: circuit gain into the clipper exceeds Drive's range (P2 decision 4); the shaper is already near-square there, so the excess mainly changes sustain and noise"
+          ],
+          "starts": [
+            {
+              "init": "derived",
+              "final_loss": 1.2240601778030396,
+              "mean_db": 0.3506971721132618
+            },
+            {
+              "init": "random 1",
+              "final_loss": 1.7978224754333496,
+              "mean_db": 0.7240877893897222
+            },
+            {
+              "init": "random 2",
+              "final_loss": 1.7350103855133057,
+              "mean_db": 0.6036194429723093
+            }
+          ],
+          "best_start": "derived",
+          "best": {
+            "mean_db": 0.3506971721132618,
+            "max_db": 3.7528627631867977,
+            "h1_mean_db": 0.9987263863231981,
+            "h1_max_db": 2.6185526197036726,
+            "dbc_mean_db": 0.27869392608993543,
+            "dbc_max_db": 3.7528627631867977,
+            "per_level": {
+              "-30": {
+                "mean_db": 0.605213438835446,
+                "h1_mean_db": 1.4155632364197275,
+                "h1_signed_db": 1.4155632364197275,
+                "dbc_mean_db": 0.5151745724371926
+              },
+              "-20": {
+                "mean_db": 0.2928968687346787,
+                "h1_mean_db": 1.0294097823807955,
+                "h1_signed_db": 0.7220047388218709,
+                "dbc_mean_db": 0.21106210055177682
+              },
+              "-10": {
+                "mean_db": 0.2473882470970737,
+                "h1_mean_db": 0.6782397057202143,
+                "h1_signed_db": 0.06040459475354076,
+                "dbc_mean_db": 0.19951586280561362
+              },
+              "0": {
+                "mean_db": 0.2572901337858484,
+                "h1_mean_db": 0.8716928207720551,
+                "h1_signed_db": -0.5470677981398113,
+                "dbc_mean_db": 0.18902316856515877
+              }
+            },
+            "mrstft_riff": 0.8733963966369629
+          },
+          "best_params": {
+            "drive.pre_hpf_hz": 237.678615004821,
+            "drive.gain_db": 59.73490834236145,
+            "drive.softness": 0.12000276148319244,
+            "drive.asymmetry": 0.0221807062625885,
+            "drive.bias": 0.0033587217330932617,
+            "drive.tone_db": -1.8234429359436035,
+            "drive.level_db": -17.792928993701935,
+            "eq.low_db": 1.8026633262634277,
+            "eq.mid_db": -8.37941586971283,
+            "eq.mid_hz": 610.6082518831703,
+            "eq.high_db": 0.7896695137023926
+          },
+          "white_h1_dbfs": {
+            "-30": -19.213649561871275,
+            "-20": -18.40541058241119,
+            "-10": -17.73050690558806,
+            "0": -17.121597685306718
+          },
+          "seconds": 82.32916749999276
+        },
+        {
+          "label": "gain max",
+          "knobs": {
+            "dist": 1.0,
+            "tone": 0.5,
+            "level": 0.5
+          },
+          "notes": [],
+          "derived": {
+            "mean_db": 0.6740132726234415,
+            "max_db": 18.490825843232415,
+            "h1_mean_db": 1.1827214334595195,
+            "h1_max_db": 2.991282778748218,
+            "dbc_mean_db": 0.617490143641655,
+            "dbc_max_db": 18.490825843232415,
+            "per_level": {
+              "-30": {
+                "mean_db": 1.1071963786839334,
+                "h1_mean_db": 0.5528392038237735,
+                "h1_signed_db": -0.1134668665694809,
+                "dbc_mean_db": 1.1687916203350621
+              },
+              "-20": {
+                "mean_db": 0.4580799029020273,
+                "h1_mean_db": 0.7982215383581397,
+                "h1_signed_db": -0.771155889464207,
+                "dbc_mean_db": 0.4202863878513482
+              },
+              "-10": {
+                "mean_db": 0.5412959347403387,
+                "h1_mean_db": 1.3991821957278914,
+                "h1_signed_db": -1.3991821957278914,
+                "dbc_mean_db": 0.44597523907505493
+              },
+              "0": {
+                "mean_db": 0.5894808741674666,
+                "h1_mean_db": 1.9806427959282735,
+                "h1_signed_db": -1.9806427959282735,
+                "dbc_mean_db": 0.4349073273051547
+              }
+            },
+            "mrstft_riff": 0.9181949496269226
+          },
+          "derived_params": {
+            "drive.pre_hpf_hz": 265.83393691387585,
+            "drive.gain_db": 60.0,
+            "drive.softness": 0.5,
+            "drive.asymmetry": 0.0,
+            "drive.bias": 0.0,
+            "drive.tone_db": 0.625638484954834,
+            "drive.level_db": -18.071474254131317,
+            "eq.low_db": 1.600085735321045,
+            "eq.mid_db": -8.026358485221863,
+            "eq.mid_hz": 663.9496898805286,
+            "eq.high_db": -2.5565035343170166
+          },
+          "derive_notes": [
+            "booster and op-amp cascaded into one Drive (the booster's own soft clipping is not represented)",
+            "op-amp C_fb and R_clip/C_clip 7.2 kHz low-passes applied after the shaper; tone stack driven by the diode node as an ideal source (clipped regime)",
+            "booster: transistor base current (beta -> inf) and the C_opamp_in/R_opamp_bias collector load neglected (~1-2 dB high); R11 (100k, role unclear: possibly across the Dist pot, max op-amp gain 21.3 dB instead of 26.5 dB) and Level-pot loading of the tone stack not modelled",
+            "drive.gain_db 67.2 clamped to 60 dB: circuit gain into the clipper exceeds Drive's range (P2 decision 4); the shaper is already near-square there, so the excess mainly changes sustain and noise"
+          ],
+          "starts": [
+            {
+              "init": "derived",
+              "final_loss": 1.2373794317245483,
+              "mean_db": 0.3042984740477289
+            },
+            {
+              "init": "random 1",
+              "final_loss": 1.568456768989563,
+              "mean_db": 0.4273620294543986
+            },
+            {
+              "init": "random 2",
+              "final_loss": 2.282472610473633,
+              "mean_db": 1.2244068664592984
+            }
+          ],
+          "best_start": "derived",
+          "best": {
+            "mean_db": 0.3042984740477289,
+            "max_db": 2.9533035193807464,
+            "h1_mean_db": 1.0254850066608783,
+            "h1_max_db": 2.9533035193807464,
+            "dbc_mean_db": 0.2241666370907123,
+            "dbc_max_db": 2.801522664990003,
+            "per_level": {
+              "-30": {
+                "mean_db": 0.46131917662177546,
+                "h1_mean_db": 1.4357111600149515,
+                "h1_signed_db": 1.4357111600149515,
+                "dbc_mean_db": 0.3530534006892003
+              },
+              "-20": {
+                "mean_db": 0.28362739689285565,
+                "h1_mean_db": 1.0362691895671987,
+                "h1_signed_db": 0.7360728709118249,
+                "dbc_mean_db": 0.20000053104015086
+              },
+              "-10": {
+                "mean_db": 0.23031734161413872,
+                "h1_mean_db": 0.7149201926541546,
+                "h1_signed_db": 0.10418867705800805,
+                "dbc_mean_db": 0.1764725803874703
+              },
+              "0": {
+                "mean_db": 0.24192998106214572,
+                "h1_mean_db": 0.9150394844072083,
+                "h1_signed_db": -0.477654121951137,
+                "dbc_mean_db": 0.16714003624602766
+              }
+            },
+            "mrstft_riff": 0.9330844879150391
+          },
+          "best_params": {
+            "drive.pre_hpf_hz": 205.29223066647563,
+            "drive.gain_db": 59.583789110183716,
+            "drive.softness": 0.7081035375595093,
+            "drive.asymmetry": 0.022193538025021553,
+            "drive.bias": 0.0011955797672271729,
+            "drive.tone_db": -1.572394609451294,
+            "drive.level_db": -17.493396520614624,
+            "eq.low_db": 2.255156993865967,
+            "eq.mid_db": -8.216963768005371,
+            "eq.mid_hz": 613.3750583843087,
+            "eq.high_db": 0.8012609481811523
+          },
+          "white_h1_dbfs": {
+            "-30": -18.734238008827894,
+            "-20": -18.015091772915902,
+            "-10": -17.381283258885226,
+            "0": -16.799248221400482
+          },
+          "seconds": 88.0563400000101
+        },
+        {
+          "label": "tone min",
+          "knobs": {
+            "dist": 0.5,
+            "tone": 0.0,
+            "level": 0.5
+          },
+          "notes": [],
+          "derived": {
+            "mean_db": 1.0143675947926063,
+            "max_db": 10.943005186738745,
+            "h1_mean_db": 1.4490522680317581,
+            "h1_max_db": 3.5412059617431293,
+            "dbc_mean_db": 0.9660692977660338,
+            "dbc_max_db": 10.943005186738745,
+            "per_level": {
+              "-30": {
+                "mean_db": 1.256542290741219,
+                "h1_mean_db": 1.0781382982048169,
+                "h1_signed_db": -0.09502983664422837,
+                "dbc_mean_db": 1.2763649565785968
+              },
+              "-20": {
+                "mean_db": 0.9121459214370802,
+                "h1_mean_db": 1.0860538010939886,
+                "h1_signed_db": -0.842588570809824,
+                "dbc_mean_db": 0.8928228236974236
+              },
+              "-10": {
+                "mean_db": 0.9276927321377709,
+                "h1_mean_db": 1.5118273455603513,
+                "h1_signed_db": -1.5118273455603513,
+                "dbc_mean_db": 0.8627888862019286
+              },
+              "0": {
+                "mean_db": 0.9610894348543552,
+                "h1_mean_db": 2.1201896272678757,
+                "h1_signed_db": -2.1201896272678757,
+                "dbc_mean_db": 0.8323005245861863
+              }
+            },
+            "mrstft_riff": 0.7660293579101562
+          },
+          "derived_params": {
+            "drive.pre_hpf_hz": 265.4229037051521,
+            "drive.gain_db": 60.0,
+            "drive.softness": 0.5,
+            "drive.asymmetry": 0.0,
+            "drive.bias": 0.0,
+            "drive.tone_db": -11.999999999999998,
+            "drive.level_db": -22.845536291599274,
+            "eq.low_db": 4.772924423217773,
+            "eq.mid_db": 4.204606533050537,
+            "eq.mid_hz": 3453.8030932215224,
+            "eq.high_db": -11.999999999999998
+          },
+          "derive_notes": [
+            "booster and op-amp cascaded into one Drive (the booster's own soft clipping is not represented)",
+            "op-amp C_fb and R_clip/C_clip 7.2 kHz low-passes applied after the shaper; tone stack driven by the diode node as an ideal source (clipped regime)",
+            "booster: transistor base current (beta -> inf) and the C_opamp_in/R_opamp_bias collector load neglected (~1-2 dB high); R11 (100k, role unclear: possibly across the Dist pot, max op-amp gain 21.3 dB instead of 26.5 dB) and Level-pot loading of the tone stack not modelled",
+            "tone fit range-limited: tone_db, high_db at a range limit",
+            "drive.gain_db 61.56 clamped to 60 dB: circuit gain into the clipper exceeds Drive's range (P2 decision 4); the shaper is already near-square there, so the excess mainly changes sustain and noise"
+          ],
+          "starts": [
+            {
+              "init": "derived",
+              "final_loss": 1.5399320125579834,
+              "mean_db": 0.7186811341553533
+            },
+            {
+              "init": "random 1",
+              "final_loss": 1.9706456661224365,
+              "mean_db": 0.778299848044407
+            },
+            {
+              "init": "random 2",
+              "final_loss": 7.662642955780029,
+              "mean_db": 6.303916826284194
+            }
+          ],
+          "best_start": "derived",
+          "best": {
+            "mean_db": 0.7186811341553533,
+            "max_db": 4.0649758528867,
+            "h1_mean_db": 1.4249135137098872,
+            "h1_max_db": 3.0132875379409647,
+            "dbc_mean_db": 0.6402108697604051,
+            "dbc_max_db": 4.0649758528867,
+            "per_level": {
+              "-30": {
+                "mean_db": 0.7931516828355338,
+                "h1_mean_db": 1.2599340979894444,
+                "h1_signed_db": 0.444611852571998,
+                "dbc_mean_db": 0.741286970040655
+              },
+              "-20": {
+                "mean_db": 0.7048535331242262,
+                "h1_mean_db": 1.2723292477951502,
+                "h1_signed_db": -0.2930740245688388,
+                "dbc_mean_db": 0.6418006759385678
+              },
+              "-10": {
+                "mean_db": 0.6838932547308902,
+                "h1_mean_db": 1.443848278794992,
+                "h1_signed_db": -0.9605515678506857,
+                "dbc_mean_db": 0.5994538076126568
+              },
+              "0": {
+                "mean_db": 0.6928260659307628,
+                "h1_mean_db": 1.7235424302599625,
+                "h1_signed_db": -1.5687152080918474,
+                "dbc_mean_db": 0.5783020254497406
+              }
+            },
+            "mrstft_riff": 0.8212676048278809
+          },
+          "best_params": {
+            "drive.pre_hpf_hz": 216.09656810788226,
+            "drive.gain_db": 59.50682759284973,
+            "drive.softness": 0.173540860414505,
+            "drive.asymmetry": 0.02003640867769718,
+            "drive.bias": 0.010047972202301025,
+            "drive.tone_db": -11.924111790955067,
+            "drive.level_db": -22.489354491233826,
+            "eq.low_db": 6.222796440124512,
+            "eq.mid_db": 3.038818359375,
+            "eq.mid_hz": 3883.057034583572,
+            "eq.high_db": -9.40844464302063
+          },
+          "white_h1_dbfs": {
+            "-30": -13.941866080842564,
+            "-20": -13.133256148002108,
+            "-10": -12.458270898138812,
+            "0": -11.849337864618875
+          },
+          "seconds": 79.40347810002277
+        },
+        {
+          "label": "tone max",
+          "knobs": {
+            "dist": 0.5,
+            "tone": 1.0,
+            "level": 0.5
+          },
+          "notes": [],
+          "derived": {
+            "mean_db": 0.5070405914553691,
+            "max_db": 12.631573871327443,
+            "h1_mean_db": 1.0295644658450263,
+            "h1_max_db": 2.7387779815125306,
+            "dbc_mean_db": 0.4489823831898516,
+            "dbc_max_db": 12.631573871327443,
+            "per_level": {
+              "-30": {
+                "mean_db": 0.8570107307661745,
+                "h1_mean_db": 0.8434248276992617,
+                "h1_signed_db": 0.41801882073248375,
+                "dbc_mean_db": 0.858520275551387
+              },
+              "-20": {
+                "mean_db": 0.3654645411969713,
+                "h1_mean_db": 0.6704157416914027,
+                "h1_signed_db": -0.3289382934010723,
+                "dbc_mean_db": 0.3315810744753678
+              },
+              "-10": {
+                "mean_db": 0.38241252574812645,
+                "h1_mean_db": 0.9980459144811897,
+                "h1_signed_db": -0.9980459144811897,
+                "dbc_mean_db": 0.3140088158888972
+              },
+              "0": {
+                "mean_db": 0.4232745681102042,
+                "h1_mean_db": 1.6063713795082508,
+                "h1_signed_db": -1.6063713795082508,
+                "dbc_mean_db": 0.2918193668437546
+              }
+            },
+            "mrstft_riff": 0.8923577666282654
+          },
+          "derived_params": {
+            "drive.pre_hpf_hz": 265.4229037051521,
+            "drive.gain_db": 60.0,
+            "drive.softness": 0.5,
+            "drive.asymmetry": 0.0,
+            "drive.bias": 0.0,
+            "drive.tone_db": 8.260487079620361,
+            "drive.level_db": -15.834495484828949,
+            "eq.low_db": -4.9388651847839355,
+            "eq.mid_db": -8.066672801971436,
+            "eq.mid_hz": 250.00000000000017,
+            "eq.high_db": -2.046177864074707
+          },
+          "derive_notes": [
+            "booster and op-amp cascaded into one Drive (the booster's own soft clipping is not represented)",
+            "op-amp C_fb and R_clip/C_clip 7.2 kHz low-passes applied after the shaper; tone stack driven by the diode node as an ideal source (clipped regime)",
+            "booster: transistor base current (beta -> inf) and the C_opamp_in/R_opamp_bias collector load neglected (~1-2 dB high); R11 (100k, role unclear: possibly across the Dist pot, max op-amp gain 21.3 dB instead of 26.5 dB) and Level-pot loading of the tone stack not modelled",
+            "tone fit range-limited: mid_hz at a range limit",
+            "drive.gain_db 61.56 clamped to 60 dB: circuit gain into the clipper exceeds Drive's range (P2 decision 4); the shaper is already near-square there, so the excess mainly changes sustain and noise"
+          ],
+          "starts": [
+            {
+              "init": "derived",
+              "final_loss": 1.1287063360214233,
+              "mean_db": 0.3724586304369301
+            },
+            {
+              "init": "random 1",
+              "final_loss": 2.7612476348876953,
+              "mean_db": 1.647892907035877
+            },
+            {
+              "init": "random 2",
+              "final_loss": 2.0263326168060303,
+              "mean_db": 0.9103092388134197
+            }
+          ],
+          "best_start": "derived",
+          "best": {
+            "mean_db": 0.3724586304369301,
+            "max_db": 10.374725099706897,
+            "h1_mean_db": 0.8572307246104294,
+            "h1_max_db": 2.4110061937437557,
+            "dbc_mean_db": 0.31859506441765245,
+            "dbc_max_db": 10.374725099706897,
+            "per_level": {
+              "-30": {
+                "mean_db": 0.8298548230832384,
+                "h1_mean_db": 1.456060041188084,
+                "h1_signed_db": 1.456060041188084,
+                "dbc_mean_db": 0.7602764655160333
+              },
+              "-20": {
+                "mean_db": 0.22147566494819498,
+                "h1_mean_db": 0.8637524858923404,
+                "h1_signed_db": 0.8637524858923404,
+                "dbc_mean_db": 0.15011157373217884
+              },
+              "-10": {
+                "mean_db": 0.2065663025667166,
+                "h1_mean_db": 0.5216733280692649,
+                "h1_signed_db": 0.2165125477887413,
+                "dbc_mean_db": 0.17155441084421122
+              },
+              "0": {
+                "mean_db": 0.2319377311495706,
+                "h1_mean_db": 0.5874370432920282,
+                "h1_signed_db": -0.3892121698422839,
+                "dbc_mean_db": 0.1924378075781864
+              }
+            },
+            "mrstft_riff": 0.756239652633667
+          },
+          "best_params": {
+            "drive.pre_hpf_hz": 278.78009407058903,
+            "drive.gain_db": 59.773067235946655,
+            "drive.softness": 0.08923155069351196,
+            "drive.asymmetry": 0.01915360428392887,
+            "drive.bias": 0.008589953184127808,
+            "drive.tone_db": 5.778167724609375,
+            "drive.level_db": -14.619306206703186,
+            "eq.low_db": -6.491407871246338,
+            "eq.mid_db": -9.405248880386353,
+            "eq.mid_hz": 253.85452827876065,
+            "eq.high_db": 0.7921156883239746
+          },
+          "white_h1_dbfs": {
+            "-30": -22.86245774302907,
+            "-20": -22.05444945735328,
+            "-10": -21.379595267031153,
+            "0": -20.770699367031963
+          },
+          "seconds": 90.75200109998696
+        }
+      ]
+    },
+    "ts808": {
+      "name": "Ibanez TS808 Tube Screamer",
+      "has_deriver": true,
+      "diagnostic": false,
+      "notes": [
+        "op-amps ideal (no rails, slew or bandwidth limit); transistor buffers ideal unity",
+        "output coupling (~1.6 Hz) and output-buffer loading of the level wiper not modelled",
+        "1S2473 modelled with 1N4148 parameters"
+      ],
+      "settings": [
+        {
+          "label": "gain min",
+          "knobs": {
+            "drive": 0.0,
+            "tone": 0.5,
+            "level": 0.5
+          },
+          "notes": [],
+          "derived": {
+            "mean_db": 2.109788148582256,
+            "max_db": 14.285208630027192,
+            "h1_mean_db": 3.1858006347531544,
+            "h1_max_db": 6.332615046414205,
+            "dbc_mean_db": 1.9902312056743783,
+            "dbc_max_db": 14.285208630027192,
+            "per_level": {
+              "-30": {
+                "mean_db": 0.9931698456199799,
+                "h1_mean_db": 4.02677333433069,
+                "h1_signed_db": 3.704610105820043,
+                "dbc_mean_db": 0.6561027913187899
+              },
+              "-20": {
+                "mean_db": 1.2772511173400907,
+                "h1_mean_db": 3.189828351852884,
+                "h1_signed_db": 2.863882488573707,
+                "dbc_mean_db": 1.064742535727558
+              },
+              "-10": {
+                "mean_db": 2.3262627260612105,
+                "h1_mean_db": 0.8376827584824218,
+                "h1_signed_db": 0.49039660492846604,
+                "dbc_mean_db": 2.4916605002366317
+              },
+              "0": {
+                "mean_db": 3.8424689053077414,
+                "h1_mean_db": 4.688918094346622,
+                "h1_signed_db": -4.688918094346622,
+                "dbc_mean_db": 3.748418995414533
+              }
+            },
+            "mrstft_riff": 0.7782337665557861
+          },
+          "derived_params": {
+            "drive.pre_hpf_hz": 228.8996866496633,
+            "drive.gain_db": 25.889784693717957,
+            "drive.softness": 0.20000000298023224,
+            "drive.asymmetry": 0.0,
+            "drive.bias": 0.0,
+            "drive.tone_db": -7.03129506111145,
+            "drive.level_db": -29.495239555835724,
+            "eq.low_db": 0.6116938591003418,
+            "eq.mid_db": 3.709197521209717,
+            "eq.mid_hz": 4000.0,
+            "eq.high_db": -11.999999999977089
+          },
+          "derive_notes": [
+            "feedback clipping's unity clean path is not represented by Drive",
+            "C_fb's pre-clip low-pass is applied after the shaper (Drive has no pre-clip LP)",
+            "tone fit range-limited: mid_hz, high_db at a range limit"
+          ],
+          "starts": [
+            {
+              "init": "derived",
+              "final_loss": 2.175804615020752,
+              "mean_db": 1.4554689619375083
+            },
+            {
+              "init": "random 1",
+              "final_loss": 10.471576690673828,
+              "mean_db": 8.982217705809235
+            },
+            {
+              "init": "random 2",
+              "final_loss": 6.0593156814575195,
+              "mean_db": 4.218501741924181
+            }
+          ],
+          "best_start": "derived",
+          "best": {
+            "mean_db": 1.4554689619375083,
+            "max_db": 15.321448450839945,
+            "h1_mean_db": 2.0571448047834817,
+            "h1_max_db": 5.870425250218489,
+            "dbc_mean_db": 1.388616090510178,
+            "dbc_max_db": 15.321448450839945,
+            "per_level": {
+              "-30": {
+                "mean_db": 0.6773659676386158,
+                "h1_mean_db": 1.8571834176693436,
+                "h1_signed_db": 1.7134044795882843,
+                "dbc_mean_db": 0.5462751398574238
+              },
+              "-20": {
+                "mean_db": 1.1182046659001004,
+                "h1_mean_db": 1.7226276083664294,
+                "h1_signed_db": 1.5709747447343139,
+                "dbc_mean_db": 1.051046561181619
+              },
+              "-10": {
+                "mean_db": 0.7932037025847276,
+                "h1_mean_db": 0.6740503256092829,
+                "h1_signed_db": 0.3520539918653327,
+                "dbc_mean_db": 0.8064429666931103
+              },
+              "0": {
+                "mean_db": 3.2331015116265887,
+                "h1_mean_db": 3.974717867488871,
+                "h1_signed_db": -3.974717867488871,
+                "dbc_mean_db": 3.150699694308558
+              }
+            },
+            "mrstft_riff": 0.7203163504600525
+          },
+          "best_params": {
+            "drive.pre_hpf_hz": 244.1833812532133,
+            "drive.gain_db": 23.314948081970215,
+            "drive.softness": 0.06207885220646858,
+            "drive.asymmetry": 0.016896963119506836,
+            "drive.bias": 0.0036993026733398438,
+            "drive.tone_db": -9.039992451667786,
+            "drive.level_db": -30.560401618480682,
+            "eq.low_db": 5.713311195373535,
+            "eq.mid_db": 1.8798279762268066,
+            "eq.mid_hz": 3945.554170165683,
+            "eq.high_db": -9.991532027721405
+          },
+          "white_h1_dbfs": {
+            "-30": -40.51960217009113,
+            "-20": -32.056039463283156,
+            "-10": -25.932298970851786,
+            "0": -19.506799394005622
+          },
+          "seconds": 98.25817100002314
+        },
+        {
+          "label": "gain mid",
+          "knobs": {
+            "drive": 0.5,
+            "tone": 0.5,
+            "level": 0.5
+          },
+          "notes": [],
+          "derived": {
+            "mean_db": 2.1525728684095937,
+            "max_db": 18.749703776567962,
+            "h1_mean_db": 3.1029536921459946,
+            "h1_max_db": 5.801047465456968,
+            "dbc_mean_db": 2.046974999105549,
+            "dbc_max_db": 18.749703776567962,
+            "per_level": {
+              "-30": {
+                "mean_db": 0.8805188985686193,
+                "h1_mean_db": 3.945550009071532,
+                "h1_signed_db": 3.415843357537753,
+                "dbc_mean_db": 0.5399598862905179
+              },
+              "-20": {
+                "mean_db": 1.3845403007913475,
+                "h1_mean_db": 3.0628517446662133,
+                "h1_signed_db": 2.728782453707863,
+                "dbc_mean_db": 1.198061251471918
+              },
+              "-10": {
+                "mean_db": 2.555574818819947,
+                "h1_mean_db": 0.7925722434782827,
+                "h1_signed_db": 0.7925722434782827,
+                "dbc_mean_db": 2.75146399385791
+              },
+              "0": {
+                "mean_db": 3.789657455458461,
+                "h1_mean_db": 4.6108407713679505,
+                "h1_signed_db": -4.6108407713679505,
+                "dbc_mean_db": 3.6984148648018507
+              }
+            },
+            "mrstft_riff": 0.8933704495429993
+          },
+          "derived_params": {
+            "drive.pre_hpf_hz": 253.7544244858898,
+            "drive.gain_db": 31.45406484603882,
+            "drive.softness": 0.20000000298023224,
+            "drive.asymmetry": 0.0,
+            "drive.bias": 0.0,
+            "drive.tone_db": -7.190155863761902,
+            "drive.level_db": -29.556544572114944,
+            "eq.low_db": 0.5915865898132324,
+            "eq.mid_db": 3.832683563232422,
+            "eq.mid_hz": 4000.0,
+            "eq.high_db": -11.999999999999998
+          },
+          "derive_notes": [
+            "feedback clipping's unity clean path is not represented by Drive",
+            "C_fb's pre-clip low-pass is applied after the shaper (Drive has no pre-clip LP)",
+            "tone fit range-limited: mid_hz, high_db at a range limit"
+          ],
+          "starts": [
+            {
+              "init": "derived",
+              "final_loss": 2.402599811553955,
+              "mean_db": 1.5424463609952384
+            },
+            {
+              "init": "random 1",
+              "final_loss": 8.195671081542969,
+              "mean_db": 6.798928558320711
+            },
+            {
+              "init": "random 2",
+              "final_loss": 4.487216472625732,
+              "mean_db": 3.0265094587516317
+            }
+          ],
+          "best_start": "derived",
+          "best": {
+            "mean_db": 1.5424463609952384,
+            "max_db": 20.785133587265058,
+            "h1_mean_db": 2.774746655606441,
+            "h1_max_db": 6.738924320736064,
+            "dbc_mean_db": 1.405524106038438,
+            "dbc_max_db": 20.785133587265058,
+            "per_level": {
+              "-30": {
+                "mean_db": 0.9616400533956073,
+                "h1_mean_db": 3.1542356020677653,
+                "h1_signed_db": 2.765775099887592,
+                "dbc_mean_db": 0.7180183257653675
+              },
+              "-20": {
+                "mean_db": 1.071839277650536,
+                "h1_mean_db": 2.1722952660281623,
+                "h1_signed_db": 1.93297179953655,
+                "dbc_mean_db": 0.949566390053022
+              },
+              "-10": {
+                "mean_db": 1.6819941597888515,
+                "h1_mean_db": 0.8606497834388209,
+                "h1_signed_db": 0.224184444489258,
+                "dbc_mean_db": 1.773254646049966
+              },
+              "0": {
+                "mean_db": 2.4543119531459583,
+                "h1_mean_db": 4.911805970891016,
+                "h1_signed_db": -4.911805970891016,
+                "dbc_mean_db": 2.181257062285397
+              }
+            },
+            "mrstft_riff": 0.860111653804779
+          },
+          "best_params": {
+            "drive.pre_hpf_hz": 307.85598649577605,
+            "drive.gain_db": 33.563289642333984,
+            "drive.softness": 0.06355049461126328,
+            "drive.asymmetry": 0.017978891730308533,
+            "drive.bias": 0.0024913251399993896,
+            "drive.tone_db": -10.413174033164978,
+            "drive.level_db": -31.86311584711075,
+            "eq.low_db": 3.3392486572265625,
+            "eq.mid_db": 0.4918327331542969,
+            "eq.mid_hz": 3906.578022039396,
+            "eq.high_db": -11.611358508467674
+          },
+          "white_h1_dbfs": {
+            "-30": -36.323237835163546,
+            "-20": -30.00276682062645,
+            "-10": -25.503509800207375,
+            "0": -19.46223299580877
+          },
+          "seconds": 98.85009600000922
+        },
+        {
+          "label": "gain max",
+          "knobs": {
+            "drive": 1.0,
+            "tone": 0.5,
+            "level": 0.5
+          },
+          "notes": [],
+          "derived": {
+            "mean_db": 2.6908197806785146,
+            "max_db": 27.088728502954204,
+            "h1_mean_db": 3.7700807214903307,
+            "h1_max_db": 6.489229456189953,
+            "dbc_mean_db": 2.5709018983660905,
+            "dbc_max_db": 27.088728502954204,
+            "per_level": {
+              "-30": {
+                "mean_db": 3.0446713004074106,
+                "h1_mean_db": 5.096263699540154,
+                "h1_signed_db": 5.096263699540154,
+                "dbc_mean_db": 2.8167165893926613
+              },
+              "-20": {
+                "mean_db": 2.4164880388359995,
+                "h1_mean_db": 4.1860779981100285,
+                "h1_signed_db": 4.1860779981100285,
+                "dbc_mean_db": 2.2198669322499964
+              },
+              "-10": {
+                "mean_db": 1.5251462161507474,
+                "h1_mean_db": 1.2918396396272378,
+                "h1_signed_db": 1.2562508480010077,
+                "dbc_mean_db": 1.5510691690978042
+              },
+              "0": {
+                "mean_db": 3.7769735673199007,
+                "h1_mean_db": 4.506141548683902,
+                "h1_signed_db": -4.506141548683902,
+                "dbc_mean_db": 3.695954902723901
+              }
+            },
+            "mrstft_riff": 1.0040918588638306
+          },
+          "derived_params": {
+            "drive.pre_hpf_hz": 267.22540631870464,
+            "drive.gain_db": 45.86932897567749,
+            "drive.softness": 0.20000000298023224,
+            "drive.asymmetry": 0.0,
+            "drive.bias": 0.0,
+            "drive.tone_db": -10.865347892045975,
+            "drive.level_db": -31.172232940793037,
+            "eq.low_db": 0.3046717643737793,
+            "eq.mid_db": 6.520129680633545,
+            "eq.mid_hz": 3043.542002718292,
+            "eq.high_db": -11.999999999999998
+          },
+          "derive_notes": [
+            "feedback clipping's unity clean path is not represented by Drive",
+            "C_fb's pre-clip low-pass is applied after the shaper (Drive has no pre-clip LP)",
+            "tone fit range-limited: high_db at a range limit"
+          ],
+          "starts": [
+            {
+              "init": "derived",
+              "final_loss": 2.393791437149048,
+              "mean_db": 1.2525292232423269
+            },
+            {
+              "init": "random 1",
+              "final_loss": 2.607290267944336,
+              "mean_db": 1.3592629697548073
+            },
+            {
+              "init": "random 2",
+              "final_loss": 3.5962162017822266,
+              "mean_db": 2.0229192844832555
+            }
+          ],
+          "best_start": "derived",
+          "best": {
+            "mean_db": 1.2525292232423269,
+            "max_db": 10.557082525893598,
+            "h1_mean_db": 4.30374101389115,
+            "h1_max_db": 10.557082525893598,
+            "dbc_mean_db": 0.9135056909480131,
+            "dbc_max_db": 7.3462468500970886,
+            "per_level": {
+              "-30": {
+                "mean_db": 1.2415288592709905,
+                "h1_mean_db": 5.525885621942836,
+                "h1_signed_db": 5.525885621942836,
+                "dbc_mean_db": 0.7654892189741189
+              },
+              "-20": {
+                "mean_db": 0.7309200830030066,
+                "h1_mean_db": 3.342533343250535,
+                "h1_signed_db": 3.3034016165000555,
+                "dbc_mean_db": 0.4407408318643922
+              },
+              "-10": {
+                "mean_db": 0.5565269457721842,
+                "h1_mean_db": 2.677230417939433,
+                "h1_signed_db": 0.12013853954589226,
+                "dbc_mean_db": 0.32089322664248987
+              },
+              "0": {
+                "mean_db": 2.4811410049231264,
+                "h1_mean_db": 5.669314672431799,
+                "h1_signed_db": -5.669314672431799,
+                "dbc_mean_db": 2.1268994863110517
+              }
+            },
+            "mrstft_riff": 1.1412547826766968
+          },
+          "best_params": {
+            "drive.pre_hpf_hz": 191.64290032489416,
+            "drive.gain_db": 50.377185344696045,
+            "drive.softness": 0.08016731590032578,
+            "drive.asymmetry": 0.019874799996614456,
+            "drive.bias": 0.008198410272598267,
+            "drive.tone_db": -11.650001652538776,
+            "drive.level_db": -34.23479667305946,
+            "eq.low_db": 6.952709197998047,
+            "eq.mid_db": 1.8391985893249512,
+            "eq.mid_hz": 3706.8229536195367,
+            "eq.high_db": -11.698927983641624
+          },
+          "white_h1_dbfs": {
+            "-30": -31.10824997641172,
+            "-20": -28.458994711312343,
+            "-10": -25.217196049333445,
+            "0": -19.42077872659092
+          },
+          "seconds": 158.89339790001395
+        },
+        {
+          "label": "tone min",
+          "knobs": {
+            "drive": 0.5,
+            "tone": 0.0,
+            "level": 0.5
+          },
+          "notes": [],
+          "derived": {
+            "mean_db": 2.1070430461391494,
+            "max_db": 17.360590294086975,
+            "h1_mean_db": 3.113789139465358,
+            "h1_max_db": 6.006636871232537,
+            "dbc_mean_db": 1.9951823691029038,
+            "dbc_max_db": 17.360590294086975,
+            "per_level": {
+              "-30": {
+                "mean_db": 0.8065117116596034,
+                "h1_mean_db": 3.8345033212654176,
+                "h1_signed_db": 3.3041291939777455,
+                "dbc_mean_db": 0.4700681994811797
+              },
+              "-20": {
+                "mean_db": 1.2961684814980934,
+                "h1_mean_db": 2.9518049385092757,
+                "h1_signed_db": 2.6170684530459907,
+                "dbc_mean_db": 1.1122088751635177
+              },
+              "-10": {
+                "mean_db": 2.4870915943877367,
+                "h1_mean_db": 0.946293349739797,
+                "h1_signed_db": 0.6808585140910157,
+                "dbc_mean_db": 2.658291399348619
+              },
+              "0": {
+                "mean_db": 3.8384003970111626,
+                "h1_mean_db": 4.722554948346943,
+                "h1_signed_db": -4.722554948346943,
+                "dbc_mean_db": 3.740161002418299
+              }
+            },
+            "mrstft_riff": 0.9429873824119568
+          },
+          "derived_params": {
+            "drive.pre_hpf_hz": 253.7544244858898,
+            "drive.gain_db": 31.45406484603882,
+            "drive.softness": 0.20000000298023224,
+            "drive.asymmetry": 0.0,
+            "drive.bias": 0.0,
+            "drive.tone_db": -11.071082353591919,
+            "drive.level_db": -31.79627551138401,
+            "eq.low_db": 0.8650403022766113,
+            "eq.mid_db": -3.608004570007324,
+            "eq.mid_hz": 657.8416569946144,
+            "eq.high_db": -9.276041328907013
+          },
+          "derive_notes": [
+            "feedback clipping's unity clean path is not represented by Drive",
+            "C_fb's pre-clip low-pass is applied after the shaper (Drive has no pre-clip LP)"
+          ],
+          "starts": [
+            {
+              "init": "derived",
+              "final_loss": 2.3648176193237305,
+              "mean_db": 1.439737348147475
+            },
+            {
+              "init": "random 1",
+              "final_loss": 7.808054447174072,
+              "mean_db": 6.017252905013764
+            },
+            {
+              "init": "random 2",
+              "final_loss": 11.728328704833984,
+              "mean_db": 9.567550174844452
+            }
+          ],
+          "best_start": "derived",
+          "best": {
+            "mean_db": 1.439737348147475,
+            "max_db": 17.360590294086975,
+            "h1_mean_db": 2.6859897028455504,
+            "h1_max_db": 7.4274816948240066,
+            "dbc_mean_db": 1.3012648642921332,
+            "dbc_max_db": 17.360590294086975,
+            "per_level": {
+              "-30": {
+                "mean_db": 0.7542174637329623,
+                "h1_mean_db": 2.6630663908672343,
+                "h1_signed_db": 2.5069785756076666,
+                "dbc_mean_db": 0.5421231384958209
+              },
+              "-20": {
+                "mean_db": 0.9223657402594515,
+                "h1_mean_db": 1.615251561472487,
+                "h1_signed_db": 1.5852371520447193,
+                "dbc_mean_db": 0.8453784267913365
+              },
+              "-10": {
+                "mean_db": 1.569278402539662,
+                "h1_mean_db": 0.9754589656803407,
+                "h1_signed_db": -0.2601532772421393,
+                "dbc_mean_db": 1.6352583399684752
+              },
+              "0": {
+                "mean_db": 2.5130877860578233,
+                "h1_mean_db": 5.49018189336214,
+                "h1_signed_db": -5.49018189336214,
+                "dbc_mean_db": 2.1822995519128994
+              }
+            },
+            "mrstft_riff": 0.9250542521476746
+          },
+          "best_params": {
+            "drive.pre_hpf_hz": 290.3824696801696,
+            "drive.gain_db": 33.31247806549072,
+            "drive.softness": 0.06402558833360672,
+            "drive.asymmetry": 0.01881265826523304,
+            "drive.bias": 0.0024264156818389893,
+            "drive.tone_db": -11.692072346806526,
+            "drive.level_db": -34.203907907009125,
+            "eq.low_db": 4.954241752624512,
+            "eq.mid_db": -6.370379090309143,
+            "eq.mid_hz": 1196.196237089938,
+            "eq.high_db": -11.011688500642776
+          },
+          "white_h1_dbfs": {
+            "-30": -37.965008022545575,
+            "-20": -31.644537008080754,
+            "-10": -27.14527998785296,
+            "0": -21.10400318413653
+          },
+          "seconds": 80.42250819999026
+        },
+        {
+          "label": "tone max",
+          "knobs": {
+            "drive": 0.5,
+            "tone": 1.0,
+            "level": 0.5
+          },
+          "notes": [],
+          "derived": {
+            "mean_db": 2.2467403377248214,
+            "max_db": 19.422127969223652,
+            "h1_mean_db": 3.157317886539378,
+            "h1_max_db": 6.081994794384762,
+            "dbc_mean_db": 2.145565054523204,
+            "dbc_max_db": 19.422127969223652,
+            "per_level": {
+              "-30": {
+                "mean_db": 0.926702862687593,
+                "h1_mean_db": 3.902721570248021,
+                "h1_signed_db": 3.3616327575838856,
+                "dbc_mean_db": 0.596034117403101
+              },
+              "-20": {
+                "mean_db": 1.543669283551116,
+                "h1_mean_db": 3.020023169434614,
+                "h1_signed_db": 2.674571431792872,
+                "dbc_mean_db": 1.379629962897394
+              },
+              "-10": {
+                "mean_db": 2.701628774778757,
+                "h1_mean_db": 1.0414751034166922,
+                "h1_signed_db": 0.7383613296556835,
+                "dbc_mean_db": 2.8860902938189863
+              },
+              "0": {
+                "mean_db": 3.8149604298818183,
+                "h1_mean_db": 4.665051703058183,
+                "h1_signed_db": -4.665051703058183,
+                "dbc_mean_db": 3.720505843973333
+              }
+            },
+            "mrstft_riff": 0.8004817962646484
+          },
+          "derived_params": {
+            "drive.pre_hpf_hz": 253.7544244858898,
+            "drive.gain_db": 31.45406484603882,
+            "drive.softness": 0.20000000298023224,
+            "drive.asymmetry": 0.0,
+            "drive.bias": 0.0,
+            "drive.tone_db": 0.7244267463684082,
+            "drive.level_db": -24.544689416885376,
+            "eq.low_db": -0.6160919666290283,
+            "eq.mid_db": 3.7659788131713867,
+            "eq.mid_hz": 4000.0,
+            "eq.high_db": -7.972495436668396
+          },
+          "derive_notes": [
+            "feedback clipping's unity clean path is not represented by Drive",
+            "C_fb's pre-clip low-pass is applied after the shaper (Drive has no pre-clip LP)",
+            "tone fit range-limited: mid_hz at a range limit"
+          ],
+          "starts": [
+            {
+              "init": "derived",
+              "final_loss": 2.4914140701293945,
+              "mean_db": 1.621457529306825
+            },
+            {
+              "init": "random 1",
+              "final_loss": 3.858889102935791,
+              "mean_db": 2.595056174011209
+            },
+            {
+              "init": "random 2",
+              "final_loss": 3.972929000854492,
+              "mean_db": 2.6962348918986634
+            }
+          ],
+          "best_start": "derived",
+          "best": {
+            "mean_db": 1.621457529306825,
+            "max_db": 23.23923968050235,
+            "h1_mean_db": 3.227955053021126,
+            "h1_max_db": 7.0049242714891164,
+            "dbc_mean_db": 1.442957804449681,
+            "dbc_max_db": 23.23923968050235,
+            "per_level": {
+              "-30": {
+                "mean_db": 1.0719573540185043,
+                "h1_mean_db": 4.252595973899508,
+                "h1_signed_db": 4.072143931976127,
+                "dbc_mean_db": 0.718553062920615
+              },
+              "-20": {
+                "mean_db": 1.3917373973899827,
+                "h1_mean_db": 3.2473645112203506,
+                "h1_signed_db": 3.2382216218226887,
+                "dbc_mean_db": 1.1855566069643864
+              },
+              "-10": {
+                "mean_db": 1.8052125515802637,
+                "h1_mean_db": 1.7503607510973582,
+                "h1_signed_db": 1.5102505850875003,
+                "dbc_mean_db": 1.8113071960783644
+              },
+              "0": {
+                "mean_db": 2.2169228142385498,
+                "h1_mean_db": 3.6614989758672865,
+                "h1_signed_db": -3.6614989758672865,
+                "dbc_mean_db": 2.0564143518353566
+              }
+            },
+            "mrstft_riff": 0.8700156211853027
+          },
+          "best_params": {
+            "drive.pre_hpf_hz": 306.53853920476547,
+            "drive.gain_db": 33.48735451698303,
+            "drive.softness": 0.09886611253023148,
+            "drive.asymmetry": 0.01749967597424984,
+            "drive.bias": 0.0018467307090759277,
+            "drive.tone_db": -4.672107696533203,
+            "drive.level_db": -26.14917728304863,
+            "eq.low_db": 0.46332263946533203,
+            "eq.mid_db": 1.4733080863952637,
+            "eq.mid_hz": 3918.2452225420016,
+            "eq.high_db": -6.959255933761597
+          },
+          "white_h1_dbfs": {
+            "-30": -35.19090755569264,
+            "-20": -28.870436540994397,
+            "-10": -24.371179520514993,
+            "0": -18.329902714039626
+          },
+          "seconds": 87.45983569999225
+        }
+      ]
+    }
+  },
+  "gate": {
+    "ds1": {
+      "gated": true,
+      "best_mean_db": 0.5820552334064742,
+      "worst_setting_mean_db": 1.164140756279097,
+      "settings_over": [],
+      "passed": true,
+      "derived_mean_db": 0.8776920582468641
+    },
+    "ts808": {
+      "gated": true,
+      "best_mean_db": 1.4623278847258745,
+      "worst_setting_mean_db": 1.621457529306825,
+      "settings_over": [],
+      "passed": true,
+      "derived_mean_db": 2.261392836306867
+    }
+  },
+  "seconds_elapsed": 958.0346889999928,
+  "torch_threads": 10
+}

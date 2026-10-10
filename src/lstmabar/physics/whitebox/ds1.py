@@ -39,9 +39,10 @@ Chain (all linear stages at the oversampled rate):
 Not modelled (documented): coupling high-passes below 10 Hz other than the booster's own
 (C1/R2 7.2 Hz, C13/R20 3.4 Hz, C14/R23 1.6 Hz: < 0.1 dB at 82 Hz), C9 (the series
 coupling ahead of R14, whose placement is inferred and which only forms a ≈2% capacitive
-divider with C10), the JFET switching, buffer non-idealities, op-amp rails/slew/bandwidth. With ideal stages the
-booster + op-amp gain (up to ≈62 dB) is unbounded, so the model reaches the diodes with far
-more than the supply could deliver; the diode node is still bounded near ±0.7 V.
+divider with C10), the JFET switching, buffer non-idealities, op-amp rails/slew/bandwidth.
+With ideal stages the booster + op-amp gain (up to ≈62 dB) is unbounded, so the model
+reaches the diodes with far more than the supply could deliver; the diode node is still
+bounded near ±0.7 V.
 """
 
 from collections.abc import Mapping
