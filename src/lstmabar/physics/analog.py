@@ -74,6 +74,7 @@ class ToneFit:
     high_db: float
     gain_db: float  # broadband offset; add to drive.level_db
     rms_error_db: float
+    at_bounds: tuple[str, ...] = ()  # knobs pinned at a range limit (fit may be range-limited)
 
     def drive_knobs(self) -> dict[str, float]:
         return {"tone_db": self.tone_db}
@@ -135,7 +136,15 @@ def fit_tone(
             best = r
     t, lo, md, mh, hi, g = unpack(best.x)
     rms = float(np.sqrt(np.mean(best.fun**2)))
-    return ToneFit(float(t), float(lo), float(md), float(mh), float(hi), float(g), rms)
+    names = ["tone_db", "low_db", "mid_db", "mid_hz", "high_db", "gain_db"]
+    if not use_eq:
+        names = ["tone_db", "gain_db"]
+    pinned = tuple(
+        n
+        for n, x, a, b in zip(names, best.x, lb, ub, strict=True)
+        if min(abs(x - a), abs(x - b)) < 1e-6 * max(1.0, abs(a), abs(b))
+    )
+    return ToneFit(float(t), float(lo), float(md), float(mh), float(hi), float(g), rms, pinned)
 
 
 __all__ = [

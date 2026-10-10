@@ -41,6 +41,11 @@ def _minimal(**over):
         ("560", 560.0),
         (47, 47.0),
         ("1e3", 1000.0),
+        ("4k7", 4700.0),
+        ("2u2", 2.2e-6),
+        ("100R", 100.0),
+        ("1R5", 1.5),
+        ("1μ", 1e-6),
     ],
 )
 def test_parse_value(raw, expected):
@@ -131,3 +136,19 @@ def test_config_points_at_pedals_dir():
     cfg = load_config(root / "configs" / "base.yaml")
     assert (root / cfg.paths.pedals).resolve() == default_pedals_dir()
     assert cfg.physics.volts_per_full_scale == 1.0
+
+
+def test_knobs_validation():
+    p = pedal_from_dict(_minimal())
+    assert p.knobs({"gain": 1}) == {"gain": 1.0}
+    with pytest.raises(KeyError):
+        p.knobs({"nope": 0.5})
+    for bad in (-0.1, 1.1, float("nan")):
+        with pytest.raises(ValueError):
+            p.knobs({"gain": bad})
+
+
+def test_v_clip_override():
+    clip = [{"stage": "q", "device": "ge_transistor", "location": "transistor", "v_clip": "4.5"}]
+    p = pedal_from_dict(_minimal(clipping=clip))
+    assert p.clipping[0].v_clip == 4.5

@@ -109,3 +109,35 @@ def test_fit_first_order_lowpass():
     assert math.isclose(target[0], 0.0, abs_tol=0.05)
     fit = fit_tone(f, target)
     assert fit.rms_error_db < 2.0
+
+
+def test_stage_clip_volts_override_and_transistor():
+    from lstmabar.physics.derive import stage_clip_volts
+
+    assert math.isclose(stage_clip_volts(ClipStage("c", "si", "shunt", n_pos=2, n_neg=2)), 1.2)
+    assert stage_clip_volts(ClipStage("c", "si", "shunt", v_clip=0.7)) == 0.7
+    with pytest.raises(KeyError, match="v_clip"):
+        stage_clip_volts(ClipStage("q", "si_transistor", "transistor"))
+
+
+def test_nan_from_deriver_raises():
+    from lstmabar.physics.derive import _clamped
+
+    with pytest.raises(ValueError, match="NaN"):
+        _clamped("drive", {"gain_db": float("nan")}, [])
+
+
+def test_context_from_config():
+    from lstmabar.config import load_config
+    from lstmabar.physics.derive import DeriveContext
+    from lstmabar.physics.kb import default_pedals_dir
+
+    base = default_pedals_dir().parent / "configs" / "base.yaml"
+    ctx = DeriveContext.from_config(load_config(base, ["physics.volts_per_full_scale=0.5"]))
+    assert ctx.volts_per_fs == 0.5 and ctx.sample_rate == 44100
+
+
+def test_fit_reports_bounds():
+    f = log_grid()
+    fit = fit_tone(f, -40.0 * np.log2(f / 40.0))  # far steeper than any setting
+    assert fit.at_bounds

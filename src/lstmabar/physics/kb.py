@@ -13,6 +13,8 @@ File format (all keys except ``descriptors`` and ``notes`` are required)::
         location: feedback          # one of LOCATIONS
         n_pos: 1                    # devices in series conducting on positive swings
         n_neg: 1                    # ... and on negative swings (n_pos != n_neg: asymmetric)
+        v_clip: 0.6                 # optional override (volts); required for mosfet and
+                                    # transistor stages, whose clip level is not a diode drop
     components:                     # semantic names -> schematic values with SI suffixes
       R_gain: 4.7k
       C_gain: 0.047u
@@ -23,9 +25,10 @@ File format (all keys except ``descriptors`` and ``notes`` are required)::
     descriptors: [warm, mid-forward]  # optional; feeds P4 captions (never read data/gold/)
     notes: free text                # optional
 
-Component values are strings such as ``"4.7k"``, ``"0.047u"``, ``"51p"``, ``"2.2M"`` or
-plain numbers, parsed to SI base units (ohms, farads, henries, volts). A component's unit is
-inferred from its name prefix (``R``, ``C``, ``L``, ``V``) and range-checked.
+Component values are strings such as ``"4.7k"``, ``"0.047u"``, ``"51p"``, ``"2.2M"``, the
+schematic forms ``"4k7"`` / ``"100R"``, or plain numbers, parsed to SI base units (ohms,
+farads, henries, volts). A component's unit is inferred from its name prefix (``R``, ``C``,
+``L``, ``V``) and range-checked.
 """
 
 import math
@@ -53,13 +56,16 @@ _SI_PREFIX = {
     "p": 1e-12,
     "n": 1e-9,
     "u": 1e-6,
-    "µ": 1e-6,
+    "µ": 1e-6,  # micro sign U+00B5
+    "μ": 1e-6,  # Greek mu U+03BC
+    "R": 1.0,
     "m": 1e-3,
     "k": 1e3,
     "K": 1e3,
     "M": 1e6,
 }
-_VALUE_RE = re.compile(r"^\s*([0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)\s*([pnuµmkKM]?)\s*$")
+_VALUE_RE = re.compile(r"^\s*([0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)\s*([pnuµμmkKMR]?)\s*$")
+_INFIX_RE = re.compile(r"^\s*([0-9]+)([pnuµμmkKMR])([0-9]+)\s*$")  # 4k7, 2u2, 1R5
 
 # Plausible ranges per component kind (SI base units), to catch unit typos ("0.047" vs "0.047u").
 _RANGES = {
@@ -84,10 +90,13 @@ def parse_value(v: str | float | int) -> float:
     if isinstance(v, int | float):
         out = float(v)
     else:
-        m = _VALUE_RE.match(str(v))
-        if not m:
+        s = str(v)
+        if m := _INFIX_RE.match(s):
+            out = float(f"{m.group(1)}.{m.group(3)}") * _SI_PREFIX[m.group(2)]
+        elif m := _VALUE_RE.match(s):
+            out = float(m.group(1)) * _SI_PREFIX.get(m.group(2), 1.0)
+        else:
             raise ValueError(f"not a component value: {v!r}")
-        out = float(m.group(1)) * _SI_PREFIX.get(m.group(2), 1.0)
     if not math.isfinite(out) or out <= 0:
         raise ValueError(f"component value must be positive and finite: {v!r}")
     return out
@@ -135,6 +144,7 @@ class ClipStage:
     n_pos: int = 1
     n_neg: int = 1
     part: str = ""
+    v_clip: float | None = None  # volts; overrides the device default
 
     @property
     def symmetric(self) -> bool:
@@ -164,6 +174,20 @@ class Pedal:
 
     def default_knobs(self) -> dict[str, float]:
         return {k: p.default for k, p in self.pots.items()}
+
+    def knobs(self, knobs: Mapping[str, float] | None = None) -> dict[str, float]:
+        """Validate a partial knob dict (rotations in [0, 1]) and fill in pot defaults."""
+        knobs = dict(knobs or {})
+        unknown = set(knobs) - set(self.pots)
+        if unknown:
+            raise KeyError(f"{self.id}: unknown knobs {sorted(unknown)}")
+        out = self.default_knobs()
+        for k, v in knobs.items():
+            v = float(v)
+            if not 0.0 <= v <= 1.0:  # also rejects NaN
+                raise ValueError(f"{self.id}.{k}: rotation {v} outside [0, 1]")
+            out[k] = v
+        return out
 
 
 # --- Parsing ------------------------------------------------------------------------------------
@@ -214,7 +238,7 @@ def _clip(i: int, raw: Any, where: str) -> ClipStage:
     w = f"{where}.clipping[{i}]"
     if not isinstance(raw, Mapping):
         raise KBError(f"{w}: expected a mapping")
-    unknown = set(raw) - {"stage", "device", "part", "location", "n_pos", "n_neg"}
+    unknown = set(raw) - {"stage", "device", "part", "location", "n_pos", "n_neg", "v_clip"}
     if unknown:
         raise KBError(f"{w}: unknown keys {sorted(unknown)}")
     n_pos, n_neg = int(raw.get("n_pos", 1)), int(raw.get("n_neg", 1))
@@ -227,6 +251,7 @@ def _clip(i: int, raw: Any, where: str) -> ClipStage:
         n_pos=n_pos,
         n_neg=n_neg,
         part=str(raw.get("part", "")),
+        v_clip=_component("V", raw["v_clip"], w) if "v_clip" in raw else None,
     )
 
 
@@ -319,7 +344,10 @@ def default_pedals_dir() -> Path:
 
 
 def load_kb(directory: str | Path | None = None) -> dict[str, Pedal]:
-    """Load and validate every ``*.yaml`` in ``directory`` (default: repo ``pedals/``)."""
+    """Load and validate every ``*.yaml`` in ``directory`` (default: repo ``pedals/``).
+
+    With a run config, pass ``cfg.paths.pedals`` (relative paths resolve against the CWD).
+    """
     directory = Path(directory) if directory is not None else default_pedals_dir()
     if not directory.is_dir():
         raise KBError(f"pedal directory not found: {directory.name}")

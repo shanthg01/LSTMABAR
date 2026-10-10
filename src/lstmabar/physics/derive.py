@@ -11,6 +11,9 @@ Contract (P2 decision 2):
 - :func:`preset_params` turns a preset into normalized ``BoardParams`` for
   :func:`~lstmabar.dsp.pedalboard.default_pedalboard`.
 
+Registration: derivers live in this module (one ``@register("<pedal id>")`` function per
+pedal), so importing :mod:`lstmabar.physics.derive` fills :data:`DERIVERS`.
+
 Level calibration follows :mod:`lstmabar.physics.calibration`. Nonlinear stages use
 closed-form formulas; linear tone stacks are fitted with :func:`~lstmabar.physics.analog.fit_tone`.
 The waveshaper settings from :func:`shaper_prior` are priors, to be refined by the P2
@@ -47,6 +50,14 @@ BLOCK_SPECS: dict[str, tuple[ParamSpec, ...]] = {
 class DeriveContext:
     volts_per_fs: float = VOLTS_PER_FULL_SCALE
     sample_rate: int = 44100
+
+    @classmethod
+    def from_config(cls, cfg) -> "DeriveContext":
+        """From ``physics.volts_per_full_scale`` and ``audio.sample_rate`` of a run config."""
+        return cls(
+            volts_per_fs=float(cfg.physics.volts_per_full_scale),
+            sample_rate=int(cfg.audio.sample_rate),
+        )
 
 
 @dataclass(frozen=True)
@@ -86,7 +97,9 @@ def shaper_prior(clip: ClipStage) -> dict[str, float]:
     Feedback clipping is softer than shunt clipping, Ge knees are softer than Si, LEDs are
     sharper. Unequal diode counts lower one side's ceiling: ``asymmetry = 2·(1 - n_min/n_max)``
     (Drive's negative ceiling is ``1 - asymmetry/2``; the magnitude spectrum does not depend on
-    which side clips first). Heuristic values; the fidelity fit replaces them where measured.
+    which side clips first). Drive cannot go below a 2:1 ceiling ratio, so ratios beyond that
+    (including single-sided clipping, ``n_min = 0``) saturate at ``asymmetry = 1``; derivers for
+    such stages should also use ``bias``. Heuristic values; the fidelity fit replaces them.
     """
     softness = {"feedback": 0.2, "shunt": 0.5, "transistor": 0.3}[clip.location]
     softness += {"ge": -0.1, "ge_transistor": -0.1, "led": 0.1}.get(clip.device, 0.0)
@@ -100,7 +113,15 @@ def shaper_prior(clip: ClipStage) -> dict[str, float]:
 
 
 def stage_clip_volts(clip: ClipStage) -> float:
-    """Clipping voltage of the side that clips last (the grey-box +1 ceiling)."""
+    """Clipping voltage of the side that clips last (the grey-box +1 ceiling).
+
+    Uses the stage's ``v_clip`` override when given (required for MOSFET and transistor
+    stages, where the clip level comes from the bias point, not a junction drop).
+    """
+    if clip.v_clip is not None:
+        return clip.v_clip
+    if clip.location == "transistor" or clip.device == "mosfet":
+        raise KeyError(f"clipping stage {clip.stage!r}: set v_clip for {clip.device} stages")
     return clip_volts(clip.device, max(clip.n_pos, clip.n_neg))
 
 
@@ -116,6 +137,8 @@ def _clamped(block: str, values: Mapping[str, float], notes: list[str]) -> dict[
         if name not in specs:
             raise KeyError(f"{block}: unknown knob {name!r}")
         s = specs[name]
+        if math.isnan(float(v)):
+            raise ValueError(f"{block}.{name}: deriver produced NaN")
         c = min(max(float(v), s.min), s.max)
         if c != v:
             notes.append(f"{block}.{name} {v:.4g} clamped to {c:.4g} {s.unit}".rstrip())
@@ -134,14 +157,7 @@ def derive(
     """Derive grey-box settings for ``pedal`` at ``knobs`` (missing knobs use pot defaults)."""
     if pedal.id not in DERIVERS:
         raise KeyError(f"no deriver registered for pedal {pedal.id!r}")
-    knobs = dict(knobs or {})
-    unknown = set(knobs) - set(pedal.pots)
-    if unknown:
-        raise KeyError(f"{pedal.id}: unknown knobs {sorted(unknown)}")
-    for k, v in knobs.items():
-        if not 0.0 <= float(v) <= 1.0:
-            raise ValueError(f"{pedal.id}.{k}: rotation {v} outside [0, 1]")
-    full = {**pedal.default_knobs(), **{k: float(v) for k, v in knobs.items()}}
+    full = pedal.knobs(knobs)
     preset = DERIVERS[pedal.id](pedal, full, ctx or DeriveContext())
     notes = list(preset.notes)
     board = {b: _clamped(b, vals, notes) for b, vals in preset.board.items()}
@@ -214,6 +230,7 @@ def _ts808(pedal: Pedal, knobs: dict[str, float], ctx: DeriveContext) -> Preset:
         },
         notes=(
             "tone knob not modelled yet (fixed post-clip low-pass only)",
+            "level pot below ~0.24 reaches Drive's -36 dB floor",
             "feedback clipping's unity clean path is not represented by Drive",
         ),
     )

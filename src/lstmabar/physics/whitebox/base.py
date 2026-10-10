@@ -5,6 +5,11 @@
 - Knob settings are fixed per model instance (built by a registered builder).
 - Models handle their own oversampling internally and return audio at ``sample_rate``.
 - Op-amps are ideal (no rails, no slew/bandwidth limit) unless a model documents otherwise.
+- Registration: each circuit lives in its own module under ``physics/whitebox/`` and registers
+  builders with ``@register_whitebox("<pedal id>")``; ``physics/whitebox/__init__.py`` imports
+  those modules so the registry is filled on import.
+- Device model parameters (diode Is/n, transistor Is/beta) live in a table keyed by part
+  number in ``physics/whitebox/devices.py``, not in the pedal YAML.
 """
 
 from abc import ABC, abstractmethod
@@ -53,7 +58,7 @@ def simulate(
     """Run full-scale ``audio`` (``(T,)`` or ``(B, T)``) through ``pedal``'s white-box model."""
     if pedal.id not in WHITEBOX:
         raise KeyError(f"no white-box model for pedal {pedal.id!r}")
-    knobs = {**pedal.default_knobs(), **dict(knobs or {})}
+    knobs = pedal.knobs(knobs)
     x = np.asarray(audio, dtype=np.float64)
     squeeze = x.ndim == 1
     x = np.atleast_2d(x)
