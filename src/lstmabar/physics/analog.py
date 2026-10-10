@@ -34,6 +34,42 @@ def analog_response_db(b: np.ndarray, a: np.ndarray, freqs_hz: np.ndarray) -> np
 
 
 def _biquad_db(kind: str, f: float, q: float, g: float, freqs_hz: np.ndarray, sr: int):
+    """NumPy copy of :func:`~lstmabar.dsp.filters.biquad_coeffs` (RBJ cookbook, same clamps)
+    evaluated on ``freqs_hz``: the tone fit calls this thousands of times, and tiny torch
+    ops dominate its run time. ``_biquad_db_torch`` is the reference it is tested against."""
+    f = min(max(f, 1.0), 0.499 * sr)
+    q = max(q, 1e-3)
+    w0 = 2.0 * math.pi * f / sr
+    cos_w, alpha = math.cos(w0), math.sin(w0) / (2.0 * q)
+    if kind == "peak":
+        big_a = 10.0 ** (g / 40.0)
+        b = (1.0 + alpha * big_a, -2.0 * cos_w, 1.0 - alpha * big_a)
+        a = (1.0 + alpha / big_a, -2.0 * cos_w, 1.0 - alpha / big_a)
+    elif kind in ("lowshelf", "highshelf"):
+        big_a = 10.0 ** (g / 40.0)
+        ap1, am1, s = big_a + 1.0, big_a - 1.0, 2.0 * math.sqrt(big_a) * alpha
+        if kind == "lowshelf":
+            b = (
+                big_a * (ap1 - am1 * cos_w + s),
+                2.0 * big_a * (am1 - ap1 * cos_w),
+                big_a * (ap1 - am1 * cos_w - s),
+            )
+            a = (ap1 + am1 * cos_w + s, -2.0 * (am1 + ap1 * cos_w), ap1 + am1 * cos_w - s)
+        else:
+            b = (
+                big_a * (ap1 + am1 * cos_w + s),
+                -2.0 * big_a * (am1 + ap1 * cos_w),
+                big_a * (ap1 + am1 * cos_w - s),
+            )
+            a = (ap1 - am1 * cos_w + s, 2.0 * (am1 - ap1 * cos_w), ap1 - am1 * cos_w - s)
+    else:
+        raise ValueError(f"unsupported biquad kind {kind!r}")
+    z = np.exp(-2j * math.pi * np.asarray(freqs_hz, float) / sr)
+    h = (b[0] + b[1] * z + b[2] * z * z) / (a[0] + a[1] * z + a[2] * z * z)
+    return 20.0 * np.log10(np.maximum(np.abs(h), 1e-12))
+
+
+def _biquad_db_torch(kind: str, f: float, q: float, g: float, freqs_hz: np.ndarray, sr: int):
     t = torch.tensor
     b, a = biquad_coeffs(kind, t([f]), t([q]), t([g]), sr)
     z = torch.exp(-1j * 2 * math.pi * torch.as_tensor(freqs_hz, dtype=torch.float64) / sr)
