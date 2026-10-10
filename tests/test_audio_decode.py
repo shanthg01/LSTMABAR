@@ -73,8 +73,19 @@ def test_garbage_file_raises_user_facing_error(tmp_path):
     pytest.importorskip("av")
     p = tmp_path / "notaudio.m4a"
     p.write_bytes(b"definitely not audio" * 100)
-    with pytest.raises(AudioDecodeError, match="notaudio.m4a"):
+    with pytest.raises(AudioDecodeError, match="notaudio.m4a") as info:
         load_audio(p)
+    # user-facing message must not leak server-side paths (shown publicly with --share)
+    assert str(tmp_path) not in str(info.value)
+    assert str(tmp_path).replace("\\", "\\\\") not in str(info.value)
+
+
+def test_absurd_sample_rate_rejected(tmp_path):
+    p = tmp_path / "fast.wav"
+    sf.write(p, np.zeros(1000, dtype=np.float32), 400_000)
+    with pytest.raises(AudioDecodeError, match="sample rate") as info:
+        load_audio(p)
+    assert str(tmp_path) not in str(info.value)
 
 
 def test_missing_pyav_gives_install_hint(tmp_path, monkeypatch):

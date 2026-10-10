@@ -85,9 +85,21 @@ class AudioDecodeError(ValueError):
     """An audio file could not be decoded; the message is safe to show to users."""
 
 
+# Reject files declaring absurd rates (they would blow up memory even within max_seconds).
+MAX_SAMPLE_RATE = 192_000
+
+
+def _check_rate(sr: int, path: str) -> None:
+    if not 0 < sr <= MAX_SAMPLE_RATE:
+        raise AudioDecodeError(
+            f"'{Path(path).name}' has an unsupported sample rate ({sr} Hz; max {MAX_SAMPLE_RATE})."
+        )
+
+
 def _decode_soundfile(path: str, max_seconds: float | None) -> tuple[np.ndarray, int]:
     with sf.SoundFile(path) as f:
         sr = f.samplerate
+        _check_rate(sr, path)
         frames = -1 if max_seconds is None else int(round(max_seconds * sr))
         return f.read(frames, dtype="float32", always_2d=True), sr
 
@@ -104,6 +116,7 @@ def _decode_pyav(path: str, max_seconds: float | None) -> tuple[np.ndarray, int]
             raise AudioDecodeError(f"'{Path(path).name}' contains no audio stream.")
         stream = container.streams.audio[0]
         sr = int(stream.rate or stream.codec_context.sample_rate or 44100)
+        _check_rate(sr, path)
         resampler = av.AudioResampler(format="flt", layout="mono", rate=sr)
         limit = None if max_seconds is None else int(round(max_seconds * sr))
         chunks: list[np.ndarray] = []
@@ -152,7 +165,10 @@ def decode_audio(path: str | Path, max_seconds: float | None = None) -> tuple[np
             "WAV, FLAC, OGG and MP3 work without it."
         ) from e
     except Exception as e:  # PyAV raises its own error types (av.error.*)
-        raise AudioDecodeError(f"Can't decode '{name}': {e}") from e
+        # Don't echo str(e): PyAV includes the full server-side path in its messages.
+        raise AudioDecodeError(
+            f"Can't decode '{name}': unsupported or corrupt audio ({type(e).__name__})."
+        ) from e
 
 
 def load_audio(
