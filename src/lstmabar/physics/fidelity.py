@@ -94,8 +94,8 @@ class FidelityConfig:
     riff_crop: int = 512
     whitebox_oversample: int = 8
     drive_oversample: int = 4
-    restarts: int = 3
-    steps: int = 150
+    restarts: int = 2
+    steps: int = 100
     lr: float = 0.05
     mrstft_weight: float = 1.0
     gate_db: float = 3.0
@@ -467,7 +467,11 @@ def check_setting(
     return row
 
 
-def run_fidelity(cfg: FidelityConfig | None = None, log=print) -> FidelityResult:
+def _log(msg: str) -> None:
+    print(msg, flush=True)
+
+
+def run_fidelity(cfg: FidelityConfig | None = None, log=_log) -> FidelityResult:
     cfg = cfg or FidelityConfig()
     start = time.perf_counter()
     torch.manual_seed(cfg.seed)
@@ -692,6 +696,16 @@ def format_report(r: FidelityResult, discussion: str = "") -> str:
     return "\n".join(lines)
 
 
+def load_result(path: str | Path) -> FidelityResult:
+    """Read a ``greybox_fidelity.json`` back (e.g. to re-render the Markdown)."""
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    c = data.pop("config")
+    for k in ("pitches_hz", "levels_dbfs", "pedals", "settings"):
+        if c.get(k) is not None:
+            c[k] = tuple(c[k])
+    return FidelityResult(config=FidelityConfig(**c), **data)
+
+
 def write_report(
     r: FidelityResult, out_dir: str | Path = "reports", discussion: str = ""
 ) -> tuple[Path, Path]:
@@ -719,6 +733,7 @@ __all__ = [
     "harmonic_errors",
     "harmonic_loss",
     "knob_settings",
+    "load_result",
     "make_signals",
     "run_fidelity",
     "summarize",

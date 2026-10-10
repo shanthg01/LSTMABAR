@@ -39,7 +39,6 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 
 import numpy as np
-from scipy.signal import lfilter
 
 from lstmabar.physics.whitebox.base import WhiteBoxModel
 from lstmabar.physics.whitebox.diode_clipper import (
@@ -206,8 +205,10 @@ class PortClipper(WhiteBoxModel):
         )
 
     def _filt(self, f: AnalogFilter, x: np.ndarray, fs: float) -> np.ndarray:
-        bz, az = to_digital(f.b, f.a, fs)  # unwarped: consistent with the port solver
-        return lfilter(bz, az, x, axis=-1)
+        # Unwarped bilinear (prewarp_hz None), consistent with the port solver.
+        if f.prewarp_hz is not None:
+            raise ValueError("port-network filters must not be prewarped")
+        return f.apply(x, fs)
 
     def process_volts(self, v: np.ndarray) -> np.ndarray:
         x = np.asarray(v, dtype=np.float64)

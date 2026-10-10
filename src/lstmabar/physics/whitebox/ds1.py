@@ -2,26 +2,16 @@ r"""Boss DS-1 white-box model (component names from ``pedals/ds1.yaml``).
 
 Chain (all linear stages at the oversampled rate):
 
-1. **Transistor booster (Q2), linear.** First-order coupling high-pass ``C_boost_in2`` /
-   ``R_boost_bias`` (C3/R5, 33 Hz, the corner ElectroSmash states) and an inverting gain
-
-   .. math::
-
-      A_0 = \frac{R_c \parallel R_{fb} \parallel R_{10}}{R_e + r_e},\quad
-      r_e = \frac{V_T}{I_c},\; I_c = \frac{V_{supply} - V_{collector}}{R_c},\qquad
-      A_b = A_0\,\frac{C_3}{C_3 + C_4 (1 + A_0)}
-
-   ``A_0`` is the common-emitter gain with the collector loaded by R8, the feedback
-   resistor R7 and the next stage's bias resistor R10, and ``r_e`` from the collector bias
-   (5.8 V). The collector-base cap C4 appears at the base multiplied by ``1 + A_0`` (Miller)
-   and forms a capacitive divider with the coupling cap C3 when driven from the low-impedance
-   input buffer: ``A_b`` ≈ 59 (35.5 dB), consistent with ElectroSmash's ≈56 (35 dB). The
-   frequency dependence of that Miller loading (it would also move the C3 corner) is **not**
-   modelled: the sources give no node-level netlist for the booster, so the stated 33 Hz
-   corner is used. **The booster's soft asymmetric clipping is ignored (ideal, unbounded
-   transistor)**; P2 decision 4 accepts this cascaded-stage gap.
+1. **Transistor booster (Q2), linear**: the shunt-feedback small-signal model the grey-box
+   derivation uses, :func:`lstmabar.physics.derive.ds1_booster` (C2/R4 leg and C3 into the
+   collector-base-feedback stage R7 ∥ C4, open-loop gain from the 5.8 V collector bias), so
+   white-box and derived grey-box share one linear model. It rises ~6 dB/oct to a corner
+   near 520 Hz (C3 into the Miller-lowered base impedance) and levels off at ~35.8 dB,
+   matching ElectroSmash's "35 dB". Inverting. **The booster's soft asymmetric clipping is
+   ignored (ideal, unbounded transistor)**; P2 decision 4 accepts this cascaded-stage gap.
 2. **Op-amp gain stage**, ideal non-inverting: input coupling ``C_opamp_in`` /
-   ``R_opamp_bias`` (C5/R10, 23 Hz), gain ``1 + Z_f / Z_g`` with ``Z_f = R_dist ∥ C_fb``
+   ``R_opamp_bias`` (C5/R10, 23 Hz), gain ``1 + Z_f / Z_g``
+   (:func:`lstmabar.physics.networks.noninverting_gain`) with ``Z_f = R_dist ∥ C_fb``
    (VR1 ∥ C7) and ``Z_g = R_gain + 1/(s C_gain)`` (R13 + C8): 0 dB at Dist min, 26.5 dB above
    the ≈72 Hz C8/R13 corner at Dist max, rolled off above ``1/(2π R_dist C_fb)``.
 3. **Clipping node + tone stack + level load, one linear network** solved exactly with
@@ -32,41 +22,50 @@ Chain (all linear stages at the oversampled rate):
    L→H with the wiper W as the output (clockwise = brighter = wiper toward H). W is loaded by
    the level pot's input resistance (step 4). The tone stack loads X with 3–18 kΩ across the
    band, against R14's 2.2 kΩ, which is why it is not treated as a separate unloaded filter.
+   The output transfer ``V_W / V_X`` is the derivation's
+   :func:`lstmabar.physics.derive.lp_hp_blend_tone_stack` with this model's load; the
+   port quantities (``T_open``, ``Z_port``) come from a nodal solve of the same network
+   (:func:`clip_port`; tests check the two agree).
 4. **Level.** Per Premier Guitar's signal-path description, the level pot (VR2) follows the
    tone stage and its wiper drives ``R_tone_out`` (R18, series) into the output buffer,
    whose bias ``R_out_bias_a ∥ R_out_bias_b`` (500 kΩ) is the load: the pot is a divider
-   with its lower leg ∥ (R18 + 500 kΩ), and the pot's input resistance loads W.
+   with its lower leg ∥ (R18 + 500 kΩ), and the pot's input resistance (~100 kΩ) loads W.
+   **This differs from the derivation**, which loads the tone stack with R18 + C13 +
+   500 kΩ and applies the level pot as an unloaded fraction afterwards (its notes list
+   "Level-pot loading of the tone stack not modelled"); the white-box follows the cited
+   signal path. At level 0.5 the two differ by 0.2-0.8 dB (white-box lower, nearly
+   broadband), so the effect on the derived error is small.
 
-Not modelled (documented): coupling high-passes below 10 Hz (C1/R2 7.2 Hz, C2/R4 3.3 Hz,
-C13/R20 3.4 Hz, C14/R23 1.6 Hz: < 0.1 dB at 82 Hz), C9 (the series coupling ahead of R14,
-whose placement is inferred and which only forms a ≈2% capacitive divider with C10), the
-JFET switching, buffer non-idealities, op-amp rails/slew/bandwidth. With ideal stages the
+Not modelled (documented): coupling high-passes below 10 Hz other than the booster's own
+(C1/R2 7.2 Hz, C13/R20 3.4 Hz, C14/R23 1.6 Hz: < 0.1 dB at 82 Hz), C9 (the series
+coupling ahead of R14, whose placement is inferred and which only forms a ≈2% capacitive
+divider with C10), the JFET switching, buffer non-idealities, op-amp rails/slew/bandwidth. With ideal stages the
 booster + op-amp gain (up to ≈62 dB) is unbounded, so the model reaches the diodes with far
 more than the supply could deliver; the diode node is still bounded near ±0.7 V.
 """
 
 from collections.abc import Mapping
 
+from lstmabar.physics.derive import ds1_booster, lp_hp_blend_tone_stack
 from lstmabar.physics.kb import Pedal
+from lstmabar.physics.networks import POT_END_OHMS, cap, noninverting_gain, par, pot_split, res
 from lstmabar.physics.whitebox.base import register_whitebox
-from lstmabar.physics.whitebox.devices import VT, diode
+from lstmabar.physics.whitebox.devices import diode
 from lstmabar.physics.whitebox.diode_clipper import DiodePair
 from lstmabar.physics.whitebox.linear import (
     AnalogFilter,
+    from_tf,
     gain,
     nodal_transfer,
     rc_highpass,
 )
 from lstmabar.physics.whitebox.port import PortClipper
 
-POT_MIN_OHMS = 1.0
-"""Pot segments are floored at 1 Ω so the nodal matrices stay finite at the knob ends."""
-
 NOTES = (
     "transistor booster linear (its soft asymmetric clipping is ignored)",
-    "booster Miller-loading frequency dependence not modelled (stated 33 Hz corner used)",
     "op-amps ideal (no rails, slew or bandwidth limit); buffers ideal unity",
-    "coupling high-passes below 10 Hz and C9 not modelled",
+    "level pot loads the tone stack (cited signal path; the derivation does not)",
+    "coupling high-passes below 10 Hz outside the booster, and C9, not modelled",
 )
 
 
@@ -74,23 +73,16 @@ def _par(*rs: float) -> float:
     return 1.0 / sum(1.0 / r for r in rs)
 
 
-def booster_gain(pedal: Pedal) -> float:
-    """Magnitude of the Q2 booster's mid-band voltage gain ``A_b`` (see module doc)."""
-    ic = (pedal.c("V_supply") - pedal.c("V_boost_collector")) / pedal.c("R_boost_c")
-    re = VT / ic
-    rc = _par(pedal.c("R_boost_c"), pedal.c("R_boost_fb"), pedal.c("R_opamp_bias"))
-    a0 = rc / (pedal.c("R_boost_e") + re)
-    c3, c4 = pedal.c("C_boost_in2"), pedal.c("C_boost_fb")
-    return a0 * c3 / (c3 + c4 * (1.0 + a0))
+def booster(pedal: Pedal) -> AnalogFilter:
+    """Q2 booster magnitude response (:func:`derive.ds1_booster`); the stage inverts."""
+    return from_tf(ds1_booster(pedal))
 
 
 def opamp_stage(pedal: Pedal, dist: float) -> AnalogFilter:
     """Non-inverting gain ``1 + Z_f/Z_g`` (VR1 ∥ C7 over R13 + C8) at Dist rotation ``dist``."""
-    rd = pedal.pots["dist"].resistance(dist)
-    a = rd * pedal.c("C_fb")
-    b = pedal.c("R_gain") * pedal.c("C_gain")
-    c8rd = pedal.c("C_gain") * rd
-    return AnalogFilter((a * b, a + b + c8rd, 1.0), (a * b, a + b, 1.0))
+    rd = max(pedal.pots["dist"].resistance(dist), POT_END_OHMS)
+    z_f = par(res(rd), cap(pedal.c("C_fb")))
+    return from_tf(noninverting_gain(z_f, res(pedal.c("R_gain")) + cap(pedal.c("C_gain"))))
 
 
 def level_divider(pedal: Pedal, level: float) -> tuple[float, float]:
@@ -98,23 +90,30 @@ def level_divider(pedal: Pedal, level: float) -> tuple[float, float]:
     pot = pedal.pots["level"]
     f = pot.fraction(level)
     r_load = pedal.c("R_tone_out") + _par(pedal.c("R_out_bias_a"), pedal.c("R_out_bias_b"))
-    lower = _par(max(f * pot.value, POT_MIN_OHMS), r_load) if f > 0 else 0.0
+    lower = _par(max(f * pot.value, POT_END_OHMS), r_load) if f > 0 else 0.0
     r_in = (1.0 - f) * pot.value + lower
     return lower / r_in, r_in
 
 
 def _tone_parts(pedal: Pedal, tone: float, r_level_in: float):
-    pot = pedal.pots["tone"]
-    f = pot.fraction(tone)
-    ga = 1.0 / max(pot.value * f, POT_MIN_OHMS)  # L - W
-    gb = 1.0 / max(pot.value * (1.0 - f), POT_MIN_OHMS)  # W - H
+    r_lw, r_wh = pot_split(pedal.pots["tone"], tone)  # L-W, W-H (as the derivation)
     g16, c12 = 1.0 / pedal.c("R_tone_lp"), pedal.c("C_tone_lp")
     c11, g17 = pedal.c("C_tone_hp"), 1.0 / pedal.c("R_tone_hp")
-    return ga, gb, g16, c12, c11, g17, 1.0 / r_level_in
+    return 1.0 / r_lw, 1.0 / r_wh, g16, c12, c11, g17, 1.0 / r_level_in
 
 
 def tone_network(pedal: Pedal, tone: float, r_level_in: float) -> AnalogFilter:
-    """Tone stack driven by an ideal source at the clipping node: ``V_W / V_X``."""
+    """Tone stack driven by an ideal source at the clipping node, ``V_W / V_X``, from the
+    derivation's :func:`~lstmabar.physics.derive.lp_hp_blend_tone_stack` loaded by the level
+    pot's input resistance ``r_level_in``."""
+    tf = lp_hp_blend_tone_stack(
+        pedal, tone, "R_tone_lp", "C_tone_lp", "C_tone_hp", "R_tone_hp", res(r_level_in)
+    )
+    return from_tf(tf)
+
+
+def tone_network_nodal(pedal: Pedal, tone: float, r_level_in: float) -> AnalogFilter:
+    """The same ``V_W / V_X`` from the nodal matrix used by :func:`clip_port` (a check)."""
     ga, gb, g16, c12, c11, g17, go = _tone_parts(pedal, tone, r_level_in)
     y = [
         [[c12, g16 + ga], [0.0], [-ga]],
@@ -154,8 +153,8 @@ def build_ds1(
     level, r_level_in = level_divider(pedal, knobs["level"])
     t_open, z_port = clip_port(pedal, knobs["tone"], r_level_in)
     pre = (
-        rc_highpass(pedal.c("R_boost_bias"), pedal.c("C_boost_in2")),
-        gain(-booster_gain(pedal)),  # common emitter: inverting
+        booster(pedal),
+        gain(-1.0),  # common emitter: inverting
         rc_highpass(pedal.c("R_opamp_bias"), pedal.c("C_opamp_in")),
         opamp_stage(pedal, knobs["dist"]),
     )
@@ -175,10 +174,11 @@ def build_ds1(
 
 __all__ = [
     "NOTES",
-    "booster_gain",
+    "booster",
     "build_ds1",
     "clip_port",
     "level_divider",
     "opamp_stage",
     "tone_network",
+    "tone_network_nodal",
 ]

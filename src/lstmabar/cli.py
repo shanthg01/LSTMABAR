@@ -105,29 +105,35 @@ def cmd_fidelity(args: argparse.Namespace) -> int:
     from lstmabar.physics.fidelity import (
         FidelityConfig,
         gate_passed,
+        load_result,
         run_fidelity,
         write_report,
     )
 
-    cfg = load_config(args.config, [f"seed={args.seed}", *args.overrides])
-    seed_everything(cfg.seed)
-    run_dir = create_run_dir(cfg, root=cfg.paths.runs, name="fidelity")
-    kw = {"seed": int(cfg.seed), "volts_per_fs": float(cfg.physics.volts_per_full_scale)}
-    if args.pedals:
-        kw["pedals"] = tuple(args.pedals)
-    fcfg = FidelityConfig.quick_config(**kw) if args.quick else FidelityConfig(**kw)
-    result = run_fidelity(fcfg)
+    discussion_path = Path(args.discussion or Path(args.out) / "greybox_fidelity.discussion.md")
     discussion = ""
-    if args.discussion:
-        discussion = Path(args.discussion).read_text(encoding="utf-8")
-    write_report(result, run_dir, discussion)
+    if discussion_path.exists():
+        discussion = discussion_path.read_text(encoding="utf-8")
+    elif args.discussion:
+        raise FileNotFoundError(discussion_path)
+
+    if args.from_json:  # re-render the Markdown only (e.g. after editing the discussion)
+        result = load_result(args.from_json)
+    else:
+        cfg = load_config(args.config, [f"seed={args.seed}", *args.overrides])
+        seed_everything(cfg.seed)
+        run_dir = create_run_dir(cfg, root=cfg.paths.runs, name="fidelity")
+        kw = {"seed": int(cfg.seed), "volts_per_fs": float(cfg.physics.volts_per_full_scale)}
+        if args.pedals:
+            kw["pedals"] = tuple(args.pedals)
+        fcfg = FidelityConfig.quick_config(**kw) if args.quick else FidelityConfig(**kw)
+        result = run_fidelity(fcfg)
+        write_report(result, run_dir, discussion)
+        print(f"run dir {run_dir}")
     md, js = write_report(result, args.out, discussion)
     verdict = "PASS" if gate_passed(result) else "FAIL"
     gates = ", ".join(f"{p} {g['best_mean_db']:.2f} dB" for p, g in result.gate.items())
-    print(
-        f"fidelity {verdict}: {gates} in {result.seconds_elapsed:.0f} s -> {md}, {js} "
-        f"(run dir {run_dir})"
-    )
+    print(f"fidelity {verdict}: {gates} in {result.seconds_elapsed:.0f} s -> {md}, {js}")
     return 0 if gate_passed(result) else 1
 
 
@@ -167,7 +173,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_fid.add_argument("--pedals", nargs="*", help="pedal ids (default: every white-box pedal)")
     p_fid.add_argument("--config", default="configs/base.yaml")
     p_fid.add_argument(
-        "--discussion", default=None, help="Markdown file appended as the report's discussion"
+        "--discussion",
+        default=None,
+        help="Markdown appended as the report's discussion "
+        "(default: <out>/greybox_fidelity.discussion.md if it exists)",
+    )
+    p_fid.add_argument(
+        "--from-json", default=None, help="re-render the report from a saved JSON (no run)"
     )
     p_fid.add_argument("overrides", nargs="*", help="dotlist overrides, e.g. paths.runs=...")
     p_fid.set_defaults(func=cmd_fidelity)

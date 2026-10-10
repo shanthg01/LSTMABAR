@@ -4,7 +4,9 @@ values, discretized with the bilinear transform and applied with ``scipy.signal.
 Coefficients are highest power of ``s`` first (``scipy.signal`` convention). First-order RC
 sections are prewarped at their corner frequency, so the -3 dB point is exact at any sample
 rate; elsewhere the bilinear frequency warping is ``f_d = (fs/π)·atan(π f / fs)``.
-Filters start from rest (zero initial state).
+Filters start from rest (zero initial state). Filters above second order (e.g. the unreduced
+rational functions of :mod:`lstmabar.physics.networks`, via :func:`from_tf`) are discretized
+pole by pole and run as second-order sections.
 """
 
 import math
@@ -12,7 +14,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
-from scipy.signal import bilinear, lfilter
+from scipy.signal import bilinear, bilinear_zpk, lfilter, sosfilt, tf2zpk, zpk2sos
 
 
 @dataclass(frozen=True)
@@ -32,10 +34,40 @@ class AnalogFilter:
         """Bilinear-transform ``(b, a)`` z-domain coefficients at ``sample_rate``."""
         return to_digital(self.b, self.a, sample_rate, self.prewarp_hz)
 
+    @property
+    def order(self) -> int:
+        return max(len(self.b), len(self.a)) - 1
+
+    def sos(self, sample_rate: float) -> np.ndarray:
+        """Bilinear transform pole by pole (zpk), as second-order sections: robust for the
+        higher-order, unreduced rational functions built by :mod:`lstmabar.physics.networks`
+        (where transforming the polynomials directly loses accuracy)."""
+        z, p, k = tf2zpk(np.asarray(self.b, np.float64), np.asarray(self.a, np.float64))
+        zd, pd, kd = bilinear_zpk(z, p, k, _bilinear_k(sample_rate, self.prewarp_hz))
+        return zpk2sos(zd, pd, kd)
+
     def apply(self, x: np.ndarray, sample_rate: float) -> np.ndarray:
-        """Filter ``x`` along its last axis at ``sample_rate``."""
+        """Filter ``x`` along its last axis at ``sample_rate`` (direct form up to second
+        order, second-order sections above)."""
+        if self.order > 2:
+            return sosfilt(self.sos(sample_rate), x, axis=-1)
         bz, az = self.digital(sample_rate)
         return lfilter(bz, az, x, axis=-1)
+
+
+def from_tf(tf, prewarp_hz: float | None = None) -> AnalogFilter:
+    """An :class:`AnalogFilter` from a :class:`lstmabar.physics.networks.TF` (same
+    coefficients; discretized via :meth:`AnalogFilter.sos` when above second order)."""
+    return AnalogFilter(tuple(float(v) for v in tf.b), tuple(float(v) for v in tf.a), prewarp_hz)
+
+
+def _bilinear_k(sample_rate: float, prewarp_hz: float | None) -> float:
+    fs = float(sample_rate)
+    if prewarp_hz is None:
+        return fs
+    if not 0 < prewarp_hz < fs / 2:
+        raise ValueError(f"prewarp frequency {prewarp_hz} outside (0, fs/2)")
+    return math.pi * prewarp_hz / math.tan(math.pi * prewarp_hz / fs)
 
 
 def to_digital(
@@ -126,6 +158,7 @@ __all__ = [
     "AnalogFilter",
     "apply_chain",
     "chain_response",
+    "from_tf",
     "gain",
     "nodal_transfer",
     "poly_det",

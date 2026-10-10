@@ -5,10 +5,17 @@ import pytest
 
 from lstmabar.analysis.harmonics import harmonic_amplitudes, to_dbc
 from lstmabar.physics.kb import load_kb
+from lstmabar.physics.networks import pot_split
 from lstmabar.physics.whitebox import WHITEBOX, has_whitebox, shunt_clipper, simulate
 from lstmabar.physics.whitebox.devices import diode
 from lstmabar.physics.whitebox.diode_clipper import DiodePair, numba_available
-from lstmabar.physics.whitebox.ds1 import booster_gain, clip_port, level_divider, tone_network
+from lstmabar.physics.whitebox.ds1 import (
+    booster,
+    clip_port,
+    level_divider,
+    tone_network,
+    tone_network_nodal,
+)
 from lstmabar.physics.whitebox.linear import AnalogFilter, nodal_transfer, poly_det
 from lstmabar.physics.whitebox.port import PortClipper
 from lstmabar.physics.whitebox.ts808 import tone_stage
@@ -46,9 +53,7 @@ def test_poly_det_and_nodal_transfer_match_numeric_solve():
 
 def _ts_tone_mna(p, f, tone, open_loop=1e9):
     """Nodal solve of the TS808 tone stage with a finite-gain op-amp (independent check)."""
-    pot = p.pots["tone"]
-    fr = pot.fraction(tone)
-    ra, rb = max(pot.value * (1 - fr), 1e-6), max(pot.value * fr, 1e-6)
+    rb, ra = pot_split(p.pots["tone"], tone)  # (+) end..wiper, wiper..(-) end
     s = 2j * np.pi * f
     r7, c5 = p.c("R_tone_lp"), p.c("C_tone_lp")
     z = p.c("R_tone_shunt") + 1 / (s * p.c("C_tone_shunt"))
@@ -122,14 +127,13 @@ def test_port_clipper_numpy_backend_matches_numba_short():
 
 def test_ds1_registered_and_booster_gain():
     assert has_whitebox("ds1")
-    assert 20 * np.log10(booster_gain(KB["ds1"])) == pytest.approx(35.0, abs=1.0)  # ES: ~35 dB
+    # shared with the derivation; ElectroSmash: ~35 dB above a few hundred Hz
+    assert 20 * np.log10(abs(booster(KB["ds1"]).response(3000.0))) == pytest.approx(35, abs=1.5)
 
 
 def _ds1_exact(p, f, knobs):
     """Independent complex nodal solve of R14 → node X (C10) → tone stack → level load."""
-    pot = p.pots["tone"]
-    fr = pot.fraction(knobs["tone"])
-    ra, rb = max(pot.value * fr, 1.0), max(pot.value * (1 - fr), 1.0)
+    ra, rb = pot_split(p.pots["tone"], knobs["tone"])  # L..W, W..H
     _, r_level = level_divider(p, knobs["level"])
     s = 2j * np.pi * f
     g14, c10 = 1 / p.c("R_clip"), p.c("C_clip")
@@ -157,12 +161,30 @@ def test_ds1_network_transfer_functions_match_nodal_solve(tone):
     knobs = p.knobs({"tone": tone})
     _, r_level = level_divider(p, knobs["level"])
     t_open, _ = clip_port(p, tone, r_level)
-    tone_h = tone_network(p, tone, r_level)
+    tone_h = tone_network(p, tone, r_level)  # derivation's two-leg blend helper
+    tone_n = tone_network_nodal(p, tone, r_level)
     for f in (82.0, 500.0, 2000.0, 7000.0):
         v = _ds1_exact(p, f, knobs)
         # diodes off: node X = T_open · v_s, output W = T_tone · X
         assert t_open.response(f) == pytest.approx(v[0], rel=1e-6)
         assert tone_h.response(f) * v[0] == pytest.approx(v[3], rel=1e-6)
+        assert tone_n.response(f) == pytest.approx(tone_h.response(f), rel=1e-6)
+
+
+@pytest.mark.parametrize("order_filter", ["ts808_tone", "ds1_booster"])
+def test_high_order_filters_discretize_to_their_analog_response(order_filter):
+    """Unreduced network TFs run as second-order sections; their digital response must
+    match the analog one well below Nyquist."""
+    from scipy.signal import sosfreqz
+
+    flt = tone_stage(KB["ts808"], 0.7) if order_filter == "ts808_tone" else booster(KB["ds1"])
+    assert flt.order > 2
+    fs = 4 * SR
+    f = np.array([50.0, 300.0, 1000.0, 5000.0])
+    _, h = sosfreqz(flt.sos(fs), worN=f, fs=fs)
+    # Only the bilinear frequency warping (~0.6% at 5 kHz at 176 kHz) separates them.
+    want = 20 * np.log10(abs(flt.response(f)))
+    np.testing.assert_allclose(20 * np.log10(abs(h)), want, atol=0.05)
 
 
 @needs_numba
