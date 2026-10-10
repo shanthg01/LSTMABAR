@@ -36,8 +36,11 @@ the trapezoidal rule, with ``a = T / (2C)`` and ``h(v) = G v + i_D(v)``::
 
 The left side is strictly increasing in ``v``, so the solution is unique. It is found per
 sample with Newton–Raphson started from the linear extrapolation ``2·v[n-1] - v[n-2]``,
-with SPICE ``pnjlim`` step limiting on each diode string's junction voltage (keeps steps up
-the exponential from overflowing) until ``|Δv| < tol`` (1e-10 V). The feedback source
+clamped to ``[min(v[n-1], -vcrit_neg), max(v[n-1], vcrit_pos)]`` so the start never lies
+deep in a conducting string (Newton descends an exponential from above by only about one
+thermal slope per iteration), with SPICE ``pnjlim`` step limiting on each diode string's
+junction voltage (keeps steps up the exponential from overflowing) until ``|Δv| < tol``
+(1e-10 V; at most ``MAX_ITER`` iterations, else ``solve`` raises). The feedback source
 ``j`` is ``Y_g`` discretized by the same (unwarped) bilinear transform, so the linearized
 system equals the bilinear transform of the analog ``H(s)``. Trapezoidal integration is
 A-stable but not L-stable; with a stiff conducting diode it can ring at Nyquist of the
@@ -77,7 +80,7 @@ from lstmabar.physics.whitebox.linear import (
 CONFIGS = ("shunt", "feedback")
 OVERSAMPLE_FACTORS = (1, 2, 4, 8)
 TOL = 1e-10  # Newton convergence threshold on |Δv| (volts)
-MAX_ITER = 50
+MAX_ITER = 100
 _EXP_CAP = 80.0  # exponent clamp; pnjlim keeps real iterates far below this
 
 
@@ -146,7 +149,11 @@ def _solve_numpy(j: np.ndarray, a: float, g: float, p: tuple[float, ...], tol, m
     for n in range(n_steps):
         jn = j[n]
         rhs = v - a * h_prev + a * (jn + j_prev)
-        v, v_old = 2.0 * v - v_old, v  # linear extrapolation as the Newton start
+        # Newton start: linear extrapolation, clamped so it never lands further into a
+        # conducting string than v[n-1] or that string's vcrit (descending an exponential
+        # from far above the root costs ~one thermal slope per iteration).
+        lo, hi = np.minimum(v, -vcn), np.maximum(v, vcp)
+        v, v_old = np.minimum(np.maximum(2.0 * v - v_old, lo), hi), v
         for _ in range(max_iter):
             ep = np.exp(np.minimum(v / sp, _EXP_CAP))
             en = np.exp(np.minimum(-v / sn, _EXP_CAP))
@@ -186,7 +193,8 @@ def _solve_scalar(j, a, g, isp, sp, vcp, isn, sn, vcn, tol, max_iter, out):
             jn = j[bi, n]
             rhs = v - a * h_prev + a * (jn + j_prev)
             v_last = v
-            v = 2.0 * v - v_old  # linear extrapolation as the Newton start
+            v = 2.0 * v - v_old  # clamped linear extrapolation (see _solve_numpy)
+            v = min(max(v, min(v_last, -vcn)), max(v_last, vcp))
             v_old = v_last
             converged = False
             for _ in range(max_iter):

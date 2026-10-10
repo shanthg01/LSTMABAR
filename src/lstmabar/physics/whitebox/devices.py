@@ -26,7 +26,7 @@ matters at currents the clippers never reach.
 """
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 BOLTZMANN = 1.380649e-23  # J/K
 ELEMENTARY_CHARGE = 1.602176634e-19  # C
@@ -54,28 +54,37 @@ class Diode:
 DIODES: dict[str, Diode] = {
     "1N4148": Diode("1N4148", Is=2.52e-9, N=1.752, Rs=0.568),
     "1N914": Diode("1N914", Is=2.52e-9, N=1.752, Rs=0.568),
-    "1S2473": Diode("1S2473", Is=2.52e-9, N=1.752, Rs=0.568),
     "1N34A": Diode("1N34A", Is=1.0e-7, N=1.3, Rs=0.0),
     "LED_RED": Diode("LED_RED", Is=6.3e-18, N=2.0, Rs=0.0),
 }
 
 SUBSTITUTES: dict[str, str] = {"1S2473": "1N4148"}
-"""Parts whose parameters are borrowed from an equivalent part (no published model)."""
+"""Deliberate equivalents: parts with no published model that borrow another part's
+parameters. :func:`diode` returns the borrowed model under the requested part name."""
 
 DEFAULT_PART: dict[str, str] = {"si": "1N914", "ge": "1N34A", "led": "LED_RED"}
 """Fallback part per KB device type when a clipping stage names no (known) part."""
 
 
 def diode(part: str = "", device: str = "si") -> Diode:
-    """Diode parameters for ``part``; falls back to the ``device`` type's default part."""
-    key = part.upper()
+    """Diode parameters for ``part`` (case-insensitive), resolving :data:`SUBSTITUTES`.
+
+    An empty ``part`` uses the ``device`` type's default part (:data:`DEFAULT_PART`). A
+    non-empty part that is neither modelled nor a listed substitute raises ``KeyError``, so
+    a typo or an unmodelled part in a pedal file never silently simulates another device.
+    """
+    key = part.strip().upper()
+    if not key:
+        if device not in DEFAULT_PART:
+            raise KeyError(f"no default diode for device {device!r}; name a part")
+        return DIODES[DEFAULT_PART[device]]
     if key in DIODES:
         return DIODES[key]
-    if part and not device:
-        raise KeyError(f"unknown diode part {part!r}")
-    if device not in DEFAULT_PART:
-        raise KeyError(f"no diode model for part {part!r} / device {device!r}")
-    return DIODES[DEFAULT_PART[device]]
+    if key in SUBSTITUTES:
+        return replace(DIODES[SUBSTITUTES[key]], part=key)
+    raise KeyError(
+        f"unknown diode part {part!r}: add it to DIODES (with a cited source) or to SUBSTITUTES"
+    )
 
 
 __all__ = ["DEFAULT_PART", "DIODES", "SUBSTITUTES", "VT", "Diode", "diode"]

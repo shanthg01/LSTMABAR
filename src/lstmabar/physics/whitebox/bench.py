@@ -37,8 +37,8 @@ def benchmark(
     """Return one row per batch size: wall seconds and aggregate real-time factor."""
     torch.set_num_threads(1)
     pedal = load_kb()["ts808"]
-    model = WHITEBOX["ts808"](pedal, pedal.knobs({"drive": 1.0}), sample_rate)
-    model.oversample, model.backend = oversample, backend
+    knobs = pedal.knobs({"drive": 1.0})
+    model = WHITEBOX["ts808"](pedal, knobs, sample_rate, oversample=oversample, backend=backend)
     model.process_volts(_test_signal(1, 0.01, sample_rate))  # warm-up (numba compile)
     rows = []
     for b in batch_sizes:
