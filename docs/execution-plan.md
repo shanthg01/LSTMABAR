@@ -94,7 +94,7 @@ Post-M1 fix (PR #17, found in manual testing): non-WAV uploads (e.g. `.m4a`) fai
 
 | # | Task | Where | Output |
 |---|---|---|---|
-| 2.1 | KB YAML schema + validator | L | `pedals/schema.yaml`, `physics/kb.py` |
+| 2.1 | KB YAML schema + validator (format per kickoff decision 1) | L | `physics/kb.py` (+ `pedals/schema.yaml` only if a separate schema file is chosen) |
 | 2.2 | Author 5 pedals: TS808, RAT, DS-1, Fuzz Face (Si/Ge), Big Muff, using published circuit analyses as sources | L | `pedals/*.yaml` |
 | 2.3 | Derivations: components + knob positions → grey-box params | L | `physics/derive.py` + tests |
 | 2.4 | White-box sims for **2 circuits only** (diode clipper → TS/DS-1 class; Fuzz Face). Others use NAM captures if licensed, else grey-box only | L | `physics/whitebox/` |

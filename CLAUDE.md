@@ -48,7 +48,7 @@ CI (`.github/workflows/ci.yml`) runs ruff check + format check + pytest on Ubunt
 ## Workflow (how this project is run)
 
 - Never commit to `main`; use a `v2/...` branch per task or wave.
-- Parallelize independent work with subagents in isolated worktrees, after first fixing a shared contract (stubs with exact signatures) on `main`.
+- Parallelize independent work with subagents in isolated worktrees, after first merging a shared contract (stubs with exact signatures) to `main` via a PR.
 - Every PR gets an **independent review agent**. Fix blockers (and cheap advisories), re-review, wait for green CI, then merge. Post the review summary as a PR comment.
 - Clean up merged branches and worktrees afterwards.
 - Reports must not overclaim: numbers in docs must match the generated data.

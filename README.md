@@ -24,7 +24,7 @@ uv run lstmabar info         # versions, device, git state
 uv run lstmabar smoke        # config -> seed -> run dir sanity check
 ```
 
-Optional extras: `demo` (Gradio + PyAV), `spikes`, `clap`, `analysis`, `dsp`, `quantum`. Install them with, for example, `uv sync --extra dev --extra demo`.
+Optional extras: `demo` (Gradio + PyAV), `spikes`, `clap`, `analysis`, `quantum`; `dsp` (dasp-pytorch, auraloss) is currently unused, since the pedalboard is pure PyTorch. Install them with, for example, `uv sync --extra dev --extra demo`.
 
 ## Demo
 

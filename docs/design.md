@@ -121,6 +121,7 @@ Module notes:
 ### 4.5 White-box reference sims (`physics/whitebox/`)
 - Offline, non-differentiable, for 2–3 circuits (a diode clipper ODE for TS/DS-1, a Fuzz Face transistor model). Solved via SciPy ODE / ngspice, or a WDF library.
 - Purpose: realistic data, and a check on grey-box fidelity (§7).
+- Solver choice is P2 kickoff decision 4 (recommended: pure Python/SciPy, no ngspice/system deps); update this section once decided.
 
 ### 4.6 Archetype readout and descriptors (`analysis/`)
 - f0 tracking (pYIN or torchcrepe) → harmonic amplitudes → odd/even energy ratio, harmonic slope, harmonic-to-noise ratio.
@@ -240,4 +241,5 @@ legacy/                  # v1 code, read-only reference for the paper
 | 2026-10-09 | Spike B: Guitar-TECHS + EGFxSet (CC BY) are the primary DI and real-pedal sources; TONE3000 captures are hand-picked only; IDMT is private-eval only; GuitarSet is dropped (acoustic) ([licenses](data-licenses.md)) |
 | 2026-10-09 | Gold set provenance: `llm_draft`, `llm_persona` and `simulated_human` (all LLM-written) stay separate from real `human` items; clipping conventions: Muff soft, Klon hard, last drive in a stack sets clipping |
 | 2026-10-09 | P1 DSP: normalized-knob contract, pure-torch frequency-sampled biquads, NumPy compressor recursion behind custom autograd, 4× oversampled p-norm waveshaper, Drive bias range ±0.25 |
+| 2026-10-09 | Python 3.11 pinned locally (`.python-version`, supersedes the 3.12 note above); CI also tests 3.13 to match Colab |
 | 2026-10-09 | Demo decodes uploads itself (libsndfile → PyAV) instead of relying on a system ffmpeg; user-facing errors never include server paths; 25 MB upload cap, 192 kHz sample-rate cap |
