@@ -14,13 +14,14 @@ board exposing the ``Pedalboard`` API (``blocks``, ``block_names``, ``sample_rat
   sliders from :func:`slider_config`.
 """
 
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 import torch
 from torch import Tensor
 
-from lstmabar.audio import loudness_match, synth_riff, to_mono_float
+from lstmabar.audio import load_audio, loudness_match, synth_riff, to_mono_float
 from lstmabar.dsp.base import ParamSpec
 
 BoardParams = dict[str, dict[str, Tensor]]
@@ -202,7 +203,7 @@ def describe_text(board: Any, params: BoardParams) -> str:
 
 
 def prepare_input(
-    audio_value: tuple[int, np.ndarray] | None,
+    audio_value: str | Path | tuple[int, np.ndarray] | None,
     riff_kind: str,
     sample_rate: int,
     max_seconds: float,
@@ -210,12 +211,17 @@ def prepare_input(
 ) -> np.ndarray:
     """The clip to process: the uploaded/recorded audio if any, else a synthetic riff.
 
+    ``audio_value`` is a file path (what ``gr.Audio(type="filepath")`` gives; decoded here
+    with libsndfile or PyAV, so no system ffmpeg is needed) or a ``(sr, ndarray)`` tuple.
     Uploads are trimmed to ``max_seconds`` before conversion and resampling. Raises
-    ``ValueError`` with a user-facing message on a bad sample rate or an empty clip.
+    ``ValueError`` with a user-facing message on an undecodable file, a bad sample rate or
+    an empty clip.
     """
     if audio_value is None:
         seconds = min(riff_seconds, max_seconds)
         return synth_riff(riff_kind, seconds=seconds, sample_rate=sample_rate)
+    if isinstance(audio_value, str | Path):
+        return load_audio(audio_value, sample_rate, max_seconds=max_seconds)
     sr, data = audio_value
     if sr is None or int(sr) <= 0:
         raise ValueError(f"The uploaded clip has an invalid sample rate ({sr}).")

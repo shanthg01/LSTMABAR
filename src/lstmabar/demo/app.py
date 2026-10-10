@@ -96,8 +96,10 @@ def build_app(board_factory: Callable[[], Any] | None = None):
         )
         with gr.Row():
             with gr.Column(scale=1):
+                # filepath (not numpy): gradio would decode non-WAV uploads with a system
+                # ffmpeg; we decode ourselves with libsndfile / PyAV instead.
                 audio_in = gr.Audio(
-                    sources=["upload", "microphone"], type="numpy", label="Input clip"
+                    sources=["upload", "microphone"], type="filepath", label="Input clip"
                 )
                 riff = gr.Dropdown(
                     choices=list(RIFF_KINDS),

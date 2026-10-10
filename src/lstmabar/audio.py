@@ -81,14 +81,90 @@ def to_mono_float(
     return x
 
 
+class AudioDecodeError(ValueError):
+    """An audio file could not be decoded; the message is safe to show to users."""
+
+
+def _decode_soundfile(path: str, max_seconds: float | None) -> tuple[np.ndarray, int]:
+    with sf.SoundFile(path) as f:
+        sr = f.samplerate
+        frames = -1 if max_seconds is None else int(round(max_seconds * sr))
+        return f.read(frames, dtype="float32", always_2d=True), sr
+
+
+def _decode_pyav(path: str, max_seconds: float | None) -> tuple[np.ndarray, int]:
+    """Decode any ffmpeg-supported format (m4a/AAC, webm/Opus, ...) to mono float32.
+
+    PyAV wheels bundle the ffmpeg libraries, so no system ffmpeg is needed.
+    """
+    import av  # lazy: optional dependency (demo extra)
+
+    with av.open(path) as container:
+        if not container.streams.audio:
+            raise AudioDecodeError(f"'{Path(path).name}' contains no audio stream.")
+        stream = container.streams.audio[0]
+        sr = int(stream.rate or stream.codec_context.sample_rate or 44100)
+        resampler = av.AudioResampler(format="flt", layout="mono", rate=sr)
+        limit = None if max_seconds is None else int(round(max_seconds * sr))
+        chunks: list[np.ndarray] = []
+        n = 0
+
+        def take(frames) -> bool:
+            nonlocal n
+            for out in frames:
+                chunk = out.to_ndarray().reshape(-1)
+                chunks.append(chunk)
+                n += chunk.size
+            return limit is not None and n >= limit
+
+        done = False
+        for frame in container.decode(stream):
+            if take(resampler.resample(frame)):
+                done = True
+                break
+        if not done:
+            take(resampler.resample(None))
+    data = np.concatenate(chunks) if chunks else np.zeros(0, dtype=np.float32)
+    if limit is not None:
+        data = data[:limit]
+    return data.astype(np.float32)[:, None], sr
+
+
+def decode_audio(path: str | Path, max_seconds: float | None = None) -> tuple[np.ndarray, int]:
+    """Decode a file to ``(data (T, C) float32, sample_rate)``, reading at most ``max_seconds``.
+
+    Tries libsndfile first (WAV/FLAC/OGG/MP3), then PyAV for everything else (m4a/AAC,
+    webm, ...). Raises :class:`AudioDecodeError` with a user-facing message on failure.
+    """
+    path = str(path)
+    name = Path(path).name
+    try:
+        return _decode_soundfile(path, max_seconds)
+    except sf.LibsndfileError:
+        pass
+    try:
+        return _decode_pyav(path, max_seconds)
+    except AudioDecodeError:
+        raise
+    except ImportError as e:
+        raise AudioDecodeError(
+            f"Can't decode '{name}': this format needs PyAV (`uv sync --extra demo`). "
+            "WAV, FLAC, OGG and MP3 work without it."
+        ) from e
+    except Exception as e:  # PyAV raises its own error types (av.error.*)
+        raise AudioDecodeError(f"Can't decode '{name}': {e}") from e
+
+
 def load_audio(
     path: str | Path, sample_rate: int = 44100, max_seconds: float | None = None
 ) -> np.ndarray:
-    """Read an audio file as mono float32 at ``sample_rate``, optionally truncated."""
-    with sf.SoundFile(str(path)) as f:
-        sr = f.samplerate
-        frames = -1 if max_seconds is None else int(round(max_seconds * sr))
-        data = f.read(frames, dtype="float32", always_2d=True)
+    """Read an audio file as mono float32 at ``sample_rate``, optionally truncated.
+
+    Raises :class:`AudioDecodeError` (a ``ValueError``) if the file can't be decoded.
+    """
+    data, sr = decode_audio(path, max_seconds)
+    if data.size == 0:
+        raise AudioDecodeError(f"'{Path(path).name}' is empty.")
     return to_mono_float(data, sr, sample_rate, max_seconds=max_seconds)
 
 
