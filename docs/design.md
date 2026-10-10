@@ -172,7 +172,7 @@ Licensing details, conditions and open questions: [data-licenses.md](data-licens
 - Audio: MR-STFT distance to target; errors in centroid, odd/even ratio, HNR and archetype vector.
 - Text adherence: CLAP score; gold-set accuracy in 2AFC-vs-distractor form.
 - Perceptual: listening test (pairwise preference + "matches description" Likert), ≥10 listeners.
-- Grey-box fidelity: harmonic-spectrum dB error of the best-fit grey-box vs white-box.
+- Grey-box fidelity: harmonic-spectrum dB error of the best-fit grey-box vs white-box (the P2 gate), and of the derived, unfitted grey-box (accuracy of the physics mapping).
 
 **Baselines** (required, in every results table):
 - no-op (dry passthrough);
@@ -195,7 +195,7 @@ Licensing details, conditions and open questions: [data-licenses.md](data-licens
 ```
 pyproject.toml           # uv-managed, pinned deps
 configs/                 # YAML (OmegaConf): data/, model/, train/, eval/, experiment/
-pedals/                  # knowledge-base YAMLs + schema
+pedals/                  # knowledge-base YAMLs (schema = dataclasses in physics/kb.py)
 src/lstmabar/
   dsp/                   # filters, waveshapers, oversampling, blocks, pedalboard
   physics/               # param derivations, knob tapers, whitebox/ sims

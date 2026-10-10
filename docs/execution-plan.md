@@ -106,7 +106,7 @@ Post-M1 fix (PR #17, found in manual testing): non-WAV uploads (e.g. `.m4a`) fai
 - Derived (unfitted) error reported for every white-box pedal; no gate on it.
 - KB validator and derivation tests green in CI; M2 demo runs.
 
-Not in P2: NAM/Proteus captures (they are a P4 rendering source, pending license emails), Big Muff and full RAT white-box sims, rail clipping of op-amps.
+Not in P2: NAM/Proteus captures (they are a P4 rendering source, pending license emails), Big Muff white-box, rail clipping and bandwidth limits of op-amps. A RAT clipping-stage sim may be built from the shunt solver, but with ideal op-amps it is **diagnostic only** and not part of the gate.
 
 ### P2 kickoff brief
 
@@ -129,13 +129,13 @@ Not in P2: NAM/Proteus captures (they are a P4 rendering source, pending license
    - Nonlinear stage: closed-form circuit formulas (stage gain, pre-clip HPF corner, device → softness/asymmetry/bias).
    - Linear tone stacks (DS-1 and Big Muff LP/HP blends, RAT filter, TS tone): compute the analog magnitude response from components, then least-squares fit `Drive.tone_db` + `EQ3` to it. Deterministic and cheap, and it puts the "physics" in the response rather than in hand-tuned constants.
    - A preset uses `EQ3` for the pedal's tone stack. That's fine for M2 and P4; note it so the demo doesn't present `EQ3` as a separate user EQ while a preset is active.
-3. **Level calibration (new).** The white-box works in volts and the grey-box clips at ±1, so fix a convention once, in config: **0 dBFS ↔ 1 V peak at the pedal input** (hot humbucker territory; typical DI peaks sit 6–20 dB lower).
-   - Then `drive.gain_db` = stage gain + 20·log10(1 V / V_clip), where V_clip is the device's clipping voltage (≈0.6 V Si, ≈0.3 V Ge, ≈1.7 V LED). Without this, derived gains are off by up to ~10 dB and the fidelity check measures the calibration, not the model.
+3. **Level calibration.** The white-box works in volts and the grey-box clips at ±1, so fix a convention once, in config: **0 dBFS ↔ 1 V peak at the pedal input** (hot humbucker territory; typical DI peaks sit 6–20 dB lower).
+   - Then `drive.gain_db` = stage gain + 20·log10(1 V / V_clip), where V_clip is the device's clipping voltage (≈0.6 V Si, ≈0.3 V Ge, ≈1.7 V LED; MOSFET devices take their value from the cited source). Without this, derived gains are off by up to ~10 dB and the fidelity check measures the calibration, not the model.
    - Both sims and the fidelity sweep use the same constant.
 4. **Range and topology gaps.** Verify each against the sources before changing anything, and let the fidelity check decide whether a gap matters:
-   - **Gain above 60 dB.** RAT is ≈ 1 + 100k/(47 Ω ∥ 560 Ω) ≈ 67 dB. Beyond ~45–50 dB the shaper output is already near-square, so the extra gain mainly changes sustain and noise. Recommendation: clamp at 60 dB and record it in the RAT file.
+   - **Gain above 60 dB.** RAT is ≈ 1 + 100k/(47 Ω ∥ 560 Ω) ≈ 67 dB. Beyond ~45–50 dB the shaper output is already near-square, so the extra gain mainly changes sustain and noise. 67 dB is also only the high-frequency ceiling: the 47 Ω / 2.2 µF leg turns on above ~1.5 kHz, below that the 560 Ω leg gives ~45 dB, and the LM308 bandwidth caps it further. Decision: clamp at 60 dB and record it in the RAT file;  must not apply 67 dB flat.
    - **Pre-clip low-pass.** The LM308's bandwidth (RAT) and the 51 pF feedback cap (TS808, ≈5.7 kHz at full drive) low-pass the signal *before* clipping. `Drive` has no pre-clip LP; its post-clip tilt only partly stands in.
-   - **TS808 clean path.** Feedback clipping outputs the input *plus* the clipped gain path, so a unity, full-range clean component survives (part of the TS "transparency"). `Drive` has no clean blend.
+   - **TS808 clean path.** Feedback clipping outputs the input *plus* the clipped gain path, so a unity, full-range clean component survives (part of the TS "transparency"). `Drive` has no clean blend. At 0 dBFS = 1 V the clean part (1 V) exceeds the clipped part (~0.6 V), so expect to need the `clean_db` fix for the TS808 gate; report TS808 error per input level to make the cause visible.
    - **Cascaded stages.** Big Muff has two clipping stages and DS-1 has a transistor booster before the op-amp. Use one `Drive` and accept the error (Big Muff has no white-box, so it is not measured).
    - Smallest-change fixes, only if fidelity misses the gate because of that gap: an optional `pre_lpf_hz` or a `clean_db` blend on `Drive` (default off). **Any change to Drive's ranges or chain must re-pass `lstmabar recover`** and update design §4.3.
 5. **White-box solver.** Pure NumPy/SciPy, offline, no ngspice or other system dependencies on Windows.
@@ -185,7 +185,7 @@ Not in P2: NAM/Proteus captures (they are a P4 rendering source, pending license
 | # | Task | Where | Output |
 |---|---|---|---|
 | 4.1 | Ingest licensed DI corpora (Guitar-TECHS, EGFxSet clean notes, ~30–60 min own DI recordings) → mono 44.1 kHz, 2–4 s onset-aligned clips + manifest | L | `data/sources/`, manifest |
-| 4.2 | Renderer: dry × pedal × sampled knobs → wet (white-box for 2 pedals, NAM/grey-box for the rest); store params, pedal id, descriptors, archetype readout. Multiprocess; resumable shards | L (C if slow) | `data/render.py` |
+| 4.2 | Renderer: dry × pedal × sampled knobs → wet (white-box for TS808 and DS-1, plus Fuzz Face if the P2 stretch lands; NAM/grey-box for the rest); store params, pedal id, descriptors, archetype readout. Multiprocess; resumable shards | L (C if slow) | `data/render.py` |
 | 4.3 | Caption generator: templates from params/descriptors/KB vocab + LLM paraphrase (Claude API), with no numeric leakage. **Do not look at the gold set while writing templates** | L | `data/captions.py` |
 | 4.4 | Real-pedal test set (EGFxSet primary; pOD-set gain sweeps; ToneTwist internal only) | L | `test_real` |
 | 4.5 | Pair each gold instruction with a target tone (pick the closest render / real recording); add friend-written instructions | L | `test_gold` |
