@@ -37,6 +37,8 @@ uv run lstmabar demo                 # http://127.0.0.1:7860 (--port N)
 
 Upload or record a clip (trimmed to 15 s, uploads up to 25 MB), or pick a synthetic example riff. Knobs are generated from each effect block's parameter specs; log-taper knobs slide over their position and show the physical value underneath. Any common format works (WAV, FLAC, MP3, OGG, M4A/AAC, WebM, ...): files are decoded with libsndfile, falling back to PyAV, which bundles its own ffmpeg, so no system ffmpeg is needed.
 
+M2 features (install `--extra analysis` for the archetype panel and `--extra whitebox` for fast white-box renders): the **Pedal** dropdown picks a pedal from the knowledge base (`pedals/`) and shows its own knobs on a 0–10 scale. Releasing a knob derives the grey-box settings from the circuit and writes them into the board sliders, with the derivation's key quantities and approximation/clamp notes underneath. While a pedal is active the EQ sliders are locked, since they hold the pedal's fitted tone stack; the other sliders stay editable, and a render after such a tweak is labelled "custom". Pedals with a white-box circuit simulation get a third player (C, first 10 s of the clip, loudness-matched like B). The archetype panel shows the sine/triangle/square/saw + noise mix and H1–H10 levels (dBc) of dry vs wet (vs white-box) on the loudest 3 s; chords or noise without a stable pitch get a message instead.
+
 `--share` creates a public URL that runs anyone's uploads on your machine; add `--auth user:pass` to require a login.
 
 Heavy training runs on Colab via [colab/bootstrap.ipynb](colab/bootstrap.ipynb), using the same CLI.
