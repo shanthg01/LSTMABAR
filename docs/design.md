@@ -119,9 +119,10 @@ Module notes:
 - Starter set: TS808, ProCo RAT, Boss DS-1, Fuzz Face (Si + Ge), Big Muff Pi. Grow to about 20 pedals.
 
 ### 4.5 White-box reference sims (`physics/whitebox/`)
-- Offline, non-differentiable, for 2–3 circuits (a diode clipper ODE for TS/DS-1, a Fuzz Face transistor model). Solved via SciPy ODE / ngspice, or a WDF library.
+- Offline, non-differentiable, for 2–3 circuits: one diode-clipper solver in feedback (TS808) and shunt (DS-1 / RAT clipping stage) configurations, plus a time-boxed Fuzz Face transistor model. Linear stages come from component values via the bilinear transform.
 - Purpose: realistic data, and a check on grey-box fidelity (§7).
-- Solver choice is P2 kickoff decision 4 (recommended: pure Python/SciPy, no ngspice/system deps); update this section once decided.
+- Sims and grey-box share one level calibration (0 dBFS ↔ 1 V peak at the pedal input, recommended), so derived drive gains are comparable.
+- Solver choice and calibration are P2 kickoff decisions 3 and 5 (recommended: pure NumPy/SciPy, no ngspice/system deps); update this section once decided.
 
 ### 4.6 Archetype readout and descriptors (`analysis/`)
 - f0 tracking (pYIN or torchcrepe) → harmonic amplitudes → odd/even energy ratio, harmonic slope, harmonic-to-noise ratio.
