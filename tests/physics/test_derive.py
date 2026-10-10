@@ -38,7 +38,9 @@ def test_ts808_textbook_numbers(kb):
     # Calibrated Drive gain adds 20 log10(1 V / 0.6 V) = +4.4 dB.
     assert math.isclose(hi.board["drive"]["gain_db"], 41.4 + 4.44, abs_tol=0.1)
     assert math.isclose(hi.info["feedback_lp_hz"], 5660.0, rel_tol=0.01)
-    assert math.isclose(hi.board["drive"]["pre_hpf_hz"], 720.0, rel_tol=0.01)
+    assert math.isclose(hi.info["textbook_hpf_hz"], 720.0, rel_tol=0.01)
+    # Drive's 12 dB/oct HPF is fitted to the 6 dB/oct shelf, so it sits well below 720 Hz.
+    assert 200.0 < lo.board["drive"]["pre_hpf_hz"] < hi.board["drive"]["pre_hpf_hz"] < 300.0
 
 
 def test_drive_knob_monotonic(kb):
@@ -222,6 +224,7 @@ def test_ds1_textbook_numbers(kb):
     assert math.isclose(p.info["opamp_gain_db"], 20 * math.log10(1 + 100e3 / 4.7e3), abs_tol=1e-6)
     # Booster: ~35 dB per ElectroSmash, below its open-loop R8/(R9 + r_e) gain.
     assert 30.0 < p.info["booster_gain_db"] < p.info["booster_open_loop_db"]
+    assert math.isclose(p.info["booster_plateau_db"], 35.0, abs_tol=1.5)  # "35 dB above 3.3k"
     # Booster + op-amp (~61.5 dB textbook) exceeds Drive's range: clamped.
     assert p.board["drive"]["gain_db"] == 60.0
     assert any("gain_db" in n and "clamped" in n for n in p.notes)
@@ -259,18 +262,21 @@ def test_big_muff_scoop_location(kb):
 def test_fuzz_face_textbook_numbers(kb, pid):
     lo, hi = _d(kb, pid, fuzz=0.0), _d(kb, pid, fuzz=1.0)
     assert math.isclose(lo.info["output_hp_hz"], 31.8, rel_tol=0.01)  # C3 into 500k
-    # Emitter bypass at full fuzz: C2 against 1k ∥ r_e2 (ElectroSmash's 7.9 Hz uses 1k alone).
-    r_e2 = 0.02585 / (hi.info["q2_ic_ma"] * 1e-3)
-    bypass = rc_hz(1e3 * r_e2 / (1e3 + r_e2), 20e-6)
-    assert math.isclose(hi.info["bypass_hp_hz"], bypass, rel_tol=0.03)  # + 1 ohm pot end
-    assert 140 < bypass < 200
+    # Emitter bypass at full fuzz: C2 against 1k ∥ (resistance into Q2's emitter, whose base
+    # is driven from Q1's 33k collector): 1/g_m2 + 33k/(h_FE2 + 1). ElectroSmash's 7.9 Hz
+    # uses the 1k alone.
+    from lstmabar.physics.derive import FUZZ_FACE_HFE
+
+    hfe2 = FUZZ_FACE_HFE[kb[pid].clipping[0].device][1]
+    r_e = 0.02585 / (hi.info["q2_ic_ma"] * 1e-3) + 33e3 / (hfe2 + 1)
+    bypass = rc_hz(1e3 * r_e / (1e3 + r_e), 20e-6)
+    assert math.isclose(hi.info["bypass_hp_hz"], bypass, rel_tol=0.01)
+    assert (25 < bypass < 40) if pid.endswith("ge") else (65 < bypass < 90)
     r2 = 470 if pid.endswith("ge") else 330
     div = 20 * math.log10(r2 / (r2 + 8200))
     assert math.isclose(lo.info["output_divider_db"], div, abs_tol=1e-6)
     # Q2 gain ~(R2 + R3)/R_unbypassed = 8.2x at minimum fuzz (ElectroSmash).
     assert math.isclose(lo.info["q2_gain_db"], 20 * math.log10(8.2), abs_tol=0.5)
-    # Fuzz up bypasses the emitter: the C2 bypass corner moves up into the audio band.
-    assert hi.board["drive"]["pre_hpf_hz"] > 100.0 > lo.board["drive"]["pre_hpf_hz"]
     # Asymmetric clipping (Q2 cutoff vs saturation swing).
     assert 0.0 < hi.board["drive"]["asymmetry"] < 1.0
 
@@ -295,14 +301,14 @@ def test_ts808_tone_stage_limits(kb):
     """Tone at 0: R8/C6 shunts P, cutting below the 723 Hz R7/C5 pole alone; tone at 1: the
     treble shelf levels off the 723 Hz roll-off."""
     from lstmabar.physics.derive import ts808_tone_stage
-    from lstmabar.physics.networks import rc_lowpass
+    from lstmabar.physics.networks import rc_lowpass_tf
 
     ts = kb["ts808"]
     f = np.array([100.0, 3000.0, 10000.0])
     dark, bright = ts808_tone_stage(ts, 0.0).db(f), ts808_tone_stage(ts, 1.0).db(f)
     lf = 20 * math.log10(10e3 / 11e3)  # R7 into the 10k bias resistor
     assert math.isclose(dark[0], lf, abs_tol=0.3) and math.isclose(bright[0], lf, abs_tol=0.3)
-    one_pole = rc_lowpass(1e3, 0.22e-6).db(f) + lf
+    one_pole = rc_lowpass_tf(1e3, 0.22e-6).db(f) + lf
     assert dark[1] < one_pole[1] - 3  # extra treble cut
     assert bright[1] > one_pole[1] + 6  # treble restored
     assert bright[1] - bright[0] > -6  # nearly flat to 3 kHz
@@ -355,12 +361,62 @@ def test_grid_finite_in_range_and_tone_fit(kb, pid):
             specs = {s.name: s for s in BLOCK_SPECS[block]}
             for k, v in vals.items():
                 assert math.isfinite(v) and specs[k].min <= v <= specs[k].max, (knobs, k, v)
-        # TS808 has no pre-HPF fit (textbook corner); post gain is -inf with volume at 0.
-        skip = {"pre_hpf_fit_rms_db", "post_gain_db"}
+        skip = {"post_gain_db"}  # -inf with the volume knob at 0
         finite = {k: v for k, v in p.info.items() if k not in skip}
         assert all(math.isfinite(v) for v in finite.values()), (knobs, finite)
         worst = max(worst, p.info["tone_fit_rms_db"])
     assert worst < TONE_RMS_BOUND_DB, (pid, worst)
+
+
+# Worst RMS dB error of Drive's HPF + flat gain against the pre-clip gain path, per pedal
+# (observed + margin). Large values are known: the RAT's ~6 dB/oct legs (5.3), the Fuzz Face
+# at full fuzz with a resistive source (Si 4.7), the TS808's first-order shelf (4.0).
+PRE_HPF_RMS_BOUND_DB = {
+    "ts808": 4.5,
+    "rat": 6.0,
+    "ds1": 3.5,
+    "big_muff": 1.5,
+    "fuzz_face_ge": 3.0,
+    "fuzz_face_si": 5.5,
+}
+
+
+@pytest.mark.parametrize("pid", sorted(GAIN_KNOB))
+def test_pre_hpf_fit_error_bounded(kb, pid):
+    rms = [_d(kb, pid, **{GAIN_KNOB[pid]: v}).info["pre_hpf_fit_rms_db"] for v in SWEEP]
+    assert max(rms) < PRE_HPF_RMS_BOUND_DB[pid], rms
+
+
+def _solve(y: np.ndarray, i: np.ndarray) -> np.ndarray:
+    return np.linalg.solve(y, i)
+
+
+@pytest.mark.parametrize("pid", ["fuzz_face_ge", "fuzz_face_si"])
+@pytest.mark.parametrize("fuzz", [0.0, 0.5, 1.0])
+def test_fuzz_face_closed_form_matches_nodal(kb, pid, fuzz):
+    """Hybrid-pi nodal solve (nodes B1, C1 = B2, E2, C2; R4 loading Q2's emitter included)
+    against :func:`fuzz_face_small_signal`'s closed form."""
+    from lstmabar.physics.derive import fuzz_face_small_signal
+
+    p = kb[pid]
+    m = fuzz_face_small_signal(p, fuzz, 10e3)
+    r4, r1 = p.c("R_fb"), p.c("R_q1_c")
+    for f in (100.0, 1000.0, 10000.0):
+        s = 2j * math.pi * f
+        y_s = 1 / (10e3 + 1 / (s * p.c("C_in")))
+        y_e = 1 / (m.r_u + 1 / (1 / m.r_y + s * p.c("C_fuzz_bypass")))
+        g1, g2, gp1, gp2 = m.gm1, m.gm2, 1 / m.r_pi1, 1 / m.r_pi2
+        y = np.array(
+            [
+                [y_s + 1 / r4 + gp1, 0, -1 / r4, 0],  # B1
+                [g1, 1 / r1 + gp2, -gp2, 0],  # C1 = B2
+                [-1 / r4, -gp2 - g2, gp2 + g2 + y_e + 1 / r4, 0],  # E2
+                [0, g2, -g2, 1 / m.r_load],  # C2
+            ],
+            dtype=complex,
+        )
+        v = _solve(y, np.array([y_s, 0, 0, 0], dtype=complex))
+        assert math.isclose(20 * math.log10(abs(v[3])), float(m.h.db(f)), abs_tol=0.15), f
 
 
 @pytest.mark.parametrize("pid", sorted(GAIN_KNOB))

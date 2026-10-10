@@ -8,9 +8,15 @@ so network equations read like the circuit analysis:
     z_leg = res(47) + cap(2.2e-6)                  # R4 + 1/(sC5)
     gain = 1 + par(res(100e3), cap(100e-12)) / par(z_leg, res(560) + cap(4.7e-6))
 
-Coefficients are not reduced (common pole/zero factors are kept); that does not affect the
-magnitude response, which is what the derivations use. ``tf.b`` / ``tf.a`` can go straight
-into ``scipy.signal.bilinear`` for a white-box linear stage.
+Coefficients are not reduced (common pole/zero factors are kept, and cascades reach degree
+13-16). That does not affect the magnitude response, which is all the derivations use (they
+evaluate it directly; checked to ~1e-14 dB against products of separately evaluated
+factors). **Do not feed a cascade's ``tf.b`` / ``tf.a`` to ``scipy.signal.bilinear``**:
+high-degree polynomials discretize poorly. A white-box model should build and discretize
+per stage (low-order TFs, or second-order sections), not the unreduced product.
+
+``rc_lowpass_tf`` / ``rc_highpass_tf`` return ``TF`` objects; they are unrelated to the
+discrete-time ``whitebox.linear.rc_lowpass`` stage.
 
 Building blocks (all small-signal, ideal op-amps, no device capacitances):
 
@@ -131,12 +137,12 @@ def divider(z_top: TF, z_bottom: TF) -> TF:
     return z_bottom / (z_top + z_bottom)
 
 
-def rc_lowpass(r: float, c: float) -> TF:
+def rc_lowpass_tf(r: float, c: float) -> TF:
     """``1 / (1 + sRC)``."""
     return TF([1.0], [r * c, 1.0])
 
 
-def rc_highpass(r: float, c: float) -> TF:
+def rc_highpass_tf(r: float, c: float) -> TF:
     """``sRC / (1 + sRC)``."""
     return TF([r * c, 0.0], [r * c, 1.0])
 
@@ -215,12 +221,12 @@ def two_leg_blend(v_a: TF, z_a: TF, v_b: TF, z_b: TF, z_load: TF) -> TF:
 
 def thevenin_rc_lowpass(r: float, c: float) -> tuple[TF, TF]:
     """Series R, shunt C to ground, seen from the C node: ``(1/(1+sRC), R ∥ 1/(sC))``."""
-    return rc_lowpass(r, c), par(res(r), cap(c))
+    return rc_lowpass_tf(r, c), par(res(r), cap(c))
 
 
 def thevenin_cr_highpass(c: float, r: float) -> tuple[TF, TF]:
     """Series C, shunt R to ground, seen from the R node: ``(sRC/(1+sRC), R ∥ 1/(sC))``."""
-    return rc_highpass(r, c), par(res(r), cap(c))
+    return rc_highpass_tf(r, c), par(res(r), cap(c))
 
 
 # --- Response summaries -------------------------------------------------------------------------
@@ -259,9 +265,9 @@ __all__ = [
     "noninverting_gain",
     "par",
     "pot_split",
-    "rc_highpass",
+    "rc_highpass_tf",
     "rc_hz",
-    "rc_lowpass",
+    "rc_lowpass_tf",
     "res",
     "response_info",
     "shunt_feedback_gain",

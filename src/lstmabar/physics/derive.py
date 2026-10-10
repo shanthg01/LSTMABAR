@@ -17,16 +17,25 @@ pedal), so importing :mod:`lstmabar.physics.derive` fills :data:`DERIVERS`.
 
 Method, shared by every deriver (helpers in :mod:`lstmabar.physics.networks`):
 
-1. **Pre-clip gain path** as an s-domain transfer function from component values, in two
-   versions: ``h_full`` (every element) and ``h_hp`` (the pre-clip low-pass elements, e.g.
-   feedback caps and Miller caps, removed). ``Drive``'s pre-HPF + flat gain stands in for
-   ``h_hp`` (:func:`pre_clip_drive`): ``gain = |h_hp(f_ref)|`` and ``pre_hpf_hz`` is the
-   Butterworth corner that best matches ``h_hp``'s roll-off below ``f_ref``. Calibrated with
+1. **Pre-clip gain path** ``h_gain`` as an s-domain transfer function from component values.
+   ``Drive``'s pre-HPF + flat gain stands in for it (:func:`pre_clip_drive`): ``gain`` is the
+   peak of ``|h_gain|`` over the guitar band (its plateau for high-pass-shaped paths), read at
+   ``f_ref``, and ``pre_hpf_hz`` is the Butterworth corner that best matches the roll-off
+   below ``f_ref``. Exception: the RAT reads its gain at 1 kHz, because the unmodelled LM308
+   bandwidth caps the rise above it (``GAIN_REF_HZ``). Calibrated with
    :func:`~lstmabar.physics.calibration.drive_gain_db` at the clipping stage's ``V_clip``.
-2. **Post-clip linear response** ``h_post`` = (``h_full / h_hp``: the pre-clip low-pass
-   ``Drive`` cannot place before the shaper, moved after it; topology gap of decision 4) ×
+2. **Post-clip linear response** ``h_post`` = (the clipper-adjacent low-pass, see below) ×
    tone stack × output filtering, fitted with :func:`~lstmabar.physics.analog.fit_tone` onto
    ``Drive.tone_db`` + ``EQ3``. The fit's broadband gain is folded into ``drive.level_db``.
+
+**Rule for low-passes before the clipper** (one rule for every pedal): a low-pass in the
+stage that drives the last clipper, or at the clipping node itself (TS808/RAT/DS-1 op-amp
+feedback caps, DS-1 ``R_clip``/``C_clip``, Big Muff clip 2's Miller cap), is removed from
+``h_gain`` and applied after the shaper instead, since ``Drive`` has no pre-clip low-pass
+(topology gap, decision 4) and these caps also filter the clipped output. Low-passes in
+*earlier* stages (DS-1 booster's ``C_boost_fb``, Big Muff booster and clip 1 Miller caps) stay
+in ``h_gain``: they shape what reaches the clipper, which regenerates the harmonics they
+remove, so moving them after the shaper would over-darken the output.
 3. **Level** :func:`~lstmabar.physics.calibration.output_level_db`: the shaper's ±1 is
    ``V_clip`` volts, times the post-clip gain (fit gain, fixed stage gains, volume pot).
 4. **Shaper** :func:`shaper_prior` from the clipping device (a prior for the P2 fidelity fit).
@@ -68,9 +77,9 @@ from lstmabar.physics.networks import (
     noninverting_gain,
     par,
     pot_split,
-    rc_highpass,
+    rc_highpass_tf,
     rc_hz,
-    rc_lowpass,
+    rc_lowpass_tf,
     res,
     response_info,
     shunt_feedback_gain,
@@ -86,11 +95,12 @@ BLOCK_SPECS: dict[str, tuple[ParamSpec, ...]] = {
 }
 
 GAIN_REF_HZ = 1000.0
-"""Default frequency at which a frequency-dependent pre-clip gain is read off (``f_ref``).
+"""Fixed gain-read frequency for the RAT, whose ideal-op-amp gain keeps rising to the 67 dB
+HF ceiling while the (unmodelled) LM308 bandwidth pulls the real gain down above ~1.5 kHz.
+Also the frequency of the per-stage gains recorded in ``info``."""
 
-Guitar fundamentals and the strongest low harmonics sit below ~1 kHz, and above ~1.5 kHz
-the op-amp bandwidth (LM308 in the RAT) and Miller caps (Big Muff) pull the real gain down,
-so 1 kHz is the representative mid-band point. It is also ``Drive``'s tilt pivot."""
+GAIN_BAND_HZ = (100.0, 10000.0)
+"""Band searched for the peak / plateau of a pre-clip gain path (:func:`pre_clip_drive`)."""
 
 SOURCE_OHMS = 10e3
 """Default guitar source impedance (ohms) for pedals whose gain depends on it (Fuzz Face).
@@ -193,21 +203,27 @@ class PreClip:
     gain: float
     pre_hpf_hz: float
     fit_rms_db: float
+    f_ref: float
 
 
-def pre_clip_drive(h_hp: TF, f_ref: float = GAIN_REF_HZ, f_lo: float = 40.0) -> PreClip:
-    """Map a pre-clip gain path (low-pass elements removed) onto ``Drive``'s HPF + gain.
+def pre_clip_drive(h_gain: TF, f_ref: float | None = None, f_lo: float = 40.0) -> PreClip:
+    """Map a pre-clip gain path onto ``Drive``'s HPF + flat gain.
 
-    ``gain = |h_hp(f_ref)|``; ``pre_hpf_hz`` minimizes the RMS dB error between Drive's
-    2nd-order Butterworth high-pass and ``|h_hp(f)| / gain`` on a log grid over
-    ``[f_lo, f_ref]`` (the band below the reference, where the circuit's coupling caps and
-    gain legs roll the gain off). A one-parameter fit rather than the -3 dB point, because
-    networks such as the RAT's two gain legs roll off at ~6 dB/oct over a decade, which a
-    12 dB/oct filter at the -3 dB point would over-cut.
+    ``f_ref`` defaults to the frequency of the peak of ``|h_gain|`` over
+    :data:`GAIN_BAND_HZ` (the plateau of a high-pass-shaped path, the top of a band-pass);
+    ``gain = |h_gain(f_ref)|``. ``pre_hpf_hz`` minimizes the RMS dB error between Drive's
+    2nd-order Butterworth high-pass and ``|h_gain(f)| / gain`` on a log grid over
+    ``[f_lo, f_ref]``. A one-parameter fit rather than the -3 dB point, because the circuits'
+    roll-offs are first-order shelves or ~6 dB/oct slopes (TS808 shelf, RAT gain legs), which
+    a 12 dB/oct filter at the -3 dB point would over-cut by 10-20 dB at 100 Hz. The residual
+    (``fit_rms_db``) is recorded in ``info``.
     """
-    gain = float(h_hp.mag(f_ref))
+    if f_ref is None:
+        band = np.geomspace(*GAIN_BAND_HZ, 200)
+        f_ref = float(band[int(np.argmax(h_gain.mag(band)))])
+    gain = float(h_gain.mag(f_ref))
     f = np.geomspace(f_lo, f_ref, 48)
-    target = h_hp.db(f) - db(gain)
+    target = h_gain.db(f) - db(gain)
     spec = next(s for s in Drive.param_specs if s.name == "pre_hpf_hz")
 
     def err(log_fc: float) -> float:
@@ -215,7 +231,7 @@ def pre_clip_drive(h_hp: TF, f_ref: float = GAIN_REF_HZ, f_lo: float = 40.0) -> 
 
     lo, hi = math.log10(spec.min * 0.5), math.log10(spec.max * 2.0)
     r = minimize_scalar(err, bounds=(lo, hi), method="bounded", options={"xatol": 1e-4})
-    return PreClip(gain, float(10**r.x), math.sqrt(err(r.x)))
+    return PreClip(gain, float(10**r.x), math.sqrt(err(r.x)), f_ref)
 
 
 def _post_clip(
@@ -257,6 +273,7 @@ def _post_clip(
             **info,
             "drive_stage_gain_db": db(pre.gain),
             "pre_hpf_fit_rms_db": pre.fit_rms_db,
+            "gain_ref_hz": pre.f_ref,
             "v_clip": v_clip,
             "post_gain_db": db(post_gain),
             "tone_fit_gain_db": tone.gain_db,
@@ -390,23 +407,25 @@ def _ts808(pedal: Pedal, knobs: dict[str, float], ctx: DeriveContext) -> Preset:
 
     Gain path ``G(s) = 1 + Z_f/Z_g``, ``Z_f = (R_fb + R_drive) ∥ 1/(sC_fb)``,
     ``Z_g = R_gain + 1/(sC_gain)``. Without C_fb it is a first-order shelf whose plateau,
-    ``1 + (R_fb + R_drive)/R_gain``, starts at the R_gain/C_gain corner (~720 Hz). So
-    ``Drive`` takes the plateau gain and the textbook corner directly (``f_ref`` would sit on
-    the shelf's slope at 1 kHz). C_fb's low-pass (``1/(2π(R_fb+R_drive)C_fb)``, ~5.7 kHz at
-    full drive) goes into the post-clip fit, followed by :func:`ts808_tone_stage` and the
-    level pot (``R_level_in`` in series with the pot, ``R_out_series``/``R_out_shunt`` output
-    divider). The unity clean path of feedback clipping is not representable by ``Drive``
-    (topology gap, P2 decision 4).
+    ``1 + (R_fb + R_drive)/R_gain``, starts at the textbook R_gain/C_gain corner (~720 Hz,
+    kept in ``info["textbook_hpf_hz"]``). ``Drive`` gets the plateau gain (read at 10 kHz,
+    within 0.03 dB) and a corner fitted by :func:`pre_clip_drive`: putting a 12 dB/oct
+    Butterworth at 720 Hz would cut 34 dB at 100 Hz where the 6 dB/oct shelf cuts 16 dB, so
+    the fitted corner lands near 230-270 Hz. C_fb's low-pass (``1/(2π(R_fb+R_drive)C_fb)``,
+    ~5.7 kHz at full drive) goes into the post-clip fit, followed by
+    :func:`ts808_tone_stage` and the level pot (``R_level_in`` in series with the pot,
+    ``R_out_series``/``R_out_shunt`` output divider). The unity clean path of feedback
+    clipping is not representable by ``Drive`` (topology gap, P2 decision 4).
     """
     clip = pedal.clipping[0]
     r_f = pedal.c("R_fb") + pedal.pots["drive"].resistance(knobs["drive"])
     z_g = res(pedal.c("R_gain")) + cap(pedal.c("C_gain"))
-    h_in = rc_highpass(pedal.c("R_clip_bias"), pedal.c("C_clip_in"))
+    h_in = rc_highpass_tf(pedal.c("R_clip_bias"), pedal.c("C_clip_in"))
     h_hp = h_in * noninverting_gain(res(r_f), z_g)
     h_full = h_in * noninverting_gain(par(res(r_f), cap(pedal.c("C_fb"))), z_g)
     gain = 1.0 + r_f / pedal.c("R_gain")
     hpf = rc_hz(pedal.c("R_gain"), pedal.c("C_gain"))
-    pre = PreClip(gain, hpf, float("nan"))
+    pre = pre_clip_drive(h_hp, f_ref=10e3)
 
     tone = ts808_tone_stage(pedal, knobs["tone"])
     level_pot = pedal.pots["level"]
@@ -428,7 +447,7 @@ def _ts808(pedal: Pedal, knobs: dict[str, float], ctx: DeriveContext) -> Preset:
         post_gain=post_gain,
         info={
             "stage_gain_db": db(gain),
-            "pre_hpf_hz": hpf,
+            "textbook_hpf_hz": hpf,
             "feedback_lp_hz": rc_hz(r_f, pedal.c("C_fb")),
             "tone_lp_hz": rc_hz(pedal.c("R_tone_lp"), pedal.c("C_tone_lp")),
             "tone_shunt_hz": rc_hz(pedal.c("R_tone_shunt"), pedal.c("C_tone_shunt")),
@@ -465,16 +484,16 @@ def _rat(pedal: Pedal, knobs: dict[str, float], ctx: DeriveContext) -> Preset:
         res(pedal.c("R_gain_hf")) + cap(pedal.c("C_gain_hf")),
         res(pedal.c("R_gain_lf")) + cap(pedal.c("C_gain_lf")),
     )
-    h_in = rc_highpass(pedal.c("R_in_bias"), pedal.c("C_in"))
+    h_in = rc_highpass_tf(pedal.c("R_in_bias"), pedal.c("C_in"))
     h_hp = h_in * noninverting_gain(res(r_dist), z_g)
     h_full = h_in * noninverting_gain(par(res(r_dist), cap(pedal.c("C_fb"))), z_g)
-    pre = pre_clip_drive(h_hp)
+    pre = pre_clip_drive(h_hp, f_ref=GAIN_REF_HZ)
 
     r_filter = pedal.c("R_filter") + pedal.pots["filter"].resistance(knobs["filter"])
     z_load = par(cap(pedal.c("C_filter")), cap(pedal.c("C_out_in")) + res(pedal.c("R_jfet_bias")))
     h_filter = divider(res(r_filter), z_load)
     vol = pedal.pots["volume"]
-    h_out = rc_highpass(vol.value, pedal.c("C_out"))
+    h_out = rc_highpass_tf(vol.value, pedal.c("C_out"))
     return _post_clip(
         pedal,
         knobs,
@@ -514,15 +533,20 @@ def _ds1(pedal: Pedal, knobs: dict[str, float], ctx: DeriveContext) -> Preset:
     ``I_C = (V_supply - V_boost_collector)/R_boost_c``. Op-amp: input coupling
     ``C_opamp_in``/``R_opamp_bias`` (23 Hz),
     ``G(s) = 1 + (R_dist ∥ 1/(sC_fb)) / (R_gain + 1/(sC_gain))`` (72 Hz corner; 1 .. 22.3 =
-    26.5 dB). The two gains are multiplied up to the diodes (cascade -> one Drive) and read at
-    1 kHz (the booster's gain still rises above it).
+    26.5 dB). The two gains are multiplied up to the diodes (cascade -> one Drive); the gain
+    is the plateau of the product (:func:`pre_clip_drive`).
 
-    The booster's input coupling cap meets the base impedance that the shunt feedback lowers
-    to ~``R_boost_fb / (1 + A_ol)`` (~5 kΩ), not ``R_boost_bias`` alone, so the pre-clip
-    high-pass sits near 250-300 Hz rather than ElectroSmash's 33 Hz (C3 with R5).
+    The booster's input cap ``C_boost_in2`` drives the shunt-feedback virtual ground, whose
+    impedance is ~``R_boost_fb / (1 + A_ol)`` (~5 kΩ), so the booster gain rises ~6 dB/oct to
+    its own -3 dB corner near 520 Hz and levels off at ~35.8 dB (``C_boost_in2/C_boost_fb``
+    limited by ``A_ol``; 34.8 dB at 1 kHz). That matches ElectroSmash's "35 dB above 3.3 kHz";
+    its 33 Hz figure is ``1/(2π·C3·R5)``, which ignores the Miller-lowered base impedance.
+    The ~250-300 Hz ``pre_hpf_hz`` is the Butterworth *fit* to booster × op-amp, not a
+    circuit corner.
 
-    Post-clip: C_boost_fb/C_fb low-passes, the ``R_clip``/``C_clip`` 7.2 kHz low-pass at the
-    diode node (pre-clip in the circuit), then :func:`lp_hp_blend_tone_stack` (234 Hz LP leg,
+    Post-clip (low-pass rule in the module docstring): the op-amp ``C_fb`` low-pass and the
+    ``R_clip``/``C_clip`` 7.2 kHz low-pass at the diode node; the booster's ``C_boost_fb``
+    stays pre-clip. Then :func:`lp_hp_blend_tone_stack` (234 Hz LP leg,
     1063 Hz HP leg) loaded by ``R_tone_out + 1/(sC_out_in) + R_out_bias_a ∥ R_out_bias_b``
     (the output buffer's input), the voltage across the bias resistors, and the Level pot.
     """
@@ -538,14 +562,15 @@ def _ds1(pedal: Pedal, knobs: dict[str, float], ctx: DeriveContext) -> Preset:
     r_fb = res(pedal.c("R_boost_fb"))
     r_dist = max(pedal.pots["dist"].resistance(knobs["dist"]), 1.0)
     z_g = res(pedal.c("R_gain")) + cap(pedal.c("C_gain"))
-    h_in = rc_highpass(pedal.c("R_in_bias"), pedal.c("C_in")) * rc_highpass(
+    h_in = rc_highpass_tf(pedal.c("R_in_bias"), pedal.c("C_in")) * rc_highpass_tf(
         pedal.c("R_opamp_bias"), pedal.c("C_opamp_in")
     )
     opamp_hp = noninverting_gain(res(r_dist), z_g)
     opamp_full = noninverting_gain(par(res(r_dist), cap(pedal.c("C_fb"))), z_g)
-    h_hp = h_in * booster(r_fb) * opamp_hp
-    h_full = h_in * booster(par(r_fb, cap(pedal.c("C_boost_fb")))) * opamp_full
-    pre = pre_clip_drive(h_hp)
+    boost = booster(par(r_fb, cap(pedal.c("C_boost_fb"))))
+    h_gain = h_in * boost * opamp_hp
+    pre = pre_clip_drive(h_gain)
+    band = np.geomspace(*GAIN_BAND_HZ, 200)
 
     r_bias = 1.0 / (1.0 / pedal.c("R_out_bias_a") + 1.0 / pedal.c("R_out_bias_b"))
     z_series = res(pedal.c("R_tone_out")) + cap(pedal.c("C_out_in"))
@@ -553,8 +578,8 @@ def _ds1(pedal: Pedal, knobs: dict[str, float], ctx: DeriveContext) -> Preset:
         pedal, knobs["tone"], "R_tone_lp", "C_tone_lp", "C_tone_hp", "R_tone_hp", z_series + r_bias
     )
     h_tone = stack * divider(z_series, res(r_bias))
-    h_clip_lp = rc_lowpass(pedal.c("R_clip"), pedal.c("C_clip"))
-    h_out = rc_highpass(pedal.c("R_out_pulldown"), pedal.c("C_out"))
+    h_clip_lp = rc_lowpass_tf(pedal.c("R_clip"), pedal.c("C_clip"))
+    h_out = rc_highpass_tf(pedal.c("R_out_pulldown"), pedal.c("C_out"))
     f = log_grid()
     return _post_clip(
         pedal,
@@ -562,10 +587,11 @@ def _ds1(pedal: Pedal, knobs: dict[str, float], ctx: DeriveContext) -> Preset:
         ctx,
         clip=clip,
         pre=pre,
-        h_post=(h_full / h_hp) * h_clip_lp * h_tone * h_out,
+        h_post=(opamp_full / opamp_hp) * h_clip_lp * h_tone * h_out,
         post_gain=pedal.pots["level"].fraction(knobs["level"]),
         info={
-            "booster_gain_db": float(booster(r_fb).db(GAIN_REF_HZ)),
+            "booster_gain_db": float(boost.db(GAIN_REF_HZ)),
+            "booster_plateau_db": float(np.max(boost.db(band))),
             "booster_open_loop_db": db(a_ol),
             "opamp_gain_db": db(1 + r_dist / pedal.c("R_gain")),
             "gain_corner_hz": rc_hz(pedal.c("R_gain"), pedal.c("C_gain")),
@@ -573,13 +599,17 @@ def _ds1(pedal: Pedal, knobs: dict[str, float], ctx: DeriveContext) -> Preset:
             "tone_lp_hz": rc_hz(pedal.c("R_tone_lp"), pedal.c("C_tone_lp")),
             "tone_hp_hz": rc_hz(pedal.c("R_tone_hp"), pedal.c("C_tone_hp")),
             "tone_hf_db": float(np.mean(h_tone.db(f[f > 2000]))),
-            **response_info("pre_gain", h_full),
+            **response_info("pre_gain", h_gain),
         },
         notes=(
             "booster and op-amp cascaded into one Drive (the booster's own soft clipping "
             "is not represented)",
-            "R_clip/C_clip 7.2 kHz low-pass applied after the shaper; tone stack driven by "
-            "the diode node as an ideal source (clipped regime)",
+            "op-amp C_fb and R_clip/C_clip 7.2 kHz low-passes applied after the shaper; tone "
+            "stack driven by the diode node as an ideal source (clipped regime)",
+            "booster: transistor base current (beta -> inf) and the C_opamp_in/R_opamp_bias "
+            "collector load neglected (~1-2 dB high); R11 (100k, role unclear: possibly across "
+            "the Dist pot, max op-amp gain 21.3 dB instead of 26.5 dB) and Level-pot loading "
+            "of the tone stack not modelled",
         ),
     )
 
@@ -598,11 +628,11 @@ def _big_muff(pedal: Pedal, knobs: dict[str, float], ctx: DeriveContext) -> Pres
     Thevenin impedance adds to clip 1's ``Z_s = Z_th + 1/(sC_clip1_in) + R_clip1_in``; clip 2
     ``Z_s = 1/(sC_clip2_in) + R_clip2_in``. Stage outputs are treated as ideal sources. The
     diode branches only conduct when clipping and are left out of the small-signal path.
-    All gains up to clip 2 are multiplied into one Drive (``V_clip`` 0.6 V, Si pair), read at
-    1 kHz. Only clip 2's Miller low-pass (~1.3 kHz closed loop; its cap sits across the
-    clipping diodes, so it filters the output) goes into the post-clip fit: the booster's and
-    clip 1's low-passes act before clip 2, which regenerates the harmonics they remove.
-    Putting all three after the shaper would cut ~48 dB at 10 kHz.
+    All gains up to clip 2 are multiplied into one Drive (``V_clip`` 0.6 V, Si pair). Per the
+    module's low-pass rule, the booster's and clip 1's Miller low-passes stay in the gain path
+    (which is then band-pass shaped; the gain is its peak), and only clip 2's (~1.3 kHz closed
+    loop; its cap sits across the clipping diodes) goes into the post-clip fit. Putting all
+    three after the shaper would cut ~48 dB at 10 kHz.
 
     Post-clip: :func:`lp_hp_blend_tone_stack` (408 Hz LP leg, 1.81 kHz HP leg) loaded by
     ``1/(sC_out_in) + R_out_bias_hi ∥ R_out_bias_lo``, the voltage at Q1's base, Q1's gain
@@ -623,7 +653,7 @@ def _big_muff(pedal: Pedal, knobs: dict[str, float], ctx: DeriveContext) -> Pres
         return hp, full, info
 
     z_s4 = res(pedal.c("R_in_series")) + cap(pedal.c("C_in"))
-    b_hp, b_full, b_info = stage(
+    _, b_full, b_info = stage(
         "booster", "R_boost_c", "R_boost_e", "R_boost_fb", "R_boost_bias", "C_boost_miller", z_s4
     )
     r_low, r_high = pot_split(pedal.pots["sustain"], knobs["sustain"])
@@ -631,16 +661,15 @@ def _big_muff(pedal: Pedal, knobs: dict[str, float], ctx: DeriveContext) -> Pres
     z_bot = res(pedal.c("R_sustain_floor") + r_low)
     v_th, z_th = divider(z_top, z_bot), par(z_top, z_bot)
     z_s3 = z_th + cap(pedal.c("C_clip1_in")) + pedal.c("R_clip1_in")
-    c1_hp, c1_full, c1_info = stage(
+    _, c1_full, c1_info = stage(
         "clip1", "R_clip1_c", "R_clip1_e", "R_clip1_fb", "R_clip1_bias", "C_clip1_miller", z_s3
     )
     z_s2 = cap(pedal.c("C_clip2_in")) + pedal.c("R_clip2_in")
     c2_hp, c2_full, c2_info = stage(
         "clip2", "R_clip2_c", "R_clip2_e", "R_clip2_fb", "R_clip2_bias", "C_clip2_miller", z_s2
     )
-    h_hp = b_hp * v_th * c1_hp * c2_hp
-    h_full = b_full * v_th * c1_full * c2_full
-    pre = pre_clip_drive(h_hp)
+    h_gain = b_full * v_th * c1_full * c2_hp
+    pre = pre_clip_drive(h_gain)
 
     r_bias = 1.0 / (1.0 / pedal.c("R_out_bias_hi") + 1.0 / pedal.c("R_out_bias_lo"))
     z_c3 = cap(pedal.c("C_out_in"))
@@ -649,7 +678,7 @@ def _big_muff(pedal: Pedal, knobs: dict[str, float], ctx: DeriveContext) -> Pres
     )
     h_tone = stack * divider(z_c3, res(r_bias))
     vol = pedal.pots["volume"]
-    h_out = rc_highpass(vol.value, pedal.c("C_out"))
+    h_out = rc_highpass_tf(vol.value, pedal.c("C_out"))
     q1_gain = pedal.c("R_out_c") / pedal.c("R_out_e")
     f = log_grid()
     return _post_clip(
@@ -669,14 +698,16 @@ def _big_muff(pedal: Pedal, knobs: dict[str, float], ctx: DeriveContext) -> Pres
             "tone_hp_hz": rc_hz(pedal.c("R_tone_hp"), pedal.c("C_tone_hp")),
             "tone_hf_db": float(np.mean(h_tone.db(f[f > 2000]))),
             "output_stage_gain_db": db(q1_gain),
-            **response_info("pre_gain", h_full),
+            **response_info("pre_gain", h_gain),
             **response_info("tone", h_tone),
         },
         notes=(
             "two clipping stages (and the booster) cascaded into one Drive",
             "clip 2's Miller low-pass applied after the shaper; the booster's and clip 1's "
-            "(pre-clip-2) low-passes dropped; stage output impedances, transistor input "
-            "currents and the diode + C_clip*_diode branches ignored",
+            "low-passes kept in the pre-clip gain path",
+            "transistor base currents (beta -> inf; ~-1.5 dB per clip stage at beta ~100), "
+            "stage output impedances (~6 kOhm into clip 2's input, ~-3 to -4 dB) and the "
+            "diode + C_clip*_diode branches ignored; mostly hidden by the 60 dB clamp",
         ),
     )
 
@@ -688,6 +719,53 @@ fidelity fit / owner may revise them."""
 
 V_BE = {"ge_transistor": 0.2, "si_transistor": 0.6}
 """Base-emitter drop used for the Fuzz Face bias point (volts)."""
+
+
+@dataclass(frozen=True)
+class FuzzFaceSmallSignal:
+    """Fuzz Face small-signal model (see :func:`_fuzz_face` for the formulas)."""
+
+    gm1: float
+    gm2: float
+    r_pi1: float
+    r_pi2: float
+    hfe2: float
+    r_u: float  # unbypassed part of the Fuzz pot (wiper -> emitter end)
+    r_y: float  # bypassed part (ground end -> wiper)
+    r_load: float  # R_out_lo + R_q2_c
+    v_e2: float  # Q2 emitter DC voltage
+    a1: TF
+    a2: TF
+    k: TF
+    v_b: TF
+    h: TF  # v_c2 / v_s
+
+
+def fuzz_face_small_signal(pedal: Pedal, fuzz: float, source_ohms: float) -> FuzzFaceSmallSignal:
+    """Bias point and closed-form small-signal gain of a Fuzz Face at Fuzz rotation ``fuzz``."""
+    clip = pedal.clipping[0]
+    hfe1, hfe2 = FUZZ_FACE_HFE[clip.device]
+    vs = pedal.c("V_supply")
+    r_load = pedal.c("R_out_lo") + pedal.c("R_q2_c")
+    pot = pedal.pots["fuzz"]
+    i_c2 = (vs - pedal.c("V_q2_collector")) / r_load
+    v_e2 = i_c2 * pot.value
+    v_c1 = pedal.components.get("V_q1_collector", v_e2 + V_BE[clip.device])
+    i_c1 = (vs - v_c1) / pedal.c("R_q1_c")
+    gm1, gm2 = i_c1 / THERMAL_VOLTAGE, i_c2 / THERMAL_VOLTAGE
+    r_pi1, r_pi2 = hfe1 / gm1, hfe2 / gm2
+
+    r_y, r_u = pot_split(pot, fuzz)  # low end = grounded end; high end = emitter
+    z_e = res(r_u) + par(res(r_y), cap(pedal.c("C_fuzz_bypass")))
+    r_in2 = r_pi2 + (hfe2 + 1) * z_e
+    a1 = gm1 * par(res(pedal.c("R_q1_c")), r_in2)
+    a2 = hfe2 * r_load / r_in2
+    k = a1 * (hfe2 + 1) * z_e / r_in2
+    y_s = 1 / (res(source_ohms) + cap(pedal.c("C_in")))
+    v_b = y_s / (y_s + 1.0 / r_pi1 + (1 + k) / pedal.c("R_fb"))
+    return FuzzFaceSmallSignal(
+        gm1, gm2, r_pi1, r_pi2, hfe2, r_u, r_y, r_load, v_e2, a1, a2, k, v_b, v_b * a1 * a2
+    )
 
 
 @register("fuzz_face_si")
@@ -708,9 +786,13 @@ def _fuzz_face(pedal: Pedal, knobs: dict[str, float], ctx: DeriveContext) -> Pre
         k  = A1 · (h_FE2 + 1)·Z_e / r_in2                   loop gain to Q2's emitter
         v_b1 / v_s = (1/Z_s) / (1/Z_s + 1/r_π1 + (1 + k)/R_fb),   Z_s = R_source + 1/(sC_in)
 
-    ``Drive`` gain = ``|v_b1/v_s · A1 · A2|`` at 1 kHz (the gain at Q2's collector, where
-    ``V_clip`` is referred). The guitar's source impedance sets how much the feedback bites
-    (:attr:`DeriveContext.source_ohms`); with a stiff source the feedback does nothing.
+    ``Drive`` gain = plateau of ``|v_b1/v_s · A1 · A2|`` (the gain at Q2's collector, where
+    ``V_clip`` is referred; :func:`pre_clip_drive`). The guitar's source impedance sets how
+    much the feedback bites (:attr:`DeriveContext.source_ohms`); with a stiff source the
+    feedback does nothing. At full fuzz ``Z_e -> 1/(sC)`` makes both Q2's degeneration and the
+    loop gain ``k`` grow toward low frequencies, hence the steep low-end roll-off (``k`` at
+    100 Hz / 1 kHz in ``info``). The resistive source is an approximation: a pickup's
+    inductance raises ``Z_s`` with frequency and would flatten this.
     Clipping asymmetry from Q2's swing: toward cutoff ``V_supply - V_q2_collector``, toward
     saturation ``V_q2_collector - V_E2``: ``asymmetry = 2·(1 - swing_sat/swing_cut)``.
 
@@ -718,37 +800,20 @@ def _fuzz_face(pedal: Pedal, knobs: dict[str, float], ctx: DeriveContext) -> Pre
     (~31 Hz high-pass), Volume pot fraction.
     """
     clip = pedal.clipping[0]
-    hfe1, hfe2 = FUZZ_FACE_HFE[clip.device]
     vs = pedal.c("V_supply")
-    r_load = pedal.c("R_out_lo") + pedal.c("R_q2_c")
-    fuzz = pedal.pots["fuzz"]
-    i_c2 = (vs - pedal.c("V_q2_collector")) / r_load
-    v_e2 = i_c2 * fuzz.value
-    v_c1 = pedal.components.get("V_q1_collector", v_e2 + V_BE[clip.device])
-    i_c1 = (vs - v_c1) / pedal.c("R_q1_c")
-    gm1, gm2 = i_c1 / THERMAL_VOLTAGE, i_c2 / THERMAL_VOLTAGE
-    r_pi1, r_pi2 = hfe1 / gm1, hfe2 / gm2
-
-    r_y, r_u = pot_split(fuzz, knobs["fuzz"])  # low end = grounded end; high end = emitter
-    z_e = res(r_u) + par(res(r_y), cap(pedal.c("C_fuzz_bypass")))
-    r_in2 = r_pi2 + (hfe2 + 1) * z_e
-    a1 = gm1 * par(res(pedal.c("R_q1_c")), r_in2)
-    a2 = hfe2 * r_load / r_in2
-    k = a1 * (hfe2 + 1) * z_e / r_in2
-    y_s = 1 / (res(ctx.source_ohms) + cap(pedal.c("C_in")))
-    v_b = y_s / (y_s + 1.0 / r_pi1 + (1 + k) / pedal.c("R_fb"))
-    h = v_b * a1 * a2
-    pre = pre_clip_drive(h)
+    m = fuzz_face_small_signal(pedal, knobs["fuzz"], ctx.source_ohms)
+    r_load, r_u, r_y = m.r_load, m.r_u, m.r_y
+    pre = pre_clip_drive(m.h)
 
     shaper = shaper_prior(clip)
     swing_cut = vs - pedal.c("V_q2_collector")
-    swing_sat = pedal.c("V_q2_collector") - v_e2
+    swing_sat = pedal.c("V_q2_collector") - m.v_e2
     lo, hi = sorted((swing_cut, swing_sat))
     shaper["asymmetry"] = min(max(2.0 * (1.0 - lo / hi), 0.0), 1.0)
 
     vol = pedal.pots["volume"]
     r_out = pedal.c("R_out_lo") * pedal.c("R_q2_c") / r_load
-    h_out = rc_highpass(vol.value + r_out, pedal.c("C_out"))
+    h_out = rc_highpass_tf(vol.value + r_out, pedal.c("C_out"))
     return _post_clip(
         pedal,
         knobs,
@@ -759,20 +824,24 @@ def _fuzz_face(pedal: Pedal, knobs: dict[str, float], ctx: DeriveContext) -> Pre
         post_gain=pedal.c("R_out_lo") / r_load * vol.fraction(knobs["volume"]),
         shaper=shaper,
         info={
-            "q1_ic_ma": i_c1 * 1e3,
-            "q2_ic_ma": i_c2 * 1e3,
-            "q1_gain_db": float(a1.db(GAIN_REF_HZ)),
-            "q2_gain_db": float(a2.db(GAIN_REF_HZ)),
-            "input_attenuation_db": float(v_b.db(GAIN_REF_HZ)),
+            "q1_ic_ma": m.gm1 * THERMAL_VOLTAGE * 1e3,
+            "q2_ic_ma": m.gm2 * THERMAL_VOLTAGE * 1e3,
+            "q1_gain_db": float(m.a1.db(GAIN_REF_HZ)),
+            "q2_gain_db": float(m.a2.db(GAIN_REF_HZ)),
+            "input_attenuation_db": float(m.v_b.db(GAIN_REF_HZ)),
+            "loop_gain_db_100hz": float(m.k.db(100.0)),
+            "loop_gain_db_1000hz": float(m.k.db(1000.0)),
             "unbypassed_ohms": r_u,
             "output_divider_db": db(pedal.c("R_out_lo") / r_load),
             "output_hp_hz": rc_hz(vol.value + r_out, pedal.c("C_out")),
-            # C2 against the bypassed section ∥ (r_e2 + R_u): the emitter-bypass corner
+            # C2 against R_y ∥ (resistance looking into Q2's emitter): Q2's base is driven
+            # from Q1's collector, so that is R_u + 1/g_m2 + R_q1_c/(h_FE2 + 1).
             "bypass_hp_hz": rc_hz(
-                1.0 / (1.0 / r_y + 1.0 / (1.0 / gm2 + r_u)), pedal.c("C_fuzz_bypass")
+                1.0 / (1.0 / r_y + 1.0 / (r_u + 1.0 / m.gm2 + pedal.c("R_q1_c") / (m.hfe2 + 1))),
+                pedal.c("C_fuzz_bypass"),
             ),
             "source_ohms": ctx.source_ohms,
-            **response_info("pre_gain", h),
+            **response_info("pre_gain", m.h),
         },
         notes=(
             f"gain depends on the guitar source impedance (assumed {ctx.source_ohms:g} ohm) "
@@ -791,6 +860,7 @@ __all__ = [
     "PreClip",
     "Preset",
     "derive",
+    "fuzz_face_small_signal",
     "lp_hp_blend_tone_stack",
     "pre_clip_drive",
     "preset_params",
