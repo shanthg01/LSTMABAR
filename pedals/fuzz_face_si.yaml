@@ -33,8 +33,8 @@ components:
   C_fuzz_bypass: 20u       # C2, from the Fuzz pot wiper to ground
   C_out: 0.01u             # C3, output coupling
 pots:
-  fuzz: {value: 1k, taper: B, default: 0.5, label: Fuzz}       # 1KB (Fuzz Central)
-  volume: {value: 500k, taper: A, default: 0.5, label: Volume} # 500KA (Fuzz Central)
+  fuzz: {value: 1k, taper: B, default: 0.5, label: Fuzz}       # 1K linear (ElectroSmash BOM; also 1KB on Fuzz Central's Si schematic)
+  volume: {value: 500k, taper: A, default: 0.5, label: Volume} # 500K audio (ElectroSmash BOM; also 500KA on Fuzz Central's Si schematic)
 sources:
   - https://fuzzcentral.ssguitar.com/fuzzface.php
   - https://www.electrosmash.com/fuzz-face

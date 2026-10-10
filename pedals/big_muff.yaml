@@ -82,7 +82,9 @@ notes: >-
   the two clipping stages). Drive is single-stage, so both clipping stages map onto one
   Drive (P2 decision 4); no white-box is planned for this pedal. Q4's collector sits at ~7 V
   because of R14 = 47k, which can make the booster clip asymmetrically for inputs above
-  ~0.2 Vpp (ElectroSmash). Differences between sources: the ElectroSmash BOM lists C1 as
+  ~0.2 Vpp (ElectroSmash). The pairing of each clipping stage with its Miller cap, diode
+  cap and diodes follows Kit Rae's trace, which differs from ElectroSmash's text; the values
+  per stage are identical. Differences between sources: the ElectroSmash BOM lists C1 as
   1 uF and R11, R13, R18 as 10K (its gain calculations use 10K for stage 1 and 15K for stage
   2), while Kit Rae's trace of the common V3 shows C1 10 uF and 15k for all three, noting
   10k on some V3s; this file follows Kit Rae's trace. The ElectroSmash BOM also omits R7.

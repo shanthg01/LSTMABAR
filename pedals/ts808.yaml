@@ -29,14 +29,18 @@ components:
   # Active tone stage (IC1b, non-inverting, unity gain at mid-band). The Tone pot is strung
   # from IC1b's (-) input to its (+) input (the R7/C5 node); its wiper goes to ground
   # through R_tone_shunt + C_tone_shunt.
-  R_tone_shunt: 220     # R8, wiper RC to ground (with C6: ~3.2 kHz)
+  # Designator conflict: ElectroSmash's text calls the 220 ohm wiper resistor R8 (and the output
+  # bias/emitter resistors R12 510k / R13 10k), but its true-bypass parts list has R8 1K,
+  # R9 10K, R10 220, R11 1K, R12 1K (510K = R2, R13). The parts-list designators below
+  # ("BOM Rn") are matched by value and role, which is an inference; the values are not affected.
+  R_tone_shunt: 220     # R8 in ES text (BOM R10), wiper RC to ground (with C6: ~3.2 kHz)
   C_tone_shunt: 0.22u   # C6
-  R_tone_fb: 1k         # IC1b output to (-) input (Geofex tone schematic)
-  R_tone_bias: 10k      # IC1b (+) input to 4.5 V (Geofex tone schematic)
+  R_tone_fb: 1k         # IC1b output to (-) input (Geofex tone schematic; BOM R11 inferred)
+  R_tone_bias: 10k      # IC1b (+) input to 4.5 V (Geofex tone schematic; BOM R9 inferred)
   # Level and output buffer (Q3 2SC1815 emitter follower)
   C_level_in: 1u        # C7, 1 uF NP from IC1b output
-  R_level_in: 1k        # series resistor from C7 to the Level pot's hot lug (Geofex)
-  R_out_bias: 510k      # R12, output buffer base bias to 4.5 V
+  R_level_in: 1k        # series resistor from C7 to the Level pot's hot lug (Geofex; BOM R12 inferred)
+  R_out_bias: 510k      # R12 in ES text (BOM R13), output buffer base bias to 4.5 V
   R_out_emitter: 10k    # R13, emitter resistor
   R_out_series: 100     # R_B, series output resistor (470 in the TS9)
   C_out: 10u            # C9, output coupling

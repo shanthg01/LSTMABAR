@@ -36,11 +36,13 @@ components:
   C_opamp_in: 68n          # C5, with R10: 23 Hz high-pass
   R_opamp_bias: 100k       # R10, (+) input bias to 4.5 V
   R_opamp_in: 47k          # R39, (+) input current limit
-  R_gain: 4.7k             # R13, gain leg to ground (with C8: 72 Hz at max distortion)
+  R_gain: 4.7k             # R13, gain leg to ground (with C8: 72 Hz pole at any Dist setting; the zero
+                           # at 1/(2*pi*C8*(R13 + VR1)) moves down to ~3 Hz at max)
   C_gain: 0.47u            # C8
   C_fb: 100p               # C7, across the feedback path (top-octave roll-off)
   # Clipping network
-  C_clip_couple: 0.47u     # C9, op-amp output coupling ahead of R14 (value from the BOM)
+  C_clip_couple: 0.47u     # C9 (0.47u per BOM); placement as op-amp output coupling
+                           # ahead of R14 is inferred, not stated by the sources
   R_clip: 2.2k             # R14, diode current limit; with C10: 7.2 kHz below clipping
   C_clip: 0.01u            # C10, across D4/D5
   # Tone stack (Big Muff style LP/HP blend, mixed by the Tone pot)
