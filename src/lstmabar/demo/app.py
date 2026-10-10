@@ -15,6 +15,7 @@ panel also wants ``analysis``, and white-box renders are much faster with ``whit
   :mod:`lstmabar.demo.archetype_panel`.
 """
 
+import inspect
 import logging
 from collections.abc import Callable, Mapping
 from typing import Any
@@ -31,16 +32,18 @@ from lstmabar.demo.archetype_panel import (
 )
 from lstmabar.demo.presets import (
     MANUAL,
+    WHITEBOX_MAX_SECONDS,
+    WHITEBOX_NEEDS_NUMBA,
     derive_preset,
     dial_config,
     is_locked,
     pedal_choices,
     preset_board_values,
     preset_controls,
-    preset_matches,
     preset_readout,
+    resolve_render,
     whitebox_available,
-    whitebox_max_seconds,
+    whitebox_ready,
     whitebox_render,
 )
 from lstmabar.demo.render import (
@@ -63,8 +66,13 @@ log = logging.getLogger(__name__)
 MAX_SECONDS = 15.0
 MAX_FILE_SIZE = "25mb"
 EQ_LOCK_NOTE = (
-    "*EQ locked: while a pedal is active this block holds the pedal's fitted tone stack. "
-    'Pick "Manual board" to use it as a free EQ.*'
+    "*EQ locked (sliders and on/off): while a pedal is active this block holds the pedal's "
+    'fitted tone stack. Pick "Manual board" to use it as a free EQ.*'
+)
+PANEL_PLACEHOLDER = "*Render to see the archetype readout.*"
+PANEL_OFF = (
+    "*Archetype analysis is off. Tick the box above to see the sine/triangle/square/saw + "
+    "noise readout (adds a few seconds per render).*"
 )
 BAR_COLUMNS = ["signal", "component", "share"]
 HARMONIC_COLUMNS = ["signal", "harmonic", "dbc"]
@@ -101,6 +109,13 @@ def _title(name: str) -> str:
     return name.replace("_", " ").title()
 
 
+def _private(gr) -> dict:
+    """Listener kwargs that keep an internal helper event out of the public API."""
+    if "api_visibility" in inspect.signature(gr.Blocks.load).parameters:  # gradio >= 6
+        return {"api_visibility": "private"}
+    return {"show_api": False}  # pragma: no cover - gradio 5
+
+
 def _frame(rows: list[dict], columns: list[str]):
     import pandas as pd  # a gradio dependency
 
@@ -130,7 +145,8 @@ def build_app(
         dial_slices[pid] = slice(start, start + len(pedal.pots))
         start += len(pedal.pots)
     n_dials = start
-    wb_seconds = whitebox_max_seconds()
+    wb_seconds = WHITEBOX_MAX_SECONDS
+    private = _private(gr)
 
     def active_pedal(pedal_id):
         return kb.get(pedal_id) if pedal_id != MANUAL else None
@@ -145,23 +161,36 @@ def build_app(
     def board_updates(preset):
         """Checkbox + slider updates for a pedal preset (``None``: unlock, keep values)."""
         if preset is None:
-            return [gr.update()] * n_blocks + [gr.update(interactive=True)] * n_sliders
+            return [gr.update(interactive=True)] * (n_blocks + n_sliders)
         enabled, sliders = preset_controls(board, preset)
-        return [gr.update(value=v) for v in enabled] + [
+        return [
+            gr.update(value=v, interactive=not is_locked(name, True))
+            for name, v in zip(board.block_names, enabled, strict=True)
+        ] + [
             gr.update(value=s, interactive=not is_locked(name, True))
             for (name, _), s in zip(specs, sliders, strict=True)
         ]
 
-    def on_render(audio_value, riff_kind, match, pedal_id, analyse, *controls):
+    def on_render(audio_value, riff_kind, match, pedal_id, analyse, derived, *controls):
         dials = controls[:n_dials]
         enabled_vals = controls[n_dials : n_dials + n_blocks]
         slider_vals = controls[n_dials + n_blocks :]
         pedal = active_pedal(pedal_id)
-        preset, edited, wb = None, False, False
+        preset, edited, wb, wb_msg = None, False, False, ""
         if pedal is not None:
-            preset = derive_preset(pedal, list(dials[dial_slices[pedal.id]]), sr)
-            edited = not preset_matches(board, preset, enabled_vals, slider_vals)
+            choice = resolve_render(
+                board,
+                pedal,
+                list(dials[dial_slices[pedal.id]]),
+                derived_for(derived, pedal.id),
+                enabled_vals,
+                slider_vals,
+                sr,
+            )
+            preset, edited = choice.preset, choice.edited
             wb = whitebox_available(pedal.id)
+            if wb and not whitebox_ready():
+                wb, wb_msg = False, WHITEBOX_NEEDS_NUMBA
         if preset is not None and not edited:
             enabled, values = preset_board_values(board, preset)  # exact, not slider-rounded
             params = knobs_to_params(board, values, enabled)
@@ -173,8 +202,8 @@ def build_app(
             raise gr.Error(str(e)) from e
         dry, wet = render(board, clip, params, match_loudness=bool(match))
 
-        wb_audio, wb_msg = None, ""
-        if wb:
+        wb_audio = None
+        if wb:  # same dial state as the grey-box preset
             res = whitebox_render(pedal, preset.knobs, clip, sr, bool(match), wb_seconds)
             wb_audio, wb_msg = res.audio, res.message
         wb_update = gr.update(
@@ -192,7 +221,7 @@ def build_app(
             bars = _frame(archetype_rows(panel), BAR_COLUMNS)
             harms = _frame(harmonic_rows(panel), HARMONIC_COLUMNS)
         else:
-            arche_md = "*Archetype analysis is off.*"
+            arche_md = PANEL_OFF
             bars, harms = _frame([], BAR_COLUMNS), _frame([], HARMONIC_COLUMNS)
         return (
             (sr, to_int16(dry)),
@@ -206,29 +235,55 @@ def build_app(
             harms,
         )
 
+    def derived_for(derived, pid):
+        """Dial values the board sliders were last derived from for ``pid`` (or None)."""
+        if isinstance(derived, dict) and derived.get("pedal") == pid:
+            return list(derived["dials"])
+        return None
+
+    def wb_shown(pid):
+        return whitebox_available(pid) and whitebox_ready()
+
+    def cleared_outputs():
+        """Clear the previous render (B, C message, readouts, panel) on a pedal switch."""
+        return [
+            None,
+            "",
+            "",
+            PANEL_PLACEHOLDER,
+            _frame([], BAR_COLUMNS),
+            _frame([], HARMONIC_COLUMNS),
+        ]
+
     def on_pedal(pedal_id, *dials):
         pedal = active_pedal(pedal_id)
         groups = [gr.update(visible=pedal is not None and pid == pedal.id) for pid in kb]
         if pedal is None:
             hidden = [gr.update(visible=False), gr.update(visible=False, value=None)]
-            return [*groups, "", *hidden, *board_updates(None)]
-        preset = derive_preset(pedal, list(dials[dial_slices[pedal.id]]), sr)
-        wb = whitebox_available(pedal.id)
+            return [*groups, "", *hidden, *cleared_outputs(), None, *board_updates(None)]
+        pedal_dials = list(dials[dial_slices[pedal.id]])
+        preset = derive_preset(pedal, pedal_dials, sr)
+        wb = wb_shown(pedal.id)
         return [
             *groups,
             preset_readout(pedal, preset, wb),
             gr.update(visible=True),
             gr.update(visible=wb, value=None),
+            *cleared_outputs(),
+            {"pedal": pedal.id, "dials": pedal_dials},
             *board_updates(preset),
         ]
 
     def make_on_dial(pid):
         pedal = kb[pid]
 
-        def on_dial(*pedal_dials):
+        def on_dial(pedal_id, *pedal_dials):
+            if pedal_id != pid:  # the pedal was switched while this derive was queued
+                return [gr.update()] * (2 + n_blocks + n_sliders)
             preset = derive_preset(pedal, list(pedal_dials), sr)
-            md = preset_readout(pedal, preset, whitebox_available(pid))
-            return [md, *board_updates(preset)]
+            md = preset_readout(pedal, preset, wb_shown(pid))
+            state = {"pedal": pid, "dials": list(pedal_dials)}
+            return [md, state, *board_updates(preset)]
 
         on_dial.__name__ = f"on_dial_{pid}"
         return on_dial
@@ -239,8 +294,9 @@ def build_app(
         for i, v in zip(range(n_dials)[dial_slices[pedal.id]], dial_vals, strict=True):
             dial_updates[i] = v
         preset = derive_preset(pedal, dial_vals, sr)
-        md = preset_readout(pedal, preset, whitebox_available(pedal.id))
-        return [*dial_updates, *board_updates(preset), md]
+        md = preset_readout(pedal, preset, wb_shown(pedal.id))
+        state = {"pedal": pedal.id, "dials": list(dial_vals)}
+        return [*dial_updates, *board_updates(preset), md, state]
 
     def on_reset(pedal_id):
         pedal = active_pedal(pedal_id)
@@ -248,7 +304,7 @@ def build_app(
             sliders = [
                 slider_from_physical(spec, defaults[name][spec.name]) for name, spec in specs
             ]
-            return [gr.update()] * n_dials + [True] * n_blocks + sliders + [""]
+            return [gr.update()] * n_dials + [True] * n_blocks + sliders + ["", None]
         return dial_outputs(pedal, [dial_config(p)["value"] for p in pedal.pots.values()])
 
     def on_randomize(pedal_id):
@@ -256,7 +312,7 @@ def build_app(
         if pedal is None:
             knobs = random_knobs(board, rng)
             sliders = [slider_from_physical(spec, knobs[name][spec.name]) for name, spec in specs]
-            return [gr.update()] * (n_dials + n_blocks) + sliders + [gr.update()]
+            return [gr.update()] * (n_dials + n_blocks) + sliders + [gr.update(), None]
         return dial_outputs(pedal, [round(float(rng.uniform(0, 10)), 1) for _ in pedal.pots])
 
     with gr.Blocks(title="LSTMABAR pedalboard") as app:
@@ -285,9 +341,9 @@ def build_app(
                     "wet may stay quieter when peak-limited)",
                 )
                 analyse = gr.Checkbox(
-                    value=True,
-                    label=f"Archetype analysis (loudest {ANALYSIS_SECONDS:.0f} s; the first "
-                    "run is slow while the pitch tracker compiles)",
+                    value=False,
+                    label=f"Archetype analysis (loudest {ANALYSIS_SECONDS:.0f} s; adds a few "
+                    "seconds per render, the first run is slow while the pitch tracker compiles)",
                 )
                 with gr.Row():
                     render_btn = gr.Button("Render", variant="primary")
@@ -303,7 +359,7 @@ def build_app(
                 )
                 wb_msg = gr.Markdown()
                 with gr.Accordion("Archetype panel", open=True):
-                    arche_md = gr.Markdown("*Render to see the archetype readout.*")
+                    arche_md = gr.Markdown(PANEL_OFF)
                     arche_bar = gr.BarPlot(
                         value=_frame([], BAR_COLUMNS),
                         x="signal",
@@ -332,6 +388,7 @@ def build_app(
                         dials.extend(gr.Slider(**dial_config(pot)) for pot in pedal.pots.values())
                     dial_groups.append(group)
                 preset_md = gr.Markdown()
+                derived = gr.State(None)  # {"pedal", "dials"} the sliders were derived from
                 eq_note = gr.Markdown(EQ_LOCK_NOTE, visible=False)
                 checkboxes = []
                 sliders = []
@@ -350,11 +407,22 @@ def build_app(
                                     inputs=slider,
                                     outputs=slider,
                                     show_progress="hidden",
+                                    **private,
                                 )
 
         render_btn.click(
             on_render,
-            inputs=[audio_in, riff, match, pedal_dd, analyse, *dials, *checkboxes, *sliders],
+            inputs=[
+                audio_in,
+                riff,
+                match,
+                pedal_dd,
+                analyse,
+                derived,
+                *dials,
+                *checkboxes,
+                *sliders,
+            ],
             outputs=[
                 dry_out,
                 wet_out,
@@ -367,21 +435,38 @@ def build_app(
                 harm_plot,
             ],
         )
+        stale = [wet_out, wb_msg, readout, arche_md, arche_bar, harm_plot]
         pedal_dd.change(
             on_pedal,
             inputs=[pedal_dd, *dials],
-            outputs=[*dial_groups, preset_md, eq_note, wb_out, *checkboxes, *sliders],
+            outputs=[
+                *dial_groups,
+                preset_md,
+                eq_note,
+                wb_out,
+                *stale,
+                derived,
+                *checkboxes,
+                *sliders,
+            ],
+            **private,
         )
         for pid in kb:
             pedal_dials = dials[dial_slices[pid]]
+            # release: mouse drags; change: keyboard / number-box edits and reset/randomize
+            # (re-deriving there is idempotent). always_last: a move made while a derive is
+            # running is queued instead of dropped.
             gr.on(
-                triggers=[d.release for d in pedal_dials],
+                triggers=[d.release for d in pedal_dials] + [d.change for d in pedal_dials],
                 fn=make_on_dial(pid),
-                inputs=pedal_dials,
-                outputs=[preset_md, *checkboxes, *sliders],
+                inputs=[pedal_dd, *pedal_dials],
+                outputs=[preset_md, derived, *checkboxes, *sliders],
+                trigger_mode="always_last",
+                show_progress="hidden",
+                **private,
             )
-        board_outputs = [*dials, *checkboxes, *sliders, preset_md]
-        reset_btn.click(on_reset, inputs=pedal_dd, outputs=board_outputs)
-        random_btn.click(on_randomize, inputs=pedal_dd, outputs=board_outputs)
+        board_outputs = [*dials, *checkboxes, *sliders, preset_md, derived]
+        reset_btn.click(on_reset, inputs=pedal_dd, outputs=board_outputs, **private)
+        random_btn.click(on_randomize, inputs=pedal_dd, outputs=board_outputs, **private)
 
     return app

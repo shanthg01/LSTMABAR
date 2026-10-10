@@ -8,15 +8,19 @@ Behaviour (P2 task 2.6):
   writes the physical result into the board sliders (:func:`preset_controls`), so the grey-box
   setting is visible.
 - **EQ lock.** While a pedal is active, the board's ``eq`` block holds the fitted tone stack of
-  the pedal (P2 decision 2), not a user EQ, so its sliders are locked (:data:`LOCKED_BLOCKS`).
-  Switching back to "Manual board" unlocks them and keeps the current values.
-- **Tweaks.** The other board sliders stay editable. At render time the grey-box output uses
-  the derived preset exactly when the sliders still match it (:func:`preset_matches`, within
-  one slider step); after a tweak it uses the sliders as set and is labelled "custom (edited
-  from <pedal>)". The white-box always follows the pedal dials.
+  the pedal (P2 decision 2), not a user EQ, so its sliders and its on/off box are locked
+  (:data:`LOCKED_BLOCKS`). Switching back to "Manual board" unlocks them and keeps the values.
+- **Tweaks** (:func:`resolve_render`). The app remembers the dial values the board sliders were
+  last derived from. At render time, if the sliders still match *that* preset (within one
+  slider step), nothing was hand-edited and the grey-box renders the preset derived from the
+  *current* dials (so a dial move whose re-derive hasn't reached the sliders yet is not lost).
+  Otherwise the sliders were edited: the grey-box renders them as set, labelled "custom
+  (edited from <pedal>)". The white-box always uses the current dials, i.e. the same dial
+  state as the grey-box whenever it is not custom.
 - **White-box** renders only for pedals that have a registered model (looked up at runtime
-  via :func:`~lstmabar.physics.whitebox.has_whitebox`), on a clip trimmed to
-  :func:`whitebox_max_seconds`, and failures give a generic message (details go to the log).
+  via :func:`~lstmabar.physics.whitebox.has_whitebox`) and only with the compiled numba solver
+  (:func:`whitebox_ready`; the NumPy fallback would block a render for ~30 s), on a clip trimmed
+  to :data:`WHITEBOX_MAX_SECONDS`. Failures give a generic message (details go to the log).
 """
 
 import logging
@@ -50,14 +54,16 @@ LOCKED_BLOCKS: tuple[str, ...] = ("eq",)
 DIAL_MAX = 10.0
 DIAL_STEP = 0.1
 WHITEBOX_MAX_SECONDS = 10.0
-WHITEBOX_MAX_SECONDS_NUMPY = 3.0  # the pure-NumPy solver runs at ~0.1x real time
 WHITEBOX_ERROR = "White-box render failed for this setting; the grey-box output is unaffected."
+WHITEBOX_NEEDS_NUMBA = (
+    "A white-box model exists for this pedal, but rendering it needs the compiled solver: "
+    "`uv sync --extra whitebox`."
+)
 
 # Preset.info keys shown in the readout (when a deriver records them), in display order.
+# The gain into the clipper is shown separately, with the frequency it was read at.
 _INFO_KEYS: tuple[tuple[str, str, str], ...] = (
-    ("drive_stage_gain_db", "Circuit gain into the clipper", "dB"),
     ("v_clip", "Clip level", "V"),
-    ("gain_ref_hz", "Gain read at", "Hz"),
     ("post_gain_db", "Post-clip gain", "dB"),
     ("tone_fit_rms_db", "Tone-stack fit error (RMS)", "dB"),
     ("pre_hpf_fit_rms_db", "Pre-HPF fit error (RMS)", "dB"),
@@ -157,7 +163,51 @@ def preset_matches(
     return True
 
 
+@dataclass
+class RenderChoice:
+    preset: Preset  # derived from the current dials (white-box and readout use these)
+    edited: bool  # sliders hand-edited since the last derive: render them as set ("custom")
+
+
+def resolve_render(
+    board: Any,
+    pedal: Pedal,
+    dial_values: Sequence[float | None],
+    derived_dials: Sequence[float | None] | None,
+    enabled_vals: Sequence[Any],
+    slider_vals: Sequence[Any],
+    sample_rate: int,
+) -> RenderChoice:
+    """Decide what the grey-box renders for an active pedal (see the module docstring).
+
+    ``derived_dials`` are the dial values the board sliders were last derived from (``None``
+    if the board was never derived for this pedal, e.g. the pick's own derive is still
+    running: then nothing can have been hand-edited yet).
+    """
+    preset = derive_preset(pedal, dial_values, sample_rate)
+    if derived_dials is None:
+        return RenderChoice(preset, False)
+    if dials_to_knobs(pedal, derived_dials) == preset.knobs:
+        base = preset
+    else:
+        base = derive_preset(pedal, derived_dials, sample_rate)
+    return RenderChoice(preset, not preset_matches(board, base, enabled_vals, slider_vals))
+
+
 # --- Readout --------------------------------------------------------------------------------
+
+
+def _finite(v: Any) -> float | None:
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    return f if math.isfinite(f) else None
+
+
+def _hz(v: float) -> str:
+    """``264 Hz``, ``1 kHz``, ``10 kHz``."""
+    return f"{_num(v / 1e3)} kHz" if abs(v) >= 1000 else f"{_num(v)} Hz"
 
 
 def preset_readout(pedal: Pedal, preset: Preset, whitebox: bool, edited: bool = False) -> str:
@@ -172,17 +222,23 @@ def preset_readout(pedal: Pedal, preset: Preset, whitebox: bool, edited: bool = 
     if "gain_db" in drive:
         rows.append(("Drive gain (board)", f"{_num(drive['gain_db'])} dB"))
     if "pre_hpf_hz" in drive:
-        rows.append(("Pre-clip high-pass corner", f"{_num(drive['pre_hpf_hz'])} Hz"))
+        rows.append(("Pre-clip high-pass corner", _hz(drive["pre_hpf_hz"])))
+    gain = _finite(preset.info.get("drive_stage_gain_db"))
+    if gain is not None:
+        ref = _finite(preset.info.get("gain_ref_hz"))
+        where = f" (evaluated at {_hz(ref)})" if ref is not None else ""
+        rows.append(("Circuit gain into the clipper", f"{_num(gain)} dB{where}"))
     for key, label, unit in _INFO_KEYS:
-        v = preset.info.get(key)
-        if v is not None and math.isfinite(float(v)):
-            rows.append((label, f"{_num(float(v))} {unit}".strip()))
+        v = _finite(preset.info.get(key))
+        if v is not None:
+            rows.append((label, f"{_num(v)} {unit}".strip()))
     if rows:
         lines += ["", "| Circuit quantity | Value |", "|---|---|"]
         lines += [f"| {k} | {v} |" for k, v in rows]
     lines.append("")
     lines.append(
-        "EQ is locked: it holds the fitted tone stack of the pedal, not a separate user EQ."
+        "EQ is locked (sliders and on/off): it holds the fitted tone stack of the pedal, "
+        "not a separate user EQ."
     )
     if whitebox:
         lines.append("A white-box circuit simulation is available for this pedal (output C).")
@@ -194,17 +250,18 @@ def preset_readout(pedal: Pedal, preset: Preset, whitebox: bool, edited: bool = 
 # --- White-box ------------------------------------------------------------------------------
 
 
-def _numba_available() -> bool:
+def whitebox_ready() -> bool:
+    """Whether the compiled (numba) white-box solver is available.
+
+    Same check the solver uses to pick its backend; without it the NumPy loop runs at ~0.1x
+    real time, too slow for an interactive render, so the demo disables output C.
+    """
     try:
-        import numba  # noqa: F401
-    except ImportError:
+        from lstmabar.physics.whitebox.diode_clipper import numba_available
+    except Exception:  # pragma: no cover - broken optional install
+        log.exception("white-box solver unavailable")
         return False
-    return True
-
-
-def whitebox_max_seconds() -> float:
-    """Clip length used for the white-box render (shorter without the numba kernel)."""
-    return WHITEBOX_MAX_SECONDS if _numba_available() else WHITEBOX_MAX_SECONDS_NUMPY
+    return bool(numba_available())
 
 
 def whitebox_available(pedal_id: str) -> bool:
@@ -239,7 +296,7 @@ def whitebox_render(
     logged server-side only. ``simulate_fn`` replaces
     :func:`~lstmabar.physics.whitebox.simulate` (tests).
     """
-    max_seconds = whitebox_max_seconds() if max_seconds is None else max_seconds
+    max_seconds = WHITEBOX_MAX_SECONDS if max_seconds is None else max_seconds
     n = min(len(clip), max(1, int(round(max_seconds * sample_rate))))
     dry = _peak_safe(np.asarray(clip)[:n])
     try:
@@ -278,6 +335,9 @@ __all__ = [
     "preset_matches",
     "preset_readout",
     "whitebox_available",
-    "whitebox_max_seconds",
+    "WHITEBOX_NEEDS_NUMBA",
+    "RenderChoice",
+    "resolve_render",
+    "whitebox_ready",
     "whitebox_render",
 ]

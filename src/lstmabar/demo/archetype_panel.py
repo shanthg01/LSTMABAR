@@ -8,8 +8,10 @@ on the dry excerpt and its track is reused for the processed signals (same notes
 distortion can confuse the pitch tracker), and at most :data:`MAX_FRAMES` frames are fitted.
 The callback computes it once per render.
 
-Chords, noise or silence have no stable pitch; the panel then says so instead of failing, and
-the same happens when librosa (the ``analysis`` extra) is not installed.
+When pYIN finds no stable pitch (e.g. silence or dense chords) the panel says so instead of
+failing, and the same happens when librosa (the ``analysis`` extra) is not installed. Note
+that pYIN often locks onto a root note in chords and onto a spurious f0 in noise; the noise
+share (and "dominant", which counts noise) shows the latter.
 """
 
 import logging
@@ -29,7 +31,7 @@ DBC_FLOOR = -60.0
 COMPONENTS: tuple[str, ...] = (*ARCHETYPES, "noise")
 
 NO_PITCH = (
-    "No stable pitch found in the analysed excerpt (chords, noise or silence?), so there is "
+    "No stable pitch found in the analysed excerpt (silence or dense chords?), so there is "
     "no archetype readout. Try single notes, e.g. the `single_notes` example riff."
 )
 NO_LIBROSA = (
@@ -145,7 +147,8 @@ def archetype_markdown(panel: ArchetypePanel) -> str:
         for v in vectors:
             cells.append("no stable pitch" if v is None else f"`{_bar(v[i])}` {v[i]:.2f}")
         lines.append(f"| {comp} | " + " | ".join(cells) + " |")
-    dom = [s.readout.dominant if s.readout is not None else "–" for s in panel.signals]
+    # Largest share of the five-way mix, so a noise-dominated signal reads "noise".
+    dom = [COMPONENTS[int(np.argmax(v))] if v is not None else "–" for v in vectors]
     lines.append("| **dominant** | " + " | ".join(dom) + " |")
     f0 = next((s.f0_hz for s in panel.signals if np.isfinite(s.f0_hz)), float("nan"))
     head = f"Archetype readout of the loudest {panel.seconds:.1f} s excerpt"

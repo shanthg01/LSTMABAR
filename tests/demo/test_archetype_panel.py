@@ -154,3 +154,12 @@ def test_real_profile_type_is_accepted():
     """The fake profile function returns the real dataclass the panel expects."""
     prof = _profile_at_f0(_tone("sine"), SR, 10, "track", 16)
     assert isinstance(prof, HarmonicProfile)
+
+
+def test_dominant_counts_noise():
+    from lstmabar.analysis.archetypes import ArchetypeReadout
+    from lstmabar.demo.archetype_panel import SignalAnalysis
+
+    noisy = ArchetypeReadout({"sine": 0.0, "triangle": 0.0, "square": 0.0, "saw": 1.0}, 0.7, 0.1)
+    panel = ArchetypePanel([SignalAnalysis("dry", noisy, np.zeros(10), 75.0)], "", 3.0)
+    assert "| **dominant** | noise |" in archetype_markdown(panel)

@@ -19,7 +19,9 @@ from lstmabar.demo.presets import (
     preset_controls,
     preset_matches,
     preset_readout,
+    resolve_render,
     whitebox_available,
+    whitebox_ready,
     whitebox_render,
 )
 from lstmabar.demo.render import iter_specs, knobs_to_params, physical_from_slider
@@ -129,6 +131,10 @@ def test_readout_surfaces_notes_and_circuit_quantities(kb):
     md = preset_readout(pedal, preset, whitebox=True)
     assert pedal.name in md
     assert "Circuit gain into the clipper" in md and "Pre-clip high-pass corner" in md
+    # The gain is shown with the frequency it was evaluated at, in kHz (A3).
+    gain_row = next(x for x in md.splitlines() if "Circuit gain into the clipper" in x)
+    assert "dB (evaluated at 10 kHz)" in gain_row
+    assert "Gain read at" not in md
     assert "EQ is locked" in md and "white-box" in md
     for note in preset.notes:
         assert f"- {note}" in md
@@ -212,3 +218,32 @@ def test_whitebox_render_real_ts808_short_clip(kb):
     res = whitebox_render(kb["ts808"], kb["ts808"].default_knobs(), clip, SR, True, 1.0)
     assert res.audio is not None and np.all(np.isfinite(res.audio))
     assert np.max(np.abs(res.audio)) <= 0.99 + 1e-6
+
+
+# --- Render resolution (B1) -------------------------------------------------------------------
+
+
+def test_resolve_render_fresh_dials_vs_hand_edits(kb, board):
+    ts = kb["ts808"]
+    old = derive_preset(ts, [9.0, 5.0, 5.0], SR)
+    checks, sliders = preset_controls(board, old)
+    # Dials moved since the last derive, sliders untouched: the fresh preset, not custom.
+    choice = resolve_render(board, ts, [1.0, 5.0, 5.0], [9.0, 5.0, 5.0], checks, sliders, SR)
+    assert not choice.edited and choice.preset.knobs["drive"] == pytest.approx(0.1)
+    # Same, but a slider was hand-edited relative to the derived preset: custom.
+    edited = list(sliders)
+    edited[[s.name for _, s in iter_specs(board)].index("level_db")] -= 6.0
+    choice = resolve_render(board, ts, [1.0, 5.0, 5.0], [9.0, 5.0, 5.0], checks, edited, SR)
+    assert choice.edited and choice.preset.knobs["drive"] == pytest.approx(0.1)
+    # Never derived for this pedal: nothing can be hand-edited yet.
+    choice = resolve_render(board, ts, [3.0, 5.0, 5.0], None, checks, edited, SR)
+    assert not choice.edited
+
+
+def test_whitebox_ready_follows_the_solver_check(monkeypatch):
+    import lstmabar.physics.whitebox.diode_clipper as dc
+
+    monkeypatch.setattr(dc, "numba_available", lambda: False)
+    assert whitebox_ready() is False
+    monkeypatch.setattr(dc, "numba_available", lambda: True)
+    assert whitebox_ready() is True
