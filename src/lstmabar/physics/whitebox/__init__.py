@@ -7,7 +7,7 @@ volts (:mod:`lstmabar.physics.calibration`), runs the model and converts back.
 Circuit modules imported below register their builders on import.
 """
 
-from lstmabar.physics.whitebox import ts808  # noqa: F401  (registers "ts808")
+from lstmabar.physics.whitebox import ds1, ts808  # noqa: F401  (register "ds1", "ts808")
 from lstmabar.physics.whitebox.base import (
     WHITEBOX,
     WhiteBoxModel,

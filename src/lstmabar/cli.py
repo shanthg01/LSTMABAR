@@ -8,6 +8,7 @@ import argparse
 import json
 import platform
 import sys
+from pathlib import Path
 
 import torch
 
@@ -98,6 +99,38 @@ def cmd_recover(args: argparse.Namespace) -> int:
     return 0 if result.passed else 1
 
 
+def cmd_fidelity(args: argparse.Namespace) -> int:
+    """P2.5 grey-box fidelity check; writes ``<out>/greybox_fidelity.{md,json}`` and a copy
+    in a run dir."""
+    from lstmabar.physics.fidelity import (
+        FidelityConfig,
+        gate_passed,
+        run_fidelity,
+        write_report,
+    )
+
+    cfg = load_config(args.config, [f"seed={args.seed}", *args.overrides])
+    seed_everything(cfg.seed)
+    run_dir = create_run_dir(cfg, root=cfg.paths.runs, name="fidelity")
+    kw = {"seed": int(cfg.seed), "volts_per_fs": float(cfg.physics.volts_per_full_scale)}
+    if args.pedals:
+        kw["pedals"] = tuple(args.pedals)
+    fcfg = FidelityConfig.quick_config(**kw) if args.quick else FidelityConfig(**kw)
+    result = run_fidelity(fcfg)
+    discussion = ""
+    if args.discussion:
+        discussion = Path(args.discussion).read_text(encoding="utf-8")
+    write_report(result, run_dir, discussion)
+    md, js = write_report(result, args.out, discussion)
+    verdict = "PASS" if gate_passed(result) else "FAIL"
+    gates = ", ".join(f"{p} {g['best_mean_db']:.2f} dB" for p, g in result.gate.items())
+    print(
+        f"fidelity {verdict}: {gates} in {result.seconds_elapsed:.0f} s -> {md}, {js} "
+        f"(run dir {run_dir})"
+    )
+    return 0 if gate_passed(result) else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="lstmabar")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -126,6 +159,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_rec.add_argument("--seed", type=int, default=0)
     p_rec.add_argument("--out", default="reports", help="directory for the report files")
     p_rec.set_defaults(func=cmd_recover)
+
+    p_fid = sub.add_parser("fidelity", help="grey-box vs white-box fidelity check (P2 exit gate)")
+    p_fid.add_argument("--quick", action="store_true", help="seconds-long smoke run")
+    p_fid.add_argument("--seed", type=int, default=0)
+    p_fid.add_argument("--out", default="reports", help="directory for the report files")
+    p_fid.add_argument("--pedals", nargs="*", help="pedal ids (default: every white-box pedal)")
+    p_fid.add_argument("--config", default="configs/base.yaml")
+    p_fid.add_argument(
+        "--discussion", default=None, help="Markdown file appended as the report's discussion"
+    )
+    p_fid.add_argument("overrides", nargs="*", help="dotlist overrides, e.g. paths.runs=...")
+    p_fid.set_defaults(func=cmd_fidelity)
 
     return parser
 

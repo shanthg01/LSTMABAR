@@ -54,8 +54,12 @@ def simulate(
     sample_rate: int = 44100,
     knobs: Mapping[str, float] | None = None,
     volts_per_fs: float = VOLTS_PER_FULL_SCALE,
+    **build_kwargs,
 ) -> np.ndarray:
-    """Run full-scale ``audio`` (``(T,)`` or ``(B, T)``) through ``pedal``'s white-box model."""
+    """Run full-scale ``audio`` (``(T,)`` or ``(B, T)``) through ``pedal``'s white-box model.
+
+    ``build_kwargs`` (e.g. ``oversample``, ``backend``) are passed to the pedal's builder.
+    """
     if pedal.id not in WHITEBOX:
         raise KeyError(f"no white-box model for pedal {pedal.id!r}")
     knobs = pedal.knobs(knobs)
@@ -64,7 +68,7 @@ def simulate(
     x = np.atleast_2d(x)
     if x.ndim != 2:
         raise ValueError(f"expected audio of shape (T,) or (B, T), got {x.shape}")
-    model = WHITEBOX[pedal.id](pedal, knobs, sample_rate)
+    model = WHITEBOX[pedal.id](pedal, knobs, sample_rate, **build_kwargs)
     y = model.process_volts(x * volts_per_fs) / volts_per_fs
     return y[0] if squeeze else y
 
