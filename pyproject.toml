@@ -24,6 +24,7 @@ demo = [
     "gradio>=5",
 ]
 quantum = ["pennylane>=0.35"]
+whitebox = ["numba>=0.60"]  # optional compiled kernel for physics.whitebox (~100x the NumPy loop)
 dev = ["pytest>=8.0", "ruff>=0.5"]
 
 [project.scripts]
