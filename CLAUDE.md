@@ -17,17 +17,18 @@ Read [docs/design.md](docs/design.md) (architecture, data, evaluation; §4.3 des
 The environment is managed by `uv` (Python 3.11 pinned in `.python-version`; CPU torch from the PyTorch CPU index). On this Windows machine bare `python` is the Store stub, so use `uv run` or `py`.
 
 ```bash
-uv sync --extra dev                      # core + tests; add --extra demo (gradio, PyAV), spikes, quantum, ...
+uv sync --extra dev                      # core + tests; add --extra demo (gradio, PyAV), whitebox (numba), analysis (librosa), ...
 uv run pytest                            # all tests except those marked slow
 uv run pytest tests/test_foundation.py::test_cli_smoke   # single test
 uv run pytest -m slow                    # slow checks only (P1.7 parameter recovery, ~7 min CPU)
 uv run ruff check . && uv run ruff format --check .      # lint + format (CI enforces both)
-uv run lstmabar demo                     # M1 Gradio demo (needs --extra demo); --share warns, --auth user:pass
+uv run lstmabar demo                     # M2 Gradio demo: pedal presets, white-box A/B, archetype panel (needs --extra demo; whitebox/analysis for A/B and panel)
 uv run lstmabar recover                  # parameter-recovery run → reports/param_recovery.{md,json}
+uv run lstmabar fidelity                 # P2 grey-box vs white-box gate → reports/greybox_fidelity.{md,json} (~20 min; --quick)
 uv run lstmabar info                     # versions, device, git state (CLI: src/lstmabar/cli.py)
 ```
 
-CI (`.github/workflows/ci.yml`) runs ruff check + format check + pytest on Ubuntu, Python 3.11 and 3.13 (Colab's version), with only the `dev` extra: tests needing gradio/PyAV skip there. Slow tests are local only.
+CI (`.github/workflows/ci.yml`) runs ruff check + format check + pytest on Ubuntu, Python 3.11 and 3.13 (Colab's version), with the `dev` and `whitebox` extras: tests needing gradio/PyAV or librosa skip there. Slow tests are local only.
 
 ## Architecture conventions
 
