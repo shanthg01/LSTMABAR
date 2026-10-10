@@ -111,7 +111,7 @@ Not in P2: NAM/Proteus captures (they are a P4 rendering source, pending license
 
 ### P2 status
 
-**Status (2026-10-10): P2 exit gate passed; M2 reached** (PRs #19–#26).
+**Status (2026-10-10): P2 exit gate passed; M2 reached** (PRs #19–#26), pending the owner's manual browser check of the demo.
 
 | PR | Content |
 |---|---|
@@ -140,12 +140,13 @@ P2/P3 follow-ups (non-blocking; fold into P4 or later):
 - **Per-pedal calibration (P4):** fits want softer clippers than the derived priors (fitted softness mostly 0.06–0.17) and TS808 fits raise `eq.low_db` by 3–7 dB.
 - **Gain clamping at 60 dB** is common at 0 dBFS = 1 V (DS-1 above ~¼ Dist, Big Muff above ~½ Sustain, Fuzz Face Si at full, RAT at max); revisit if P4 renders need the extra range.
 - **Source model:** add pickup inductance (`DeriveContext.source_henries`) — the resistive 10 kΩ source inflates the Fuzz Face Si pre-HPF (411 Hz vs ~143 Hz with a pickup-like source); flag presets whose gain peak lands on the search-band edge.
+- **Finite transistor gain / interstage loading** (PR #24 A2): DS-1 booster −0.4…−1.2 dB, Big Muff ~−1.5 dB per stage plus interstage loading; hidden by the 60 dB clamp today.
 - **Fuzz Face assumptions:** transistor gain (h_FE) and source impedance are not in the KB; Q1 one-sided saturation not modelled.
 - **DS-1:** level-pot loading of the tone stack differs between white-box and derivation (0.2–0.8 dB); R11/R15 roles unconfirmed.
 - **TS808 pot tapers:** sources disagree (Drive A vs linear, Tone "G", Level A vs B); currently A/B/A.
-- **Fidelity:** switch the fit to the masked loss; RAT white-box (diagnostic) needs a solver without a capacitor at the diode node.
+- **Fidelity:** switch the fit to the masked loss; parallelize across pedals/settings (full run ~16–23 min); RAT white-box (diagnostic) needs a solver without a capacitor at the diode node.
 - **Analysis:** MFCC deferred; pYIN dominates analysis time (track f0 once per dry clip in P4).
-- **Demo:** owner browser check (list in PR #26); readout wording for the narrow edit-then-move race.
+- **Demo:** owner browser check (list in PR #26); readout wording for the narrow edit-then-move race; debounce re-derives during dial drags if hosted with `--share`.
 - **Sources:** electrosmash.com was down; values came from the ElectroSmash Archive mirror, cross-checked against Geofex, Kit Rae, Aion FX and Fuzz Central.
 
 ### P2 kickoff brief

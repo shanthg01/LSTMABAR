@@ -123,7 +123,7 @@ Module notes:
 - Purpose: realistic data, and a check on grey-box fidelity (§7).
 - Sims and grey-box share one level calibration (0 dBFS ↔ 1 V peak at the pedal input), so derived drive gains are comparable.
 - Solver and calibration: P2 kickoff decisions 3 and 5 (pure NumPy/SciPy, no ngspice/system deps; 0 dBFS ↔ 1 V peak).
-- Implemented (P2): `whitebox/diode_clipper.py` (trapezoidal rule + Newton per sample, 4–8× oversampled, numba-compiled when the `whitebox` extra is installed), `whitebox/port.py` (exact nodal solve when linear networks load the diode node), TS808 and DS-1 models sharing their linear stages with `physics/derive.py`. Fidelity: [reports/greybox_fidelity.md](../reports/greybox_fidelity.md).
+- Implemented (P2): `whitebox/diode_clipper.py` (trapezoidal rule + Newton per sample, 4–8× oversampled, numba-compiled when the `whitebox` extra is installed), `whitebox/port.py` (exact nodal solve when linear networks load the diode node), TS808 and DS-1 models sharing their linear stages with `physics/derive.py`. The Fuzz Face (time-boxed stretch) and RAT (diagnostic) white-boxes were not built in P2; they stay grey-box only. Fidelity: [reports/greybox_fidelity.md](../reports/greybox_fidelity.md).
 
 ### 4.6 Archetype readout and descriptors (`analysis/`)
 - f0 tracking (pYIN or torchcrepe) → harmonic amplitudes → odd/even energy ratio, harmonic slope, harmonic-to-noise ratio.

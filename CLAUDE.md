@@ -24,7 +24,7 @@ uv run pytest -m slow                    # slow checks only (P1.7 parameter reco
 uv run ruff check . && uv run ruff format --check .      # lint + format (CI enforces both)
 uv run lstmabar demo                     # M2 Gradio demo: pedal presets, white-box A/B, archetype panel (needs --extra demo; whitebox/analysis for A/B and panel)
 uv run lstmabar recover                  # parameter-recovery run → reports/param_recovery.{md,json}
-uv run lstmabar fidelity                 # P2 grey-box vs white-box gate → reports/greybox_fidelity.{md,json} (~20 min; --quick)
+uv run lstmabar fidelity                 # P2 grey-box vs white-box gate → reports/greybox_fidelity.{md,json} (~16–23 min CPU; --quick)
 uv run lstmabar info                     # versions, device, git state (CLI: src/lstmabar/cli.py)
 ```
 
