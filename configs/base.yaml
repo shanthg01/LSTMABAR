@@ -9,3 +9,8 @@ audio:
 paths:
   data: data
   runs: runs
+  pedals: pedals
+
+physics:
+  # Level calibration (P2 decision 3): 0 dBFS = this many volts peak at the pedal input.
+  volts_per_full_scale: 1.0
