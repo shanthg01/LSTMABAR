@@ -1055,6 +1055,9 @@ spikes = [
     { name = "pedalboard" },
     { name = "transformers" },
 ]
+whitebox = [
+    { name = "numba" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -1063,6 +1066,7 @@ requires-dist = [
     { name = "dasp-pytorch", marker = "extra == 'dsp'", specifier = ">=0.0.1" },
     { name = "gradio", marker = "extra == 'demo'", specifier = ">=5" },
     { name = "librosa", marker = "extra == 'analysis'", specifier = ">=0.10" },
+    { name = "numba", marker = "extra == 'whitebox'", specifier = ">=0.60" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "omegaconf", specifier = ">=2.3" },
     { name = "pedalboard", marker = "extra == 'spikes'", specifier = ">=0.9" },
@@ -1076,7 +1080,7 @@ requires-dist = [
     { name = "transformers", marker = "extra == 'clap'", specifier = ">=4.40" },
     { name = "transformers", marker = "extra == 'spikes'", specifier = ">=4.40" },
 ]
-provides-extras = ["dsp", "analysis", "clap", "spikes", "demo", "quantum", "dev"]
+provides-extras = ["dsp", "analysis", "clap", "spikes", "demo", "quantum", "whitebox", "dev"]
 
 [[package]]
 name = "markdown-it-py"
