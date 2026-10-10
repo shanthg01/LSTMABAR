@@ -29,6 +29,10 @@ Normalization choices (documented because they change the numbers):
   ``noise = 1 / (1 + 10^(HNR/10))`` (0 for a clean tone, 0.5 at HNR = 0 dB). The five-way
   :meth:`ArchetypeReadout.vector` scales the harmonic weights by ``1 - noise`` and appends
   ``noise``, so it also sums to 1.
+
+Limitations: NumPy, not differentiable. When only H1 (or H1-H2) is measurable (very high f0
+or low sample rate), sine, triangle and square coincide after masking and the readout says
+"sine"; not reachable for guitar at 44.1 kHz with 10 harmonics.
 """
 
 from __future__ import annotations
@@ -38,7 +42,13 @@ from dataclasses import dataclass
 import numpy as np
 from scipy.optimize import nnls
 
-from lstmabar.analysis.harmonics import _as_numpy, harmonic_amplitudes, harmonic_profile, hnr
+from lstmabar.analysis.harmonics import (
+    _as_numpy,
+    harmonic_amplitudes,
+    harmonic_profile,
+    hnr,
+    refine_f0,
+)
 
 ARCHETYPES: tuple[str, ...] = ("sine", "triangle", "square", "saw")
 
@@ -111,18 +121,30 @@ def project_archetypes(amps, hnr_db: float | None = None) -> ArchetypeReadout:
 
 
 def archetype_readout(
-    x, sr: int, f0: float | None = None, n_harmonics: int = 10, whole_clip: bool = False
+    x,
+    sr: int,
+    f0: float | None = None,
+    n_harmonics: int = 10,
+    whole_clip: bool = False,
+    refine: bool = True,
+    hnr_max_hz: float | None = None,
 ) -> ArchetypeReadout:
     """Archetype readout of mono audio ``x`` (``(T,)``).
 
     - ``f0`` unknown: pYIN profile (needs the ``analysis`` extra), median over voiced frames.
     - ``f0`` known: frame-wise profile at that f0 (no librosa), or with ``whole_clip=True`` one
       fit over the whole (stationary) clip, which is what synthetic sine tests want.
+    - ``refine`` (default) refines the f0 (given or tracked) with :func:`refine_f0`; a nominal
+      note frequency is not exact enough for the fits. ``refine=False`` only for exact f0.
     """
     if f0 is not None and whole_clip:
+        if refine:
+            f0 = refine_f0(x, sr, f0)
         amps = harmonic_amplitudes(x, sr, f0, n_harmonics)
-        return project_archetypes(amps, float(hnr(x, sr, f0)))
-    prof = harmonic_profile(x, sr, n_harmonics=n_harmonics, f0=f0)
+        return project_archetypes(amps, float(hnr(x, sr, f0, hnr_max_hz)))
+    prof = harmonic_profile(
+        x, sr, n_harmonics=n_harmonics, f0=f0, refine=refine, hnr_max_hz=hnr_max_hz
+    )
     return project_archetypes(prof.amplitudes, prof.hnr_db)
 
 

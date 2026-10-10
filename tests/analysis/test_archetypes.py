@@ -25,6 +25,14 @@ def test_pure_oscillators_read_as_themselves(kind, f0):
     assert sum(r.weights.values()) == pytest.approx(1.0)
 
 
+def test_whole_clip_refines_nominal_f0():
+    x = oscillator("square", 196.0, 0.5, 0.4)
+    nominal = 196.0 * 2 ** (-6 / 1200)
+    assert archetype_readout(x, SR, f0=nominal, whole_clip=True).weights["square"] > 0.9
+    off = archetype_readout(x, SR, f0=nominal, whole_clip=True, refine=False)
+    assert off.weights["square"] < 0.9 or off.noise > 0.1
+
+
 def test_frame_profile_path_matches():
     r = archetype_readout(oscillator("triangle", 110.0, 1.0, 0.4), SR, f0=110.0)
     assert r.weights["triangle"] > 0.9

@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import pytest
 
@@ -72,3 +74,22 @@ def test_describe_known_f0():
     assert d["slope_db_per_oct"] == pytest.approx(-6.02, abs=0.1)
     assert d["hnr_db"] > 60
     assert {"rms_db", "crest_factor_db", "centroid_hz", "rolloff_hz", "f0_hz"} <= d.keys()
+
+
+HARMONIC_KEYS = {"f0_hz", "hnr_db", "odd_even_db", "slope_db_per_oct", "harmonic_energy_fraction"}
+
+
+def test_describe_without_librosa_falls_back(monkeypatch):
+    monkeypatch.setitem(sys.modules, "librosa", None)  # import librosa -> ImportError
+    d = describe(oscillator("saw", F0, 0.5, 0.5), SR)
+    assert HARMONIC_KEYS <= d.keys()
+    assert all(np.isnan(d[k]) for k in HARMONIC_KEYS)
+    assert np.isfinite(d["centroid_hz"]) and np.isfinite(d["rms_db"])
+
+
+def test_silence():
+    z = np.zeros(SR // 4)
+    assert crest_factor(z) == 0.0 and crest_factor_db(z) == -np.inf
+    assert rms_db(z) < -150
+    d = describe(z, SR, f0=F0)
+    assert all(np.isnan(d[k]) for k in HARMONIC_KEYS)  # all frames below min_rms_db

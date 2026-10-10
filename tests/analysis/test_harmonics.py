@@ -83,7 +83,33 @@ def test_profile_known_f0_without_librosa():
     prof = harmonic_profile(x, SR, n_harmonics=10, f0=110.0)
     expected = np.where(np.arange(1, 11) % 2 == 1, 1 / np.arange(1, 11), 0.0)
     np.testing.assert_allclose(prof.amplitudes, expected, atol=1e-3)
-    assert abs(prof.h1 - 0.3) < 1e-3 and prof.f0_hz == 110.0
+    assert abs(prof.h1 - 0.3) < 1e-3 and abs(prof.f0_hz - 110.0) < 0.01
+
+
+def test_profile_refines_a_nominal_f0():
+    """A nominal pitch 8 cents off: without refinement the upper harmonics collapse."""
+    true_f0 = 110.0
+    nominal = true_f0 * 2 ** (8 / 1200)
+    x = oscillator("saw", true_f0, 1.0, 0.3)
+    good = harmonic_profile(x, SR, n_harmonics=10, f0=nominal)
+    np.testing.assert_allclose(good.amplitudes, 1 / np.arange(1, 11), rtol=1e-3)
+    assert abs(good.f0_hz - true_f0) < 0.01 and good.hnr_db > 60
+    bad = harmonic_profile(x, SR, n_harmonics=10, f0=nominal, refine=False)
+    assert bad.hnr_db < 30
+
+
+def test_hnr_batched_matches_rows_and_silence_is_nan():
+    rng = np.random.default_rng(0)
+    x = oscillator("saw", 82.41, 0.5, 0.3)
+    batch = np.stack([x + s * rng.standard_normal(len(x)) for s in (0.0, 0.01, 0.1)])
+    batch = np.concatenate([batch, np.zeros((1, len(x)))])
+    got = hnr(batch, SR, 82.41)
+    assert got.shape == (4,)
+    for row, h in zip(batch[:3], got[:3], strict=True):
+        assert h == pytest.approx(float(hnr(row, SR, 82.41)), abs=1e-6)
+    assert got[0] > got[1] > got[2]
+    assert np.isnan(got[3])
+    assert np.isnan(hnr(np.zeros(4096), SR, 110.0))
 
 
 def test_profile_pyin():

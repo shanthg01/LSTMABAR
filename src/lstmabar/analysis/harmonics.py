@@ -21,6 +21,15 @@ measurable); :func:`to_db` / :func:`to_dbc` map them to the floor.
 For real audio, :func:`track_f0` runs pYIN (librosa, the optional ``analysis`` extra, imported
 lazily) and :func:`harmonic_profile` fits each voiced frame at its tracked f0 and takes the
 median over frames of the H1-normalized amplitudes.
+
+Everything here is NumPy (float64) and **not differentiable**: torch inputs are detached and
+copied to the CPU. Use these as evaluation metrics, not as training losses.
+
+**f0 must be exact.** :func:`harmonic_amplitudes`, :func:`harmonic_fit` and :func:`hnr` never
+refine the f0 they are given; on a 0.5 s clip a 1-cent error already costs ~1 dB at H10 and
+5 cents ~40 dB. Pass the exact frequency of a synthetic test tone, or call :func:`refine_f0`
+first (:func:`harmonic_profile` and :func:`~lstmabar.analysis.archetypes.archetype_readout`
+do so by default).
 """
 
 from __future__ import annotations
@@ -103,8 +112,10 @@ def harmonic_amplitudes(x, sr: float, f0: float, n_harmonics: int = 10) -> np.nd
 
     ``x`` is ``(..., T)`` (NumPy or torch, any float dtype; computed in float64). Accurate to
     well under 0.1 dB for harmonics well above the noise floor, for f0 from ~50 Hz to a few kHz
-    and clips of >= ~3 periods. Harmonics at/above Nyquist are ``NaN``. Crop onsets and
-    transients before calling: the fit assumes a stationary signal.
+    and clips of >= ~3 periods, **provided ``f0`` is exact** (well under 1 cent; this function
+    never refines it, use :func:`refine_f0` for a nominal pitch). Harmonics at/above Nyquist
+    are ``NaN``. Crop onsets and transients before calling: the fit assumes a stationary
+    signal. Not differentiable (NumPy; torch inputs are detached).
     """
     return harmonic_fit(x, sr, f0, n_harmonics)[0]
 
@@ -113,7 +124,9 @@ def to_db(amps, floor_db: float | None = None) -> np.ndarray:
     """``20 log10(amps)`` (dB re. amplitude 1, i.e. dBFS peak for full-scale audio).
 
     With ``floor_db``, values below it (including 0 and ``NaN``) are clamped to the floor;
-    without it, 0 maps to ``-inf`` and ``NaN`` stays ``NaN``.
+    without it, 0 maps to ``-inf`` and ``NaN`` stays ``NaN``. For an *absolute* level metric
+    (e.g. the P2 fidelity H1 term) use it without a floor, so a silent or failed render shows
+    up as ``-inf``/``NaN`` instead of reading as the floor.
     """
     a = _as_numpy(amps)
     with np.errstate(divide="ignore", invalid="ignore"):
@@ -183,7 +196,12 @@ def hnr(x, sr: float, f0: float, max_hz: float | None = None, eps: float = 1e-20
     window's -92 dB sidelobes bound the cross-talk, so the measurable HNR tops out around
     ~90 dB). The noise part is everything else (inharmonic partials, noise, content above
     ``max_hz``), excluding DC. Both powers are Blackman-Harris-weighted means over the frame.
-    Requires >= ~4.5 periods in the frame.
+    Requires >= ~4.5 periods in the frame. Returns ``NaN`` for silence (no power above DC).
+
+    Caveats: harmonics in the guard band 0.499-0.5 sr count as noise, and with very short
+    frames a harmonic within ~2 bins of Nyquist cross-talks with its mirror image; neither is
+    reachable for guitar at 44.1 kHz with the default frame length. String inharmonicity
+    (stretched upper partials) also counts as noise; lower ``max_hz`` to discount it.
     """
     x = _as_numpy(x)
     _check_f0(f0, sr)
@@ -198,12 +216,18 @@ def hnr(x, sr: float, f0: float, max_hz: float | None = None, eps: float = 1e-20
     orders = np.arange(1, int(math.floor(top / f0)) + 1)
     orders = orders[orders * f0 < top]
     basis = _harmonic_basis(t_len, sr, f0, len(orders))  # (T, K)
-    c = 2 * (xs * w) @ basis / wsum  # complex amplitudes (B, K)
-    harm = np.real(c @ basis.conj().T)  # (B, T)
+    # Real and imaginary parts as separate real matmuls (a real @ complex product misses BLAS).
+    xw = xs * w
+    b_re, b_im = np.ascontiguousarray(basis.real), np.ascontiguousarray(basis.imag)
+    c_re, c_im = 2 * (xw @ b_re) / wsum, 2 * (xw @ b_im) / wsum  # complex amps (B, K)
+    harm = c_re @ b_re.T + c_im @ b_im.T  # Re(c @ conj(basis).T), (B, T)
     resid = xs - harm
     p_h = (harm**2) @ w / wsum
     p_n = (resid**2) @ w / wsum
-    return (10 * np.log10((p_h + eps) / (p_n + eps))).reshape(x.shape[:-1])
+    p_x = (xs**2) @ w / wsum
+    out = 10 * np.log10((p_h + eps) / (p_n + eps))
+    out = np.where(p_x > 1e-30, out, np.nan)  # silence: HNR undefined
+    return out.reshape(x.shape[:-1])
 
 
 # --------------------------------------------------------------------------- f0 tracking
@@ -301,6 +325,7 @@ def harmonic_profile(
     max_frames: int = 64,
     min_rms_db: float = -50.0,
     refine: bool = True,
+    hnr_max_hz: float | None = None,
     **track_kwargs,
 ) -> HarmonicProfile:
     """Clip-level harmonic profile of mono audio ``x``.
@@ -310,8 +335,11 @@ def harmonic_profile(
     voiced frames are used. Frames are ``frame_length`` long, centred on the pYIN frame times,
     and frames quieter than ``min_rms_db`` (dBFS) are skipped. Voiced runs are eroded by half a
     frame at each end (when that leaves any frame), so frames straddling a note boundary or
-    silence don't count. With ``refine`` each tracked f0 is refined by :func:`refine_f0`
-    (pYIN's grid is too coarse for exact harmonic fits). At most ``max_frames`` evenly
+    silence don't count. With ``refine`` (default) each frame's f0, tracked *or* given, is
+    refined by :func:`refine_f0` within +-20 cents: pYIN's 10-cent grid and nominal note
+    frequencies are both too coarse for exact harmonic fits. Pass ``refine=False`` only when
+    ``f0`` is exact (synthetic tones). ``hnr_max_hz`` is passed to :func:`hnr` as ``max_hz``.
+    At most ``max_frames`` evenly
     spaced frames are analysed (the median is robust; this bounds the cost on long clips).
     Raises ``ValueError`` if no usable frame is found.
     """
@@ -363,12 +391,14 @@ def harmonic_profile(
     frames, f0_list = frames[loud], f0_list[loud]
     if len(frames) == 0:
         raise ValueError(f"all voiced frames are below {min_rms_db} dBFS RMS")
-    if refine and f0 is None:
+    if refine:
         f0_list = np.array([refine_f0(fr, sr, f) for fr, f in zip(frames, f0_list, strict=True)])
     amps = np.stack(
         [harmonic_amplitudes(fr, sr, f, n_harmonics) for fr, f in zip(frames, f0_list, strict=True)]
     )
-    hnrs = np.array([float(hnr(fr, sr, f)) for fr, f in zip(frames, f0_list, strict=True)])
+    hnrs = np.array(
+        [float(hnr(fr, sr, f, hnr_max_hz)) for fr, f in zip(frames, f0_list, strict=True)]
+    )
     with np.errstate(divide="ignore", invalid="ignore"):
         rel = amps / amps[:, :1]
     with np.errstate(all="ignore"):
@@ -379,7 +409,7 @@ def harmonic_profile(
         amplitudes=profile,
         h1=float(np.median(amps[:, 0])),
         f0_hz=float(np.median(f0_list)),
-        hnr_db=float(np.median(hnrs)),
+        hnr_db=float(np.nanmedian(hnrs)) if np.isfinite(hnrs).any() else float("nan"),
         voiced_fraction=voiced_fraction,
         frame_amplitudes=amps,
         frame_f0=f0_list,

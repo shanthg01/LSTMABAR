@@ -4,6 +4,13 @@ Harmonic descriptors take a harmonic-amplitude vector ``amps`` (``(..., K)``, pe
 of H1..HK as returned by :func:`lstmabar.analysis.harmonics.harmonic_amplitudes` or a
 :class:`~lstmabar.analysis.harmonics.HarmonicProfile`); ``NaN`` entries (above Nyquist) are
 treated as absent. Signal descriptors take audio ``x`` (``(..., T)``) and a sample rate.
+
+All NumPy and **not differentiable** (torch inputs are detached): evaluation only.
+Silence: ``rms_db`` gives ~-200 dB (the ``eps`` floor), ``crest_factor`` 0 (``crest_factor_db``
+``-inf``), ``spectral_centroid`` 0 Hz and ``spectral_rolloff`` the first non-DC bin; the HNR of
+silence is ``NaN``.
+
+MFCCs (design §4.6) are deferred to P4/P5.
 """
 
 from __future__ import annotations
@@ -32,7 +39,8 @@ def odd_even_ratio(amps, eps: float = _EPS) -> np.ndarray:
     default the range is about +-120 dB.
     """
     a = _as_numpy(amps)
-    a = np.nan_to_num(a / a[..., :1], nan=0.0)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        a = np.nan_to_num(a / a[..., :1], nan=0.0, posinf=0.0)
     e = a**2
     odd = e[..., 2::2].sum(-1)
     even = e[..., 1::2].sum(-1)
@@ -89,14 +97,15 @@ def rms_db(x, eps: float = 1e-20) -> np.ndarray:
 
 
 def crest_factor(x, eps: float = _EPS) -> np.ndarray:
-    """Peak / RMS (linear, unitless): sqrt(2) ≈ 1.414 for a sine, 1 for a square."""
+    """Peak / RMS (linear, unitless): sqrt(2) ≈ 1.414 for a sine, 1 for a square; 0 for silence."""
     x = _as_numpy(x)
     return np.max(np.abs(x), axis=-1) / (rms(x) + eps)
 
 
 def crest_factor_db(x) -> np.ndarray:
-    """Crest factor in dB, ``20 log10(peak / RMS)`` (3.01 dB for a sine)."""
-    return 20 * np.log10(crest_factor(x))
+    """Crest factor in dB, ``20 log10(peak / RMS)`` (3.01 dB for a sine; ``-inf`` for silence)."""
+    with np.errstate(divide="ignore"):
+        return 20 * np.log10(crest_factor(x))
 
 
 def power_spectrum(x, sr: float, nperseg: int = 4096) -> tuple[np.ndarray, np.ndarray]:
@@ -135,10 +144,11 @@ def spectral_rolloff(x, sr: float, fraction: float = 0.85, nperseg: int = 4096) 
 def describe(x, sr: int, f0: float | None = None, n_harmonics: int = 10) -> dict[str, float]:
     """All descriptors for a mono clip ``x`` (``(T,)``) as a flat ``dict``.
 
-    Signal descriptors always; harmonic ones (via :func:`harmonic_profile`, which runs pYIN
-    unless ``f0`` is given) when a harmonic profile can be measured. Keys: ``rms_db``,
-    ``crest_factor_db``, ``centroid_hz``, ``rolloff_hz``, and optionally ``f0_hz``,
-    ``hnr_db``, ``odd_even_db``, ``slope_db_per_oct``, ``harmonic_energy_fraction``.
+    Keys are always the same: ``rms_db``, ``crest_factor_db``, ``centroid_hz``, ``rolloff_hz``
+    (signal descriptors) and ``f0_hz``, ``hnr_db``, ``odd_even_db``, ``slope_db_per_oct``,
+    ``harmonic_energy_fraction`` (via :func:`harmonic_profile`, which runs pYIN unless ``f0``
+    is given, refining f0 either way). The harmonic ones are ``NaN`` when no harmonic profile
+    can be measured (no voiced frames, or no ``f0`` and librosa not installed).
     """
     y = _as_numpy(x)
     out = {
@@ -147,10 +157,17 @@ def describe(x, sr: int, f0: float | None = None, n_harmonics: int = 10) -> dict
         "centroid_hz": float(spectral_centroid(y, sr)),
         "rolloff_hz": float(spectral_rolloff(y, sr)),
     }
+    harmonic_keys = (
+        "f0_hz",
+        "hnr_db",
+        "odd_even_db",
+        "slope_db_per_oct",
+        "harmonic_energy_fraction",
+    )
     try:
         prof = harmonic_profile(y, sr, n_harmonics=n_harmonics, f0=f0)
-    except ValueError:
-        return out
+    except (ValueError, ImportError):
+        return out | dict.fromkeys(harmonic_keys, float("nan"))
     out.update(
         f0_hz=prof.f0_hz,
         hnr_db=prof.hnr_db,
