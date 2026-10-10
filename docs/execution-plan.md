@@ -94,14 +94,19 @@ Post-M1 fix (PR #17, found in manual testing): non-WAV uploads (e.g. `.m4a`) fai
 
 | # | Task | Where | Output |
 |---|---|---|---|
-| 2.1 | KB YAML schema + validator (format per kickoff decision 1) | L | `physics/kb.py` (+ `pedals/schema.yaml` only if a separate schema file is chosen) |
-| 2.2 | Author 5 pedals: TS808, RAT, DS-1, Fuzz Face (Si/Ge), Big Muff, using published circuit analyses as sources | L | `pedals/*.yaml` |
-| 2.3 | Derivations: components + knob positions → grey-box params | L | `physics/derive.py` + tests |
-| 2.4 | White-box sims for **2 circuits only** (diode clipper → TS/DS-1 class; Fuzz Face). Others use NAM captures if licensed, else grey-box only | L | `physics/whitebox/` |
-| 2.5 | Fidelity check: fit grey-box to white-box; harmonic-spectrum dB error | L | `reports/greybox_fidelity.md` |
-| 2.6 | **M2 demo:** pedal preset picker + KB knobs; grey-box vs white-box A/B | L | demo update |
+| 2.1 | KB YAML schema + validator (format per kickoff decision 1); validator test runs over every file in `pedals/` | L | `physics/kb.py` |
+| 2.2 | Author 6 pedal files: TS808, RAT, DS-1, Fuzz Face Si, Fuzz Face Ge, Big Muff. Every component value cites a source URL; owner spot-checks values against the source | L | `pedals/*.yaml` |
+| 2.3 | Derivations: components + knob positions → physical `Drive`/`EQ3` knob values (decision 2), with the level calibration of decision 3. Tests check the textbook numbers (e.g. TS808 HPF ≈ 720 Hz, drive-stage gain 1 + (51k + R_drive)/4.7k) | L | `physics/derive.py` + tests |
+| 2.4 | White-box sims (decision 5): one generic one-capacitor diode-clipper solver in two configurations, **feedback** (TS808) and **shunt to ground** (DS-1 and RAT clipping stage), plus each pedal's linear stages from component values. Fuzz Face is a time-boxed stretch. Measure throughput (sizes P4) | L | `physics/whitebox/` |
+| 2.5 | Fidelity check (decision 6): best-fit grey-box vs white-box, and derived (unfitted) grey-box vs white-box. `lstmabar fidelity` CLI, run dir, report (same pattern as `lstmabar recover`) | L | `reports/greybox_fidelity.md` |
+| 2.6 | **M2 demo:** pedal picker + pedal knobs (Drive/Tone/Level…) → derived board knobs → existing sliders; grey-box vs white-box A/B for white-box pedals; archetype panel once P3 lands | L | demo update |
 
-**Exit gate:** mean harmonic error ≤ ~3 dB on the first 10 harmonics for the 2 white-box pedals (or deviations documented); M2 demo runs.
+**Exit gate:**
+- Best-fit grey-box harmonic error (decision 6 metric) ≤ ~3 dB mean for TS808 and DS-1, or the deviation is documented with its cause (e.g. a named topology gap from decision 4).
+- Derived (unfitted) error reported for every white-box pedal; no gate on it.
+- KB validator and derivation tests green in CI; M2 demo runs.
+
+Not in P2: NAM/Proteus captures (they are a P4 rendering source, pending license emails), Big Muff white-box, rail clipping and bandwidth limits of op-amps. A RAT clipping-stage sim may be built from the shunt solver, but with ideal op-amps it is **diagnostic only** and not part of the gate.
 
 ### P2 kickoff brief
 
@@ -112,35 +117,56 @@ Post-M1 fix (PR #17, found in manual testing): non-WAV uploads (e.g. `.m4a`) fai
 - `dsp.signals` (synthetic riffs) and `lstmabar.audio` (decode, resample, loudness).
 - The demo builds its sliders generically from `param_specs`, and `demo.render.knobs_to_params` turns physical knob values into board params. An M2 preset picker only needs to produce physical knob values.
 
-**Decisions to make at kickoff** (each has a recommendation; confirm with the owner):
-1. **KB format.** Recommendation: one YAML per pedal under `pedals/`, validated by plain dataclasses in `physics/kb.py` (no new dependency). Fields: id, name, family, topology, clipping device(s), component values with units, knob tapers, sources (URLs), optional descriptors.
-2. **Grey-box target.** Recommendation: `physics/derive.py` maps (pedal, knob positions) → physical values for the *existing* `Drive`/`EQ3` knobs, then `ParamSpec.normalize` → board params. That makes presets usable directly by `Pedalboard`, the renderer and the demo.
-3. **Range and topology gaps.** Verify each against the sources before changing anything:
-   - High-gain circuits may exceed `drive.gain_db` max 60 dB. The RAT's op-amp stage is roughly 1 + 100k/47 Ω, about 67 dB, though the LM308's bandwidth limits high-frequency gain.
-   - Big Muff has two cascaded clipping stages plus a mid-scoop tone stack. DS-1 also has an LP/HP-blend tone. `Drive` has one shaper and a tilt, so the options are a second `Drive` in the chain, a stage count, or a tone-stack block.
-   - Prefer the smallest change. **Any change to Drive's ranges or chain must re-pass `lstmabar recover`** (and update design §4.3).
-4. **White-box solver.** Recommendation: pure Python/SciPy, offline, with no ngspice or other system dependencies on Windows.
-   - First the diode clipper (TS808 / DS-1 class): an ODE with Shockley diodes, solved implicitly (trapezoidal + Newton) at an oversampled rate.
-   - Then the Fuzz Face (2-transistor Ebers–Moll), which is harder; time-box it and document if it slips.
-   - Validate each solver against known analytic or small-signal behaviour.
-5. **Fidelity metric and fit.**
-   - Metric: harmonic magnitudes (first 10, in dB) on sine inputs across pitch (~82–660 Hz) and level (−30…0 dBFS), plus MR-STFT on a riff.
-   - Fit: grey-box to white-box with **multi-start** (P1 showed local minima). Report per-pedal errors in `reports/greybox_fidelity.md`.
-6. **Sources.** Use published circuit analyses (e.g. ElectroSmash) for component values; cite the URLs in each YAML. Don't copy schematic images.
+**Kickoff decisions** (confirmed by the owner 2026-10-09, as recommended below):
+
+1. **KB format.** One YAML per pedal under `pedals/`, validated by plain dataclasses in `physics/kb.py` (no new dependency, no separate schema file).
+   - Fields: `id`, `name`, `family`, `topology` (enum, e.g. `opamp_feedback_clip`, `opamp_shunt_clip`, `two_transistor_fuzz`, `cascaded_transistor_clip`), clipping device(s) with type (Si/Ge/LED/MOSFET), component values, pots with value and taper, `sources` (URLs), optional `descriptors`.
+   - Component values as schematic strings with SI suffixes (`"4.7k"`, `"0.047u"`, `"51p"`), parsed and range-checked by the validator.
+   - Pot tapers `A` (audio), `B` (linear), `C` (reverse audio); `A`/`C` as the usual two-segment approximation. Knob position 0–1 → resistance is part of `kb.py`, not each derivation.
+   - Fuzz Face Si and Ge are **separate pedal ids** (separate files), so P4's held-out-pedal split can treat them independently.
+   - Load path comes from a `paths.pedals: pedals` config key, so a non-editable install can point elsewhere.
+2. **Grey-box target.** `physics/derive.py` maps (pedal, knob positions) → physical values for the *existing* `Drive`/`EQ3` knobs, then `ParamSpec.normalize` → board params. That makes presets usable directly by `Pedalboard`, the renderer and the demo.
+   - Nonlinear stage: closed-form circuit formulas (stage gain, pre-clip HPF corner, device → softness/asymmetry/bias).
+   - Linear tone stacks (DS-1 and Big Muff LP/HP blends, RAT filter, TS tone): compute the analog magnitude response from components, then least-squares fit `Drive.tone_db` + `EQ3` to it. Deterministic and cheap, and it puts the "physics" in the response rather than in hand-tuned constants.
+   - A preset uses `EQ3` for the pedal's tone stack. That's fine for M2 and P4; note it so the demo doesn't present `EQ3` as a separate user EQ while a preset is active.
+3. **Level calibration.** The white-box works in volts and the grey-box clips at ±1, so fix a convention once, in config: **0 dBFS ↔ 1 V peak at the pedal input** (hot humbucker territory; typical DI peaks sit 6–20 dB lower).
+   - Then `drive.gain_db` = stage gain + 20·log10(1 V / V_clip), where V_clip is the device's clipping voltage (≈0.6 V Si, ≈0.3 V Ge, ≈1.7 V LED; MOSFET devices take their value from the cited source). Without this, derived gains are off by up to ~10 dB and the fidelity check measures the calibration, not the model.
+   - Both sims and the fidelity sweep use the same constant.
+4. **Range and topology gaps.** Verify each against the sources before changing anything, and let the fidelity check decide whether a gap matters:
+   - **Gain above 60 dB.** RAT is ≈ 1 + 100k/(47 Ω ∥ 560 Ω) ≈ 67 dB. Beyond ~45–50 dB the shaper output is already near-square, so the extra gain mainly changes sustain and noise. 67 dB is also only the high-frequency ceiling: the 47 Ω / 2.2 µF leg turns on above ~1.5 kHz, below that the 560 Ω leg gives ~45 dB, and the LM308 bandwidth caps it further. Decision: clamp at 60 dB and record it in the RAT file;  must not apply 67 dB flat.
+   - **Pre-clip low-pass.** The LM308's bandwidth (RAT) and the 51 pF feedback cap (TS808, ≈5.7 kHz at full drive) low-pass the signal *before* clipping. `Drive` has no pre-clip LP; its post-clip tilt only partly stands in.
+   - **TS808 clean path.** Feedback clipping outputs the input *plus* the clipped gain path, so a unity, full-range clean component survives (part of the TS "transparency"). `Drive` has no clean blend. At 0 dBFS = 1 V the clean part (1 V) exceeds the clipped part (~0.6 V), so expect to need the `clean_db` fix for the TS808 gate; report TS808 error per input level to make the cause visible.
+   - **Cascaded stages.** Big Muff has two clipping stages and DS-1 has a transistor booster before the op-amp. Use one `Drive` and accept the error (Big Muff has no white-box, so it is not measured).
+   - Smallest-change fixes, only if fidelity misses the gate because of that gap: an optional `pre_lpf_hz` or a `clean_db` blend on `Drive` (default off). **Any change to Drive's ranges or chain must re-pass `lstmabar recover`** and update design §4.3.
+5. **White-box solver.** Pure NumPy/SciPy, offline, no ngspice or other system dependencies on Windows.
+   - One solver for a one-capacitor diode clipper (Shockley diodes, trapezoidal rule + Newton, 4–8× oversampled), configured as feedback (TS808) or shunt (DS-1, RAT clipping stage). Linear stages around it (input buffers, booster, op-amp gain networks, tone stacks) are analog transfer functions from component values, discretized with the bilinear transform. Op-amps are ideal (no rails, no slew); documented.
+   - Vectorize over a batch of clips with the time loop in Python. Target ≥10× real time aggregate per core; if it misses, add `numba` as an optional `whitebox` extra rather than rewriting.
+   - Validation tests: small-signal output matches the analytic linear response (≤0.1 dB); output bounded near V_clip at high drive; symmetric diodes → even harmonics below −80 dBc; halving the step changes the output negligibly (convergence).
+   - Fuzz Face (two-transistor Ebers–Moll, bias-dependent asymmetry, input-impedance interaction) is a **stretch, time-boxed to ~1 week of P2 effort**. If it slips, Fuzz Face stays grey-box only and the gap is documented.
+6. **Fidelity metric and fit.**
+   - Inputs: sines at ~82, 165, 330, 660 Hz × −30, −20, −10, 0 dBFS (calibration of decision 3), 0.5 s each with onsets cropped; plus MR-STFT on a riff.
+   - Metric: H1 level error in dB, plus H2–H10 in dBc (relative to H1), each floored at −60 dBc so harmonics both models put in the noise don't count. Report mean and max per pedal and per knob setting.
+   - **One parameter set per (pedal, knob setting) must fit all pitches and levels at once.** Level dependence is the point of a clipper, so fitting per level would hide the gap.
+   - Knob settings: drive ∈ {min, mid, max} × tone at mid (+ tone sweep at mid drive).
+   - Fit with **multi-start** (P1 showed local minima), starting from the derived params plus random restarts.
+   - Report both best-fit error (expressiveness of the grey-box family, the gate) and derived error (accuracy of `derive.py`). If they differ a lot, that motivates a per-pedal calibration in P4.
+7. **Sources and data hygiene.**
+   - Use published circuit analyses (e.g. ElectroSmash) for component values and cite URLs in each YAML. Don't copy schematic images or prose.
+   - The KB's `descriptors` and pedal vocabulary feed P4 captions, so **gold-set hygiene applies: don't read `data/gold/` while writing them**. Write descriptors from circuit behaviour and the cited sources only.
 
 **Suggested parallel waves** (same workflow as P1):
-- wave 0: KB schema + `derive.py` contract (me/main session).
+- wave 0 (main session): `kb.py` schema + validator, the calibration constant, `derive.py` contract (signatures + one worked pedal, TS808), whitebox solver interface.
 - wave 1, three agents in parallel:
-  - (a) author 5 pedal YAMLs;
-  - (b) white-box diode clipper;
-  - (c) **P3 analysis** (harmonics, descriptors, archetype readout), independent of the KB.
-- wave 2: derivations + fidelity fit + report.
-- wave 3: M2 demo — preset picker, white-box vs grey-box A/B, archetype panel from P3.
+  - (a) author the other 5 pedal YAMLs against the schema (sources cited; owner spot-checks);
+  - (b) diode-clipper white-box (both configurations) + validation tests + throughput benchmark;
+  - (c) **P3 analysis** (harmonics, descriptors, archetype readout), independent of the KB. Wave 2 reuses its harmonic extraction for the fidelity metric.
+- wave 2: derivations for all pedals + fidelity fit + report; topology-gap fixes only if the gate misses.
+- wave 3: M2 demo (picker, A/B, archetype panel). Fuzz Face white-box in the remaining time box.
 
 **P1 follow-ups that matter here:**
-- Filter speed: fitting loops call the filters a lot.
-- Multi-start for swept-frequency knobs.
-- Crop the ~32-sample oversampler edges in losses.
+- Crop the ~32-sample oversampler edges in losses (the fidelity fit uses them).
+- Multi-start for swept-frequency knobs (`eq.mid_hz` in the tone-stack fit and fidelity fit).
+- Filter speed: only if the fidelity fit loop turns out slow; sine fits on 0.5 s clips are short.
 
 ## P3 — Archetype readout and descriptors (interleaved, weeks 6–7)
 
@@ -159,7 +185,7 @@ Post-M1 fix (PR #17, found in manual testing): non-WAV uploads (e.g. `.m4a`) fai
 | # | Task | Where | Output |
 |---|---|---|---|
 | 4.1 | Ingest licensed DI corpora (Guitar-TECHS, EGFxSet clean notes, ~30–60 min own DI recordings) → mono 44.1 kHz, 2–4 s onset-aligned clips + manifest | L | `data/sources/`, manifest |
-| 4.2 | Renderer: dry × pedal × sampled knobs → wet (white-box for 2 pedals, NAM/grey-box for the rest); store params, pedal id, descriptors, archetype readout. Multiprocess; resumable shards | L (C if slow) | `data/render.py` |
+| 4.2 | Renderer: dry × pedal × sampled knobs → wet (white-box for TS808 and DS-1, plus Fuzz Face if the P2 stretch lands; NAM/grey-box for the rest); store params, pedal id, descriptors, archetype readout. Multiprocess; resumable shards | L (C if slow) | `data/render.py` |
 | 4.3 | Caption generator: templates from params/descriptors/KB vocab + LLM paraphrase (Claude API), with no numeric leakage. **Do not look at the gold set while writing templates** | L | `data/captions.py` |
 | 4.4 | Real-pedal test set (EGFxSet primary; pOD-set gain sweeps; ToneTwist internal only) | L | `test_real` |
 | 4.5 | Pair each gold instruction with a target tone (pick the closest render / real recording); add friend-written instructions | L | `test_gold` |
