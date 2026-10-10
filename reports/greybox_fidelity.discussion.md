@@ -2,66 +2,88 @@ Hand-written commentary on the generated tables above (kept in
 `reports/greybox_fidelity.discussion.md`; re-render with
 `lstmabar fidelity --from-json reports/greybox_fidelity.json`).
 
-**Gate.** Both gated pedals pass with margin: one Drive + EQ3 parameter set per knob
-setting reaches 0.30–1.16 dB (DS-1) and 1.25–1.62 dB (TS808) mean harmonic error across all
-four pitches and all four input levels. No topology fix (`clean_db`, `pre_lpf_hz`) is needed
-for the gate, so `Drive`'s ranges and chain are unchanged and `lstmabar recover` does not
-need a re-pass.
+**Gate metric.** The gate uses the *masked* mean: every H1 term plus every dBc term that is
+not floored on both sides. Decision 6 says harmonics that both models put in the noise
+"don't count", and those terms are 0 by construction. Only 58–79 of 160 terms count per
+TS808 setting and 80–86 per DS-1 setting, so the all-terms mean (still shown, secondary)
+roughly halves the error and should not be quoted as the result.
 
-**TS808 clean path (P2 decision 4).** The gap the plan predicted is visible in the per-level
-tables, but it is not large enough to fail the mean. The signed H1 error of the best fit
-runs from +1.7 … +5.5 dB at -30 dBFS to -3.7 … -5.7 dB at 0 dBFS: the grey-box is too loud
-at low input and too quiet at full input. That is the signature of feedback clipping's
-unity clean path: the white-box output keeps growing with the input (at 0 dBFS the clean
-1 V exceeds the ~0.6 V clipped part, so every TS808 setting outputs ≈ -19.5 dBFS whatever
-the drive), while `Drive` saturates, so a single level cannot match both ends and the fit
-splits the difference. The harmonic (dBc) error also peaks at 0 dBFS (2.1–3.2 dB vs
-0.3–1.8 dB below), because the clean component dilutes the harmonics relative to H1 in the
-circuit but not in `Drive`. The H1 term is where TS808's error lives (best-fit H1 mean
-2.1–4.3 dB vs 0.9–1.4 dB dBc). If later work needs the TS808's level dependence (e.g. the
-demo's input-gain behaviour or P4 renders at hot levels), the `clean_db` blend of decision 4
-is the fix; it would need `lstmabar recover` to re-pass and an update to design §4.3.
+**Verdict.**
+- **DS-1 passes outright:** best-fit masked mean 1.13 dB (0.61–2.17 per setting).
+- **TS808 misses the 3 dB threshold:** 3.48 dB (2.54–4.02; four of five settings are over).
+  It passes only via the exit gate's documented-deviation clause, with the two causes below.
+  This is not a comfortable pass. The TS808 grey-box is a measurably worse match than the
+  DS-1's.
 
-**DS-1.** The DS-1's ~60 dB of pre-clip gain puts every level above -30 dBFS into hard
-clipping, so the level dependence is small and one parameter set fits well; most of the
-remaining error is at -30/-20 dBFS on the Dist-min setting (37.7 dB fitted gain), where the
-circuit is just entering clipping and the shunt diode knee differs from Drive's shaper.
-Drive's gain clamps at 60 dB (the derivation asks for more; the fit sits at 59.5–59.8 dB),
-which did not limit the fit. The white-box ignores the booster's own soft clipping (an
-ideal linear transistor), so this result does not cover the booster's even-harmonic
-contribution; that cascaded-stage gap remains documented, not measured.
+**TS808 cause 1: the clean path (P2 decision 4).** Feedback clipping adds the input to the
+clipped gain path. At 0 dBFS the clean 1 V exceeds the ~0.6 V clipped part, so every TS808
+setting outputs ≈ -19.5 dBFS whatever the drive. `Drive` saturates instead, so one output
+level cannot match both ends of the input range:
+- The best fit's signed H1 error runs from +1.7 … +5.5 dB at -30 dBFS to -3.7 … -5.7 dB
+  at 0 dBFS.
+- The per-pitch max |H1 error| reaches 10.6 dB (gain max, 82 Hz at -30 dBFS: grey -22.4
+  vs white -33.0 dBFS) and 8.7 dB (gain max, 659 Hz at 0 dBFS).
+- The masked mean is highest at 0 dBFS in every setting (4.4–6.5 dB). There the clean
+  component also dilutes the circuit's harmonics relative to H1 (H3 of 165 Hz: white
+  -19.1…-21.9 dBc vs grey -11…-13 dBc).
 
-**Derived vs best fit.** Derived (unfitted) errors are 0.5–1.6 dB (DS-1) and 2.1–2.7 dB
-(TS808), i.e. the derivations land within ~1 dB of the best the grey-box family can do,
-and the derived start was the winning start in 9 of 10 fits. The largest systematic
-differences: the derived waveshaper prior (`softness` 0.5 for shunt, 0.2 for feedback
-clipping) is harder than the fitted values (0.06–0.18 except DS-1 Dist max, 0.71); the
-TS808 low shelf (four of five fits want +3 … +7 dB `eq.low_db` against ~+0.6 derived,
-plausibly compensating the clean path's full-range content); and the TS808 derived H1 offset at
--30 dBFS (+3.3 … +5.1 dB), the same clean-path signature. These are candidates for the
-per-pedal calibration the plan mentions for P4, not blockers.
+**TS808 cause 2: upper odd harmonics of the lowest note.** The largest single terms (10–23
+dB) are H5/H7/H9 (and H3 at -20 dBFS) of the 82 Hz tone at -20/-10/0 dBFS. There the
+circuit has them at about -26…-50 dBc (H3 -26…-32, H5 -27…-31, H7 -37…-43, H9 -45…-50) and
+the grey-box has them at -36 dBc down to the -60 dBc floor. In other words, the grey-box loses upper odd
+harmonics on low notes; these are not even harmonics from the fitted asymmetry. A plausible
+mechanism (a hypothesis, not tested here) is the TS808's frequency-dependent clipping gain:
+- In the circuit, the gain leg's ~720 Hz corner gives an 82 Hz fundamental little gain,
+  while the harmonics the feedback diodes generate still reach the output.
+- In `Drive`, a pre-clip HPF strong enough to keep the 82 Hz fundamental out of saturation
+  also keeps that note's shaper from generating them.
 
-**Large single-term maxima** (3–27 dB) come from individual terms out of 160 per setting;
-the report does not attribute them to a harmonic, but a term where one model sits near the
--60 dBc floor and the other well above it (weak upper harmonics, or even harmonics the
-grey-box adds through its small fitted asymmetry/bias) produces exactly this. They barely
-move the means; per-term errors are a cheap addition to the JSON if they need diagnosing.
+**Fix if this matters.** The decision-4 `clean_db` blend on `Drive` addresses cause 1 and
+probably part of cause 2. It changes Drive's chain, so it needs an `lstmabar recover`
+re-pass and a design §4.3 update. It is not done here.
 
-**Known model differences between white-box and derivation** (both documented in code):
-the DS-1 white-box loads the tone stack with the level pot (Premier Guitar's signal path;
-0.2–0.8 dB lower than the derivation's R18 + buffer load at level 0.5), and it omits
-coupling high-passes below 10 Hz that the derivation includes. The TS808 white-box and the
-derivation share `derive.ts808_tone_stage`; the DS-1 booster and tone stack share
-`derive.ds1_booster` and `derive.lp_hp_blend_tone_stack`.
+**DS-1.** The DS-1's ~60 dB of pre-clip gain hard-clips every level, so its level
+dependence is small. The worst setting is Dist min (2.17 dB; 3.0 dB masked at -30/-20
+dBFS, fitted gain 37.7 dB), where the circuit is just entering clipping and the shunt
+diode knee differs from Drive's shaper. Its worst terms are mixed in sign (H3–H9 with the
+white-box at -34…-57 dBc, up to 9.7 dB). The white-box ignores the booster's own soft clipping (an ideal
+linear transistor), so this result does not cover the booster's even-harmonic contribution.
 
-**Not covered.** No RAT white-box was built (optional and diagnostic-only per the plan): the
-RAT has no capacitor at the diode node, so the one-capacitor shunt solver does not apply
-directly, and its LM308 bandwidth limit is the more important gap anyway. Big Muff and the
-Fuzz Faces have no white-box.
+**Derived (unfitted) vs best fit.**
+- **Error gaps:** derived errors are 1.78 dB (DS-1) and 5.35 dB (TS808) masked, i.e.
+  0.65 dB and 1.9 dB above the best fit. For TS808 the derivation is clearly off, not
+  merely close: the derived H1 offset at -30 dBFS (+3.3 … +5.1 dB) is the same clean-path
+  signature, and the derived dBc error is 5.7–6.8 dB.
+- **The derivation is a valuable start:** the derived start won 9 of 10 fits. TS808
+  random starts ended at 5–20 dB, so the fit landscape is strongly multimodal there.
+- **Systematic differences** (see the parameter tables), candidates for P4's per-pedal
+  calibration:
+  - The derived shaper priors (`softness` 0.5 shunt / 0.2 feedback) are harder than most
+    fitted values (0.06–0.17, except DS-1 Dist max at 0.71).
+  - Four of five TS808 fits raise `eq.low_db` to +3…+7 dB (derived ≈ +0.6).
 
-**Runtime.** 958 s for the full report on a 10-thread laptop CPU (≈80–160 s per pedal
-setting, almost all of it the grey-box fit). To fit the ~20 min budget: 22.05 kHz,
-fitting on 0.2 s of each 0.5 s analysis window with a 0.05 s grey-box pre-roll (the metric
-always uses the full window), 3 starts × 100 Adam steps. In a 150-step, 4-start trial the
-TS808/DS-1 gain-mid errors were 1.53/0.36 dB vs 1.54/0.35 dB here, so the shorter schedule
-does not change the result.
+**Selection is in-sample by design.** The best start is chosen on the same clips it was
+fitted to. The question is how close the grey-box family can get (an expressiveness bound),
+not generalization, so the best-fit numbers are optimistic for unseen material by
+construction.
+
+**Known model differences between white-box and derivation** (documented in code):
+- The DS-1 white-box loads the tone stack with the level pot (Premier Guitar's signal path).
+  This is 0.2–0.8 dB lower than the derivation's R18 + buffer load at level 0.5.
+- The DS-1 white-box omits coupling high-passes below 10 Hz that the derivation includes.
+- Shared linear models: the TS808 white-box and the derivation share
+  `derive.ts808_tone_stage`; the DS-1 booster and tone stack share `derive.ds1_booster` and
+  `derive.lp_hp_blend_tone_stack`.
+
+**Not covered.** No RAT white-box was built; it is optional and diagnostic-only per the
+plan. The RAT has no capacitor at its diode node, so the one-capacitor shunt solver does not
+apply directly. Big Muff and the Fuzz Faces have no white-box.
+
+**Runtime.** This run took 1403 s, a bit over the ~20 min target, on a 10-thread laptop CPU
+at 80–250 s per setting, almost all of it in the grey-box fit. An identical earlier run of
+the same computation took 958 s, so machine load varies. Settings used to stay near budget:
+- 22.05 kHz sample rate.
+- Fitting on 0.2 s of each 0.5 s window with a 0.05 s grey-box pre-roll; the metric always
+  uses the full window.
+- 3 starts × 100 Adam steps. A 150-step, 4-start trial gave the same gain-mid result to
+  within 0.01 dB (all-terms mean).

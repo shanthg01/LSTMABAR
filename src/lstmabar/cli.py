@@ -132,7 +132,9 @@ def cmd_fidelity(args: argparse.Namespace) -> int:
         print(f"run dir {run_dir}")
     md, js = write_report(result, args.out, discussion)
     verdict = "PASS" if gate_passed(result) else "FAIL"
-    gates = ", ".join(f"{p} {g['best_mean_db']:.2f} dB" for p, g in result.gate.items())
+    gates = ", ".join(
+        f"{p} {g['best_mean_db']:.2f} dB ({g['verdict']})" for p, g in result.gate.items()
+    )
     print(f"fidelity {verdict}: {gates} in {result.seconds_elapsed:.0f} s -> {md}, {js}")
     return 0 if gate_passed(result) else 1
 

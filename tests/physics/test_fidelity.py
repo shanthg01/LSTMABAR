@@ -10,6 +10,8 @@ from lstmabar.analysis.harmonics import harmonic_amplitudes
 from lstmabar.physics.fidelity import (
     FidelityConfig,
     HarmonicProjector,
+    compute_gate,
+    counted_terms,
     harmonic_errors,
     harmonic_loss,
     knob_settings,
@@ -47,6 +49,36 @@ def test_floor_and_h1_terms():
     assert err2[0, 1] == pytest.approx(20.0)
     # Silent grey render: H1 error is inf (no floor), so it can't pass for a good match.
     assert np.isinf(harmonic_errors(np.array([[0.0, 0.0]]), np.array([[1.0, 0.0]]))[0, 0])
+
+
+def test_masked_mean_excludes_terms_floored_on_both_sides():
+    white = np.array([[1.0, 1e-4, 1e-5, 0.1]])  # H2, H3 below -60 dBc
+    grey = np.array([[0.5, 1e-6, 0.01, 0.1]])  # H2 floored on both sides; H3 only on white
+    mask = counted_terms(grey, white)
+    np.testing.assert_array_equal(mask, [[True, False, True, True]])
+    s = summarize(grey, white, np.array([0.0]), f0s=np.array([110.0]))
+    err = harmonic_errors(grey, white)[0]
+    assert s["mean_db"] == pytest.approx(err[[0, 2, 3]].mean())
+    assert s["all_terms_mean_db"] == pytest.approx(err.mean())
+    assert s["counted_terms"] == 3 and s["total_terms"] == 4
+    assert s["per_level"]["0"]["h1_max_abs_db"] == pytest.approx(20 * np.log10(2))
+    worst = s["worst_terms"][0]
+    assert worst["harmonic"] == 3 and worst["error_db"] == pytest.approx(err.max())
+    assert s["terms"]["counted"] == [[1, 0, 1, 1]]
+
+
+def test_gate_verdicts():
+    cfg = FidelityConfig()
+
+    def pedal(mean):
+        row = {"label": "x", "best": {"mean_db": mean, "all_terms_mean_db": mean / 2}}
+        return {"has_deriver": False, "settings": [row]}
+
+    g = compute_gate({"ds1": pedal(1.0), "ts808": pedal(3.5), "rat": pedal(9.0)}, cfg)
+    assert g["ds1"]["verdict"] == "PASS" and g["ds1"]["deviation"] is None
+    assert g["ts808"]["verdict"] == "PASS (documented deviation)" and not g["ts808"]["passed"]
+    assert g["rat"]["verdict"] == "diagnostic"
+    assert compute_gate({"ds1": pedal(3.5)}, cfg)["ds1"]["verdict"] == "FAIL"
 
 
 def test_torch_projector_matches_numpy_and_is_differentiable():

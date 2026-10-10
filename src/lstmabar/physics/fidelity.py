@@ -72,6 +72,18 @@ TONE_KNOB = {"ts808": "tone", "ds1": "tone", "rat": "filter"}
 DIAGNOSTIC = ("rat",)
 """White-box pedals reported without a gate (P2: a RAT sim with ideal op-amps is diagnostic)."""
 GATED = ("ts808", "ds1")
+DOCUMENTED_DEVIATIONS: dict[str, str] = {
+    "ts808": (
+        "topology gap, P2 decision 4: feedback clipping's unity clean path (Drive has no clean "
+        "blend), so the output level cannot follow the circuit across input levels (signed H1 "
+        "error positive at -30 dBFS, negative at 0 dBFS); plus upper odd harmonics of the "
+        "lowest notes that the grey-box puts below the -60 dBc floor. Evidence: per-level and "
+        "worst-term tables of reports/greybox_fidelity.md. Fix if needed: Drive clean_db "
+        "(requires an `lstmabar recover` re-pass and a design §4.3 update)."
+    ),
+}
+"""Gated pedals whose best fit misses the threshold for a named, evidenced cause (the P2
+exit gate allows "deviation documented with its cause")."""
 
 
 @dataclass
@@ -139,32 +151,88 @@ def harmonic_errors(
     return np.concatenate([h1, dbc], axis=-1)
 
 
+def counted_terms(
+    amps_grey: np.ndarray, amps_white: np.ndarray, floor_dbc: float = -60.0
+) -> np.ndarray:
+    """Boolean mask ``(..., K)`` of the terms that count (decision 6): every H1 term, and a
+    dBc term unless **both** models are at or below ``floor_dbc`` (such a term is 0 by
+    construction and would only dilute the mean)."""
+    g = to_dbc(amps_grey, floor_dbc)
+    w = to_dbc(amps_white, floor_dbc)
+    mask = ~((g <= floor_dbc) & (w <= floor_dbc))
+    mask[..., 0] = True
+    return mask
+
+
+def _masked_mean(err: np.ndarray, mask: np.ndarray) -> float:
+    return float(err[mask].mean()) if mask.any() else 0.0
+
+
 def summarize(
     amps_grey: np.ndarray,
     amps_white: np.ndarray,
     levels: np.ndarray,
     floor_dbc: float = -60.0,
+    f0s: np.ndarray | None = None,
+    n_worst: int = 8,
 ) -> dict:
-    """Summary of :func:`harmonic_errors` over clips ``(C, K)`` with input level per clip."""
+    """Summary of :func:`harmonic_errors` over clips ``(C, K)`` with input level per clip.
+
+    ``mean_db`` (the gate metric) is the *masked* mean over :func:`counted_terms`;
+    ``all_terms_mean_db`` is the plain mean over every term (secondary, diluted by terms
+    floored on both sides). Per-term errors, levels and the counted mask are kept for
+    attribution, plus the ``n_worst`` largest terms.
+    """
     err = harmonic_errors(amps_grey, amps_white, floor_dbc)
+    mask = counted_terms(amps_grey, amps_white, floor_dbc)
     signed_h1 = (to_db(amps_grey[:, 0]) - to_db(amps_white[:, 0])).astype(float)
+    lvl_g = np.concatenate([to_db(amps_grey[:, :1]), to_dbc(amps_grey, floor_dbc)[:, 1:]], axis=1)
+    lvl_w = np.concatenate([to_db(amps_white[:, :1]), to_dbc(amps_white, floor_dbc)[:, 1:]], axis=1)
+    dbc_mask = mask[:, 1:]
     out = {
-        "mean_db": float(np.mean(err)),
+        "mean_db": _masked_mean(err, mask),
+        "all_terms_mean_db": float(np.mean(err)),
+        "counted_terms": int(mask.sum()),
+        "total_terms": int(mask.size),
         "max_db": float(np.max(err)),
         "h1_mean_db": float(np.mean(err[:, 0])),
         "h1_max_db": float(np.max(err[:, 0])),
-        "dbc_mean_db": float(np.mean(err[:, 1:])),
+        "dbc_mean_db": _masked_mean(err[:, 1:], dbc_mask),
+        "dbc_all_terms_mean_db": float(np.mean(err[:, 1:])),
         "dbc_max_db": float(np.max(err[:, 1:])),
         "per_level": {},
     }
     for lv in sorted(set(levels.tolist())):
         m = levels == lv
         out["per_level"][f"{lv:g}"] = {
-            "mean_db": float(np.mean(err[m])),
+            "mean_db": _masked_mean(err[m], mask[m]),
             "h1_mean_db": float(np.mean(err[m, 0])),
             "h1_signed_db": float(np.mean(signed_h1[m])),
-            "dbc_mean_db": float(np.mean(err[m, 1:])),
+            "h1_max_abs_db": float(np.max(np.abs(signed_h1[m]))),
+            "dbc_mean_db": _masked_mean(err[m, 1:], dbc_mask[m]),
         }
+    f0s = np.zeros(len(levels)) if f0s is None else np.asarray(f0s)
+    order = np.argsort(err, axis=None)[::-1][:n_worst]
+    out["worst_terms"] = [
+        {
+            "f0_hz": float(f0s[c]),
+            "level_dbfs": float(levels[c]),
+            "harmonic": int(k + 1),
+            "grey": float(lvl_g[c, k]),
+            "white": float(lvl_w[c, k]),
+            "error_db": float(err[c, k]),
+        }
+        for c, k in zip(*np.unravel_index(order, err.shape), strict=True)
+    ]
+    out["terms"] = {
+        "unit": "H1: dBFS; H2..: dBc floored",
+        "f0_hz": f0s.tolist(),
+        "level_dbfs": levels.tolist(),
+        "grey": np.round(lvl_g, 3).tolist(),
+        "white": np.round(lvl_w, 3).tolist(),
+        "error_db": np.round(err, 3).tolist(),
+        "counted": mask.astype(int).tolist(),
+    }
     return out
 
 
@@ -343,7 +411,7 @@ def evaluate(
     amps = _amps(y, sig, cfg)
     out = []
     for i in range(u.shape[0]):
-        s = summarize(amps[i], white_amps, sig.levels, cfg.floor_dbc)
+        s = summarize(amps[i], white_amps, sig.levels, cfg.floor_dbc, f0s=sig.f0s)
         s["mrstft_riff"] = _riff_mrstft(yr[i], white_riff, cfg.riff_crop)
         out.append(s)
     return out
@@ -455,6 +523,8 @@ def check_setting(
             "init": first_name if i == 0 else f"random {i}",
             "final_loss": final_loss[i],
             "mean_db": evals[i]["mean_db"],
+            "all_terms_mean_db": evals[i]["all_terms_mean_db"],
+            "params": physical(board, fk, u_fit[i]),
         }
         for i in range(len(evals))
     ]
@@ -505,25 +575,51 @@ def run_fidelity(cfg: FidelityConfig | None = None, log=_log) -> FidelityResult:
             ),
             "settings": rows,
         }
+    return FidelityResult(cfg, pedals, compute_gate(pedals, cfg), time.perf_counter() - start)
+
+
+def compute_gate(pedals: dict, cfg: FidelityConfig) -> dict:
+    """Per-pedal gate summary. ``passed`` is the strict threshold test on the masked mean;
+    ``verdict`` is ``PASS``, ``PASS (documented deviation)`` (over the threshold, with the
+    cause in :data:`DOCUMENTED_DEVIATIONS` — the P2 exit gate allows this), ``FAIL`` or
+    ``diagnostic`` (ungated pedals)."""
     gate = {}
     for pid, p in pedals.items():
         means = [r["best"]["mean_db"] for r in p["settings"]]
         avg = float(np.mean(means))
+        passed = bool(avg <= cfg.gate_db)
+        if pid not in GATED:
+            verdict = "diagnostic"
+        elif passed:
+            verdict = "PASS"
+        elif pid in DOCUMENTED_DEVIATIONS:
+            verdict = "PASS (documented deviation)"
+        else:
+            verdict = "FAIL"
+
+        def derived(key, p=p):
+            if not p["has_deriver"]:
+                return None
+            return float(np.mean([r["derived"][key] for r in p["settings"]]))
+
         gate[pid] = {
             "gated": pid in GATED,
             "best_mean_db": avg,
+            "best_all_terms_mean_db": float(
+                np.mean([r["best"]["all_terms_mean_db"] for r in p["settings"]])
+            ),
             "worst_setting_mean_db": float(np.max(means)),
+            "best_setting_range_db": [float(np.min(means)), float(np.max(means))],
             "settings_over": [
                 r["label"] for r in p["settings"] if r["best"]["mean_db"] > cfg.gate_db
             ],
-            "passed": bool(avg <= cfg.gate_db),
-            "derived_mean_db": (
-                float(np.mean([r["derived"]["mean_db"] for r in p["settings"]]))
-                if p["has_deriver"]
-                else None
-            ),
+            "passed": passed,
+            "verdict": verdict,
+            "deviation": DOCUMENTED_DEVIATIONS.get(pid) if verdict.endswith("deviation)") else None,
+            "derived_mean_db": derived("mean_db"),
+            "derived_all_terms_mean_db": derived("all_terms_mean_db"),
         }
-    return FidelityResult(cfg, pedals, gate, time.perf_counter() - start)
+    return gate
 
 
 # --- Report -------------------------------------------------------------------------------------
@@ -539,11 +635,12 @@ def _metric_rows(pid: str, p: dict) -> list[str]:
         b, d = r["best"], r["derived"]
         knobs = ", ".join(f"{k} {v:g}" for k, v in r["knobs"].items())
         rows.append(
-            f"| {r['label']} ({knobs}) | {b['mean_db']:.2f} | {b['max_db']:.1f} | "
-            f"{b['h1_mean_db']:.2f} | {b['dbc_mean_db']:.2f} | {b['mrstft_riff']:.3f} | "
-            f"{_f(d and d['mean_db'])} | {_f(d and d['max_db'], 1)} | "
-            f"{_f(d and d['h1_mean_db'])} | {_f(d and d['dbc_mean_db'])} | "
-            f"{_f(d and d['mrstft_riff'], 3)} |"
+            f"| {r['label']} ({knobs}) | **{b['mean_db']:.2f}** | {b['all_terms_mean_db']:.2f} | "
+            f"{b['max_db']:.1f} | {b['h1_mean_db']:.2f} | {b['dbc_mean_db']:.2f} | "
+            f"{b['counted_terms']}/{b['total_terms']} | {b['mrstft_riff']:.3f} | "
+            f"**{_f(d and d['mean_db'])}** | {_f(d and d['all_terms_mean_db'])} | "
+            f"{_f(d and d['max_db'], 1)} | {_f(d and d['h1_mean_db'])} | "
+            f"{_f(d and d['dbc_mean_db'])} | {_f(d and d['mrstft_riff'], 3)} |"
         )
     return rows
 
@@ -555,10 +652,26 @@ def _level_rows(p: dict, which: str) -> list[str]:
         if m is None:
             continue
         cells = " | ".join(
-            f"{v['mean_db']:.2f} / {v['h1_signed_db']:+.2f} / {v['dbc_mean_db']:.2f}"
+            f"{v['mean_db']:.2f} / {v['h1_signed_db']:+.2f} / {v['h1_max_abs_db']:.2f} / "
+            f"{v['dbc_mean_db']:.2f}"
             for v in m["per_level"].values()
         )
         rows.append(f"| {r['label']} | {cells} |")
+    return rows
+
+
+def _worst_rows(p: dict, which: str, n: int = 5) -> list[str]:
+    rows = []
+    for r in p["settings"]:
+        m = r[which]
+        if m is None:
+            continue
+        for t in m["worst_terms"][:n]:
+            unit = "dBFS" if t["harmonic"] == 1 else "dBc"
+            rows.append(
+                f"| {r['label']} | {t['f0_hz']:g} | {t['level_dbfs']:g} | H{t['harmonic']} | "
+                f"{t['grey']:.1f} {unit} | {t['white']:.1f} {unit} | {t['error_db']:.1f} |"
+            )
     return rows
 
 
@@ -587,20 +700,29 @@ def format_report(r: FidelityResult, discussion: str = "") -> str:
         "",
         "## Gate",
         "",
-        f"Gate: best-fit harmonic error, averaged over the pedal's knob settings, "
-        f"≤ {c.gate_db:g} dB for {', '.join(GATED)}.",
+        f"Gate: best-fit **masked mean** harmonic error, averaged over the pedal's knob "
+        f"settings, ≤ {c.gate_db:g} dB for {', '.join(GATED)}, or a deviation documented with "
+        "its cause (P2 exit gate). The masked mean counts every H1 term and every dBc term "
+        f"except those where *both* models are at or below {c.floor_dbc:g} dBc (decision 6: "
+        "harmonics both models put in the noise don't count). The all-terms mean (every term, "
+        "including those zero-by-construction floored pairs) is shown for reference only; it "
+        "is diluted and not the gate.",
         "",
-        "| pedal | gated | best-fit mean (dB) | worst setting (dB) | settings > gate | "
-        "derived mean (dB) | verdict |",
-        "|---|---|---|---|---|---|---|",
+        "| pedal | gated | best-fit masked mean (dB) | per-setting range | settings > gate | "
+        "derived masked mean | best-fit / derived all-terms mean (secondary) | verdict |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for pid, g in r.gate.items():
-        verdict = ("PASS" if g["passed"] else "FAIL") if g["gated"] else "diagnostic"
+        lo, hi = g["best_setting_range_db"]
         lines.append(
-            f"| {pid} | {'yes' if g['gated'] else 'no'} | {g['best_mean_db']:.2f} | "
-            f"{g['worst_setting_mean_db']:.2f} | {', '.join(g['settings_over']) or 'none'} | "
-            f"{_f(g['derived_mean_db'])} | **{verdict}** |"
+            f"| {pid} | {'yes' if g['gated'] else 'no'} | **{g['best_mean_db']:.2f}** | "
+            f"{lo:.2f}–{hi:.2f} | {', '.join(g['settings_over']) or 'none'} | "
+            f"{_f(g['derived_mean_db'])} | {g['best_all_terms_mean_db']:.2f} / "
+            f"{_f(g['derived_all_terms_mean_db'])} | **{g['verdict']}** |"
         )
+    for pid, g in r.gate.items():
+        if g.get("deviation"):
+            lines += ["", f"**{pid} deviation:** {g['deviation']}"]
     cmd = "lstmabar fidelity" + (" --quick" if c.quick else "") + f" --seed {c.seed}"
     lines += [
         "",
@@ -621,17 +743,23 @@ def format_report(r: FidelityResult, discussion: str = "") -> str:
         f"{c.drive_oversample}x.",
         f"- Metric per clip: |ΔH1| dB (absolute level, no floor) and |ΔHk| dBc, k = "
         f"2..{c.n_harmonics}, both sides floored at {c.floor_dbc:g} dBc "
-        "(`analysis.harmonics.harmonic_amplitudes` at the exact f0). *mean* = mean of the "
-        f"{c.n_harmonics} terms over all {len(c.pitches_hz) * len(c.levels_dbfs)} clips; "
-        "*max* = largest single term.",
+        "(`analysis.harmonics.harmonic_amplitudes` at the exact f0). *masked mean* (the gate) "
+        f"= mean over the counted terms of all {len(c.pitches_hz) * len(c.levels_dbfs)} clips "
+        "(every H1, and every dBc term not floored on both sides); *all-terms mean* = mean of "
+        f"all {c.n_harmonics} terms per clip (secondary); *max* = largest single term. "
+        "Per-term values and errors are in the JSON (`terms`, `worst_terms`).",
         f"- Best fit: one Drive + EQ3 parameter set (11 knobs, compressor off) per (pedal, "
         "setting), fitted jointly to every pitch and level. Loss = the metric (differentiable "
         f"harmonic projection on the first {c.fit_seconds:g} s of each analysed window, "
         f"grey-box pre-roll {c.fit_settle:g} s) + "
         f"{c.mrstft_weight:g} × MR-STFT on the riff. Multi-start: derived parameters (or all "
         f"knobs 0.5 without a deriver) + {c.restarts} random starts U(0.1, 0.9); Adam lr "
-        f"{c.lr:g}, cosine decay, {c.steps} steps on sigmoid logits. Best start by final "
-        "metric on the full window.",
+        f"{c.lr:g}, cosine decay, {c.steps} steps on sigmoid logits. The best start is the one "
+        "with the lowest masked mean on the full evaluation window. **Selection is in-sample "
+        "by design**: the question is how close the grey-box family *can* get to the circuit "
+        "on these inputs (an expressiveness bound), not how well a fit generalizes to unseen "
+        "signals, so there is no held-out split. The fit loss is the all-terms L1 (both-"
+        "floored terms contribute zero gradient either way).",
         "- Derived: `physics.derive.derive` → `preset_params`, unfitted.",
         "",
     ]
@@ -642,13 +770,18 @@ def format_report(r: FidelityResult, discussion: str = "") -> str:
             "",
             "White-box notes: " + ("; ".join(p["notes"]) or "none") + ".",
             "",
-            "| setting | best mean | best max | best H1 | best dBc | best MR-STFT | "
-            "derived mean | derived max | derived H1 | derived dBc | derived MR-STFT |",
-            "|---|---|---|---|---|---|---|---|---|---|---|",
+            "Best fit, then derived (dB; *masked* = gate metric, *all* = all-terms mean, "
+            "secondary; H1 = mean |ΔH1|; dBc = masked mean of counted dBc terms; *counted* = "
+            "terms in the masked mean):",
+            "",
+            "| setting | best masked | best all | best max | best H1 | best dBc | counted | "
+            "best MR-STFT | derived masked | derived all | derived max | derived H1 | "
+            "derived dBc | derived MR-STFT |",
+            "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
             *_metric_rows(pid, p),
             "",
-            "Per input level, best fit: harmonic error / signed H1 error (grey − white) / "
-            "dBc error, in dB:",
+            "Per input level, best fit: masked mean / signed mean H1 error (grey − white, over "
+            "the 4 pitches; can cancel) / max |H1 error| / masked dBc error, in dB:",
             "",
             "| setting | " + " | ".join(f"{lv} dBFS" for lv in levels) + " |",
             "|---|" + "---|" * len(levels),
@@ -665,6 +798,15 @@ def format_report(r: FidelityResult, discussion: str = "") -> str:
                 "",
             ]
         lines += [
+            "Worst single terms, best fit (top 5 per setting; H1 in dBFS, others in dBc "
+            f"floored at {c.floor_dbc:g}):",
+            "",
+            "| setting | f0 (Hz) | input (dBFS) | term | grey | white | error (dB) |",
+            "|---|---|---|---|---|---|---|",
+            *_worst_rows(p, "best"),
+            "",
+        ]
+        lines += [
             "White-box output level (mean H1, dBFS) per input level: "
             + "; ".join(
                 f"{r['label']}: " + ", ".join(f"{v:.1f}" for v in r["white_h1_dbfs"].values())
@@ -678,7 +820,7 @@ def format_report(r: FidelityResult, discussion: str = "") -> str:
             "",
             *_param_rows(p),
             "",
-            "Multi-start (final mean harmonic error, dB): "
+            "Multi-start (masked mean harmonic error after fitting, dB): "
             + "; ".join(
                 f"{r['label']}: "
                 + ", ".join(f"{s['init']} {s['mean_db']:.2f}" for s in r["starts"])
@@ -718,12 +860,16 @@ def write_report(
 
 
 def gate_passed(r: FidelityResult) -> bool:
-    return all(g["passed"] for g in r.gate.values() if g["gated"])
+    """Exit gate: every gated pedal passes outright or via a documented deviation."""
+    return all(g["verdict"] != "FAIL" for g in r.gate.values() if g["gated"])
 
 
 __all__ = [
     "DIAGNOSTIC",
+    "DOCUMENTED_DEVIATIONS",
     "GATED",
+    "compute_gate",
+    "counted_terms",
     "FidelityConfig",
     "FidelityResult",
     "HarmonicProjector",
