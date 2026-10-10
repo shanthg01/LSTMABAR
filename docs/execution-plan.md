@@ -117,7 +117,7 @@ Not in P2: NAM/Proteus captures (they are a P4 rendering source, pending license
 - `dsp.signals` (synthetic riffs) and `lstmabar.audio` (decode, resample, loudness).
 - The demo builds its sliders generically from `param_specs`, and `demo.render.knobs_to_params` turns physical knob values into board params. An M2 preset picker only needs to produce physical knob values.
 
-**Decisions to make at kickoff** (each has a recommendation; confirm with the owner):
+**Kickoff decisions** (confirmed by the owner 2026-10-09, as recommended below):
 
 1. **KB format.** One YAML per pedal under `pedals/`, validated by plain dataclasses in `physics/kb.py` (no new dependency, no separate schema file).
    - Fields: `id`, `name`, `family`, `topology` (enum, e.g. `opamp_feedback_clip`, `opamp_shunt_clip`, `two_transistor_fuzz`, `cascaded_transistor_clip`), clipping device(s) with type (Si/Ge/LED/MOSFET), component values, pots with value and taper, `sources` (URLs), optional `descriptors`.

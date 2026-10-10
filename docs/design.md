@@ -121,8 +121,8 @@ Module notes:
 ### 4.5 White-box reference sims (`physics/whitebox/`)
 - Offline, non-differentiable, for 2–3 circuits: one diode-clipper solver in feedback (TS808) and shunt (DS-1 / RAT clipping stage) configurations, plus a time-boxed Fuzz Face transistor model. Linear stages come from component values via the bilinear transform.
 - Purpose: realistic data, and a check on grey-box fidelity (§7).
-- Sims and grey-box share one level calibration (0 dBFS ↔ 1 V peak at the pedal input, recommended), so derived drive gains are comparable.
-- Solver choice and calibration are P2 kickoff decisions 3 and 5 (recommended: pure NumPy/SciPy, no ngspice/system deps); update this section once decided.
+- Sims and grey-box share one level calibration (0 dBFS ↔ 1 V peak at the pedal input), so derived drive gains are comparable.
+- Solver and calibration: P2 kickoff decisions 3 and 5 (pure NumPy/SciPy, no ngspice/system deps; 0 dBFS ↔ 1 V peak).
 
 ### 4.6 Archetype readout and descriptors (`analysis/`)
 - f0 tracking (pYIN or torchcrepe) → harmonic amplitudes → odd/even energy ratio, harmonic slope, harmonic-to-noise ratio.
@@ -244,3 +244,4 @@ legacy/                  # v1 code, read-only reference for the paper
 | 2026-10-09 | P1 DSP: normalized-knob contract, pure-torch frequency-sampled biquads, NumPy compressor recursion behind custom autograd, 4× oversampled p-norm waveshaper, Drive bias range ±0.25 |
 | 2026-10-09 | Python 3.11 pinned locally (`.python-version`, supersedes the 3.12 note above); CI also tests 3.13 to match Colab |
 | 2026-10-09 | Demo decodes uploads itself (libsndfile → PyAV) instead of relying on a system ffmpeg; user-facing errors never include server paths; 25 MB upload cap, 192 kHz sample-rate cap |
+| 2026-10-09 | P2 kickoff: one YAML per pedal (`pedals/`, SI-suffix strings, dataclass validator); 0 dBFS ↔ 1 V peak calibration; RAT gain clamped at Drive's 60 dB; white-box = one diode-clipper solver (feedback: TS808, shunt: DS-1/RAT) as the fidelity gate, Fuzz Face time-boxed stretch |
