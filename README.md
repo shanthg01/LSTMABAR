@@ -5,7 +5,12 @@ Text-driven guitar tone transformation grounded in pedal circuit physics. Give i
 v2 is a solo side project building on the W266 course project. The original version is archived in [legacy/](legacy/) (tag `v1-w266`).
 
 - Design: [docs/design.md](docs/design.md)
-- Execution plan: [docs/execution-plan.md](docs/execution-plan.md)
+- Execution plan and status: [docs/execution-plan.md](docs/execution-plan.md)
+- Dataset licenses: [docs/data-licenses.md](docs/data-licenses.md)
+
+**Status:**
+- **Done:** M1, a playable differentiable pedalboard (compressor → drive → EQ) with a Gradio demo; parameter recovery passes as an audio match ([report](reports/param_recovery.md)).
+- **Next:** M2, physics-grounded presets from real pedal circuits.
 
 ## Setup
 
@@ -13,13 +18,13 @@ Requires [uv](https://docs.astral.sh/uv/).
 
 ```bash
 uv sync --extra dev          # core + test tooling (CPU torch)
-uv run pytest                # tests
-uv run ruff check .          # lint
+uv run pytest                # tests (add -m slow for the ~7 min parameter-recovery check)
+uv run ruff check .          # lint (CI also runs ruff format --check)
 uv run lstmabar info         # versions, device, git state
 uv run lstmabar smoke        # config -> seed -> run dir sanity check
 ```
 
-Optional extras: `dsp`, `analysis`, `clap`, `demo`, `quantum`. Install them with, for example, `uv sync --extra dev --extra demo`.
+Optional extras: `demo` (Gradio + PyAV), `spikes`, `clap`, `analysis`, `dsp`, `quantum`. Install them with, for example, `uv sync --extra dev --extra demo`.
 
 ## Demo
 
