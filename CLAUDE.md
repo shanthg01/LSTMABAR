@@ -6,7 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 LSTMABAR v2: text-driven guitar tone transformation grounded in pedal circuit physics. Guitar audio + instruction → parameters for a differentiable, physically grounded pedalboard → rendered audio + explanation. Solo side project; the main deliverable is a Gradio demo.
 
-Read [docs/design.md](docs/design.md) (architecture, data, evaluation) and [docs/execution-plan.md](docs/execution-plan.md) (phases P0–P8, exit gates, milestones) before substantial work. Work happens on `v2/...` feature branches, not `main`.
+**Status:** P0 and P1 are done (M1 demo works). **Next: P2** (pedal knowledge base + white-box circuit sims), with P3 (harmonic analysis) in parallel. Start from the "P2 kickoff brief" in [docs/execution-plan.md](docs/execution-plan.md).
+
+Read [docs/design.md](docs/design.md) (architecture, data, evaluation; §4.3 describes the implemented DSP; §10 is the decisions log) and [docs/execution-plan.md](docs/execution-plan.md) (phases, exit gates, status) before substantial work.
 
 `legacy/` holds the v1 W266 submission (tag `v1-w266`) and is read-only reference. Its design flaws are documented in design §1; do not reuse its labelling scheme, DDSP engine, or RLHF code.
 
@@ -15,26 +17,41 @@ Read [docs/design.md](docs/design.md) (architecture, data, evaluation) and [docs
 The environment is managed by `uv` (Python 3.11 pinned in `.python-version`; CPU torch from the PyTorch CPU index). On this Windows machine bare `python` is the Store stub, so use `uv run` or `py`.
 
 ```bash
-uv sync --extra dev                      # add --extra dsp/analysis/clap/demo/quantum as needed
+uv sync --extra dev                      # core + tests; add --extra demo (gradio, PyAV), spikes, quantum, ...
 uv run pytest                            # all tests except those marked slow
-uv run pytest -m slow                    # slow checks only (P1.7 parameter recovery, ~8 min CPU)
-uv run lstmabar recover                  # same recovery run; writes reports/param_recovery.{md,json}
 uv run pytest tests/test_foundation.py::test_cli_smoke   # single test
-uv run ruff check .                      # lint (legacy/ excluded)
+uv run pytest -m slow                    # slow checks only (P1.7 parameter recovery, ~7 min CPU)
+uv run ruff check . && uv run ruff format --check .      # lint + format (CI enforces both)
+uv run lstmabar demo                     # M1 Gradio demo (needs --extra demo); --share warns, --auth user:pass
+uv run lstmabar recover                  # parameter-recovery run → reports/param_recovery.{md,json}
 uv run lstmabar info                     # versions, device, git state (CLI: src/lstmabar/cli.py)
-uv run lstmabar smoke                    # config -> seed -> run-dir sanity check
 ```
 
-CI (`.github/workflows/ci.yml`) runs ruff + pytest on Ubuntu with CPU torch (slow tests are local only).
+CI (`.github/workflows/ci.yml`) runs ruff check + format check + pytest on Ubuntu, Python 3.11 and 3.13 (Colab's version), with only the `dev` extra: tests needing gradio/PyAV skip there. Slow tests are local only.
 
 ## Architecture conventions
 
-- Code lives in `src/lstmabar/` subpackages: `dsp/` (differentiable pedalboard), `physics/` (pedal knowledge base, circuit → grey-box param derivations, `whitebox/` offline sims), `analysis/` (harmonics, descriptors, archetype readout), `data/`, `models/`, `train/`, `eval/`, `demo/`.
-- Configs are YAML in `configs/`, loaded by `lstmabar.config.load_config`. Configs compose via a `defaults:` list of relative paths, then dotlist overrides (`seed=1 paths.runs=...`).
-- Every experiment calls `seed_everything` and writes to a run dir from `lstmabar.runs.create_run_dir` (`runs/<name>/<timestamp>/` with resolved `config.yaml` + `meta.json` holding the git SHA). `runs/` and `data/{raw,rendered,cache}/` are gitignored.
-- Heavy training runs on Colab via `colab/bootstrap.ipynb`, which only clones, installs and calls the CLI. Never put project logic in notebooks; notebooks import from `src/`.
-- The "archetypes" (sine/triangle/square/saw + noise) are a *measured* harmonic readout of audio in v2, not a prediction target.
-- Every result is reported against the baselines in design §7 with multiple seeds.
+- Code lives in `src/lstmabar/`: `dsp/` (implemented differentiable pedalboard), `demo/` (Gradio app; `render.py` holds the gradio-free logic), `audio.py` (decode/resample/loudness/synth riffs), `physics/` (P2: pedal KB, circuit → grey-box derivations, `whitebox/` offline sims), `analysis/` (P3), `data/`, `models/`, `train/`, `eval/` (later phases).
+- **DSP contracts (`dsp/base.py`):**
+  - Audio is `(B, T)`; knobs are `(B,)`.
+  - `EffectBlock`s take **normalized** knobs in [0, 1] and map them to physical units via `ParamSpec` (linear/log taper). Low-level functions (`filters`, `waveshaper`, `oversample`, `compressor`) take physical units.
+  - Knobs are constant per clip, processing is zero-latency, and gating/ordering belongs to `Pedalboard`.
+  - Optimize knobs as logits through a sigmoid; the clamp zeroes gradients outside [0, 1].
+- **Pedalboard (`dsp/pedalboard.py`):** `BoardParams = {block: {knob: (B,), "enabled": (B,)}}`; `default_pedalboard()` = compressor → drive → eq.
+- **Changing knobs or the chain:** adjust a block's ranges or chain only together with design §4.3, and re-pass `lstmabar recover` (the P1 exit gate is an audio-match criterion; don't claim parameter recovery beyond what the report shows).
+- **Demo:** UI controls are generated from `param_specs` (never hard-code knob names). Uploads are decoded by `audio.decode_audio` (libsndfile → PyAV, no system ffmpeg). User-facing errors must never include server paths.
+- **Configs and runs:** configs are YAML in `configs/`, loaded by `lstmabar.config.load_config` (`defaults:` composition + dotlist overrides). Experiments call `seed_everything` and write to `lstmabar.runs.create_run_dir` (`runs/<name>/<timestamp>/` with resolved config + git SHA). `runs/` and `data/{raw,rendered,cache}/` are gitignored.
+- **Colab:** heavy training runs via `colab/bootstrap.ipynb`, which only clones, installs and calls the CLI. No project logic in notebooks.
+- **Archetypes:** the archetypes (sine/triangle/square/saw + noise) are a *measured* harmonic readout of audio, not a prediction target.
+- **Results:** every result is reported against the baselines in design §7 with multiple seeds.
+
+## Workflow (how this project is run)
+
+- Never commit to `main`; use a `v2/...` branch per task or wave.
+- Parallelize independent work with subagents in isolated worktrees, after first merging a shared contract (stubs with exact signatures) to `main` via a PR.
+- Every PR gets an **independent review agent**. Fix blockers (and cheap advisories), re-review, wait for green CI, then merge. Post the review summary as a PR comment.
+- Clean up merged branches and worktrees afterwards.
+- Reports must not overclaim: numbers in docs must match the generated data.
 
 ## Evaluation data hygiene
 

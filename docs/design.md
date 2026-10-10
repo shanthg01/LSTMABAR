@@ -87,17 +87,26 @@ So the archetypes stop being a *control space* (v1) and become a *measurement sp
 - Normalized parameters map to physical units through the **physics layer** (§4.4), e.g. `gain_norm → dB` using ranges taken from real pedal knob tapers.
 - Optional v2.x: a distributional head (Beta/Gaussian per parameter) for uncertainty and for the preference-learning stage.
 
-### 4.3 Differentiable pedalboard (`dsp/`)
-- Built in PyTorch. Filters use `torchaudio.functional.lfilter` or frequency sampling, and `dasp-pytorch` blocks are used where they fit.
-- **Drive block** (the centerpiece):
-  - pre-emphasis HPF (fc);
-  - input gain;
-  - parametric waveshaper family `f(x; softness, asymmetry, bias)` spanning tanh-like soft clip, near-hard clip and asymmetric (Ge/biased-transistor) clip;
-  - post tone (tilt or LPF);
-  - output level.
-- Waveshapers run at 4–8× oversampling with anti-alias filtering. Hard clipping uses smooth surrogates so gradients don't vanish.
-- Compressor: feed-forward with differentiable smoothed attack/release, à la dasp.
-- Every block exposes `forward(x, params)` and `param_spec` (name, physical range, unit, taper).
+### 4.3 Differentiable pedalboard (`dsp/`) — implemented in P1
+Pure PyTorch, with no torchaudio or dasp dependency. Contracts are in `dsp/base.py`:
+- Audio is `(B, T)`; knobs are `(B,)`.
+- Blocks take **normalized** knobs in [0, 1] and map them to physical units via `ParamSpec` (linear/log taper).
+- Knobs are constant per clip, processing is zero-latency, and wet/dry gating lives in the pedalboard.
+
+| Block | Chain | Knobs (physical range) |
+|---|---|---|
+| `Drive` | biquad HPF → gain → 4× oversampled waveshaper → tilt (1 kHz pivot) → level | pre_hpf_hz 20–1500 (log), gain_db 0–60, softness 0–1, asymmetry 0–1, bias ±0.25, tone_db ±12, level_db −36…+6 |
+| `EQ3` | low shelf 120 Hz, peak (Q 0.9), high shelf 3 kHz | low/mid/high_db ±12, mid_hz 250–4000 (log) |
+| `Compressor` | peak detect → soft-knee gain computer → attack/release → makeup | threshold_db −60…0, ratio 1–20 (log), attack 0.5–100 ms (log), release 10–1000 ms (log), makeup 0–24 dB |
+| `Gain` | — | gain_db ±24 |
+
+Module notes:
+- **Filters** (`filters.py`): RBJ biquads applied by frequency sampling, an FIR approximation of the IIR filter with FFT size ≥ 2T; coefficients are computed in float64.
+- **Waveshaper**: `x/(1+|x|^p)^(1/p)` with `p = 2·6^softness`. Asymmetry lowers the negative ceiling to −0.5. Bias is renormalized, so keep |bias| ≤ 0.25.
+- **Oversampling**: Kaiser-windowed sinc, −90 dB stopband, zero phase.
+- **Compressor**: control-rate recursion in NumPy behind a custom autograd function. It is fast on CPU but syncs the GPU on CUDA.
+- **Pedalboard** (`pedalboard.py`): `default_pedalboard()` = compressor → drive → eq. Per-block `enabled` gate (`y = g·block(x) + (1−g)·x`), plus `default_params`, `random_params`, `layout`, `to_vector`/`from_vector` and `describe`.
+- **Recovery check** (`recovery.py`): the P1 exit gate passed as an *audio-match* criterion (96%). In parameter space, `drive.asymmetry` and `drive.bias` trade off, and the swept `eq.mid_hz` is prone to local minima. See [reports/param_recovery.md](../reports/param_recovery.md).
 
 ### 4.4 Physics layer and pedal knowledge base (`physics/`, `pedals/`)
 - One YAML per pedal: family, topology, clipping device (Si/Ge/LED/MOSFET), key component values, knob tapers, a source (e.g., an ElectroSmash analysis), and optional review-derived descriptors.
@@ -112,6 +121,7 @@ So the archetypes stop being a *control space* (v1) and become a *measurement sp
 ### 4.5 White-box reference sims (`physics/whitebox/`)
 - Offline, non-differentiable, for 2–3 circuits (a diode clipper ODE for TS/DS-1, a Fuzz Face transistor model). Solved via SciPy ODE / ngspice, or a WDF library.
 - Purpose: realistic data, and a check on grey-box fidelity (§7).
+- Solver choice is P2 kickoff decision 4 (recommended: pure Python/SciPy, no ngspice/system deps); update this section once decided.
 
 ### 4.6 Archetype readout and descriptors (`analysis/`)
 - f0 tracking (pYIN or torchcrepe) → harmonic amplitudes → odd/even energy ratio, harmonic slope, harmonic-to-noise ratio.
@@ -227,3 +237,9 @@ legacy/                  # v1 code, read-only reference for the paper
 | 2026-10-09 | Quantum bottleneck kept as an add-on experiment (P7), trainable VQC vs matched classical bottleneck |
 | 2026-10-09 | Local CPU (Python 3.12 via `py`, `uv`-managed env) + Colab GPU for heavy training |
 | 2026-10-09 | Solo project; the demo is the primary deliverable, with rigorous evaluation kept but right-sized |
+| 2026-10-09 | Spike A: CLAP only robustly tracks the drive-amount contrast, so `L_clap` is optional and drive-only; the text side is learned from paired synthetic data ([findings](../spikes/clap_vocab/FINDINGS.md)) |
+| 2026-10-09 | Spike B: Guitar-TECHS + EGFxSet (CC BY) are the primary DI and real-pedal sources; TONE3000 captures are hand-picked only; IDMT is private-eval only; GuitarSet is dropped (acoustic) ([licenses](data-licenses.md)) |
+| 2026-10-09 | Gold set provenance: `llm_draft`, `llm_persona` and `simulated_human` (all LLM-written) stay separate from real `human` items; clipping conventions: Muff soft, Klon hard, last drive in a stack sets clipping |
+| 2026-10-09 | P1 DSP: normalized-knob contract, pure-torch frequency-sampled biquads, NumPy compressor recursion behind custom autograd, 4× oversampled p-norm waveshaper, Drive bias range ±0.25 |
+| 2026-10-09 | Python 3.11 pinned locally (`.python-version`, supersedes the 3.12 note above); CI also tests 3.13 to match Colab |
+| 2026-10-09 | Demo decodes uploads itself (libsndfile → PyAV) instead of relying on a system ffmpeg; user-facing errors never include server paths; 25 MB upload cap, 192 kHz sample-rate cap |

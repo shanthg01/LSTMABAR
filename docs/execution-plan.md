@@ -2,6 +2,10 @@
 
 Companion to [design.md](design.md). This is a solo side project, assumed at ~8–12 h/week, with a demo as the main deliverable. Durations are relative sizing, not commitments.
 
+**Current status (2026-10-09):**
+- **P0 and P1 are done; M1 is reached** (PRs #1–#17).
+- **Next: P2**, together with P3, which is independent and can run in parallel. Start from the [P2 kickoff brief](#p2-kickoff-brief).
+
 Each phase ends with an **exit gate**: don't start dependent work until it passes. Each task is tagged with where it runs:
 - **[L]** local CPU
 - **[C]** Colab GPU
@@ -82,13 +86,15 @@ P1 follow-ups (non-blocking, fold into later phases):
 - Speed: evaluate filter responses directly instead of zero-padded FFTs; move the compressor recursion off the CPU (parallel scan) if GPU training needs it; consider checkpointing the 4× shaper.
 - Optimization: multi-start or coarse-to-fine search for the swept mid peak (P6 parameter loss / predictor init).
 - Losses: crop the ~32-sample oversampler edge transients.
-- Demo polish: put defaults on the slider step grid; accept auth from an env var; ":1" unit for ratio; friendlier knob labels; manual browser click-test.
+- Demo polish: put defaults on the slider step grid; accept auth from an env var; ":1" unit for ratio; friendlier knob labels.
+
+Post-M1 fix (PR #17, found in manual testing): non-WAV uploads (e.g. `.m4a`) failed because Gradio needs a system ffmpeg. The demo now decodes uploads itself (libsndfile → PyAV). The manual browser test was then confirmed working by the owner.
 
 ## P2 — Physics layer and pedal knowledge base (weeks 5–7) → M2
 
 | # | Task | Where | Output |
 |---|---|---|---|
-| 2.1 | KB YAML schema + validator | L | `pedals/schema.yaml`, `physics/kb.py` |
+| 2.1 | KB YAML schema + validator (format per kickoff decision 1) | L | `physics/kb.py` (+ `pedals/schema.yaml` only if a separate schema file is chosen) |
 | 2.2 | Author 5 pedals: TS808, RAT, DS-1, Fuzz Face (Si/Ge), Big Muff, using published circuit analyses as sources | L | `pedals/*.yaml` |
 | 2.3 | Derivations: components + knob positions → grey-box params | L | `physics/derive.py` + tests |
 | 2.4 | White-box sims for **2 circuits only** (diode clipper → TS/DS-1 class; Fuzz Face). Others use NAM captures if licensed, else grey-box only | L | `physics/whitebox/` |
@@ -96,6 +102,45 @@ P1 follow-ups (non-blocking, fold into later phases):
 | 2.6 | **M2 demo:** pedal preset picker + KB knobs; grey-box vs white-box A/B | L | demo update |
 
 **Exit gate:** mean harmonic error ≤ ~3 dB on the first 10 harmonics for the 2 white-box pedals (or deviations documented); M2 demo runs.
+
+### P2 kickoff brief
+
+**What P2 builds on (already on `main`):**
+- `Drive`, `EQ3`, `Compressor` and `Gain` blocks; their knob ranges are in design §4.3.
+- `Pedalboard` / `default_pedalboard()` with gates, `describe()` and `to_vector`/`from_vector`.
+- `dsp.losses.multi_resolution_stft_loss`.
+- `dsp.signals` (synthetic riffs) and `lstmabar.audio` (decode, resample, loudness).
+- The demo builds its sliders generically from `param_specs`, and `demo.render.knobs_to_params` turns physical knob values into board params. An M2 preset picker only needs to produce physical knob values.
+
+**Decisions to make at kickoff** (each has a recommendation; confirm with the owner):
+1. **KB format.** Recommendation: one YAML per pedal under `pedals/`, validated by plain dataclasses in `physics/kb.py` (no new dependency). Fields: id, name, family, topology, clipping device(s), component values with units, knob tapers, sources (URLs), optional descriptors.
+2. **Grey-box target.** Recommendation: `physics/derive.py` maps (pedal, knob positions) → physical values for the *existing* `Drive`/`EQ3` knobs, then `ParamSpec.normalize` → board params. That makes presets usable directly by `Pedalboard`, the renderer and the demo.
+3. **Range and topology gaps.** Verify each against the sources before changing anything:
+   - High-gain circuits may exceed `drive.gain_db` max 60 dB. The RAT's op-amp stage is roughly 1 + 100k/47 Ω, about 67 dB, though the LM308's bandwidth limits high-frequency gain.
+   - Big Muff has two cascaded clipping stages plus a mid-scoop tone stack. DS-1 also has an LP/HP-blend tone. `Drive` has one shaper and a tilt, so the options are a second `Drive` in the chain, a stage count, or a tone-stack block.
+   - Prefer the smallest change. **Any change to Drive's ranges or chain must re-pass `lstmabar recover`** (and update design §4.3).
+4. **White-box solver.** Recommendation: pure Python/SciPy, offline, with no ngspice or other system dependencies on Windows.
+   - First the diode clipper (TS808 / DS-1 class): an ODE with Shockley diodes, solved implicitly (trapezoidal + Newton) at an oversampled rate.
+   - Then the Fuzz Face (2-transistor Ebers–Moll), which is harder; time-box it and document if it slips.
+   - Validate each solver against known analytic or small-signal behaviour.
+5. **Fidelity metric and fit.**
+   - Metric: harmonic magnitudes (first 10, in dB) on sine inputs across pitch (~82–660 Hz) and level (−30…0 dBFS), plus MR-STFT on a riff.
+   - Fit: grey-box to white-box with **multi-start** (P1 showed local minima). Report per-pedal errors in `reports/greybox_fidelity.md`.
+6. **Sources.** Use published circuit analyses (e.g. ElectroSmash) for component values; cite the URLs in each YAML. Don't copy schematic images.
+
+**Suggested parallel waves** (same workflow as P1):
+- wave 0: KB schema + `derive.py` contract (me/main session).
+- wave 1, three agents in parallel:
+  - (a) author 5 pedal YAMLs;
+  - (b) white-box diode clipper;
+  - (c) **P3 analysis** (harmonics, descriptors, archetype readout), independent of the KB.
+- wave 2: derivations + fidelity fit + report.
+- wave 3: M2 demo — preset picker, white-box vs grey-box A/B, archetype panel from P3.
+
+**P1 follow-ups that matter here:**
+- Filter speed: fitting loops call the filters a lot.
+- Multi-start for swept-frequency knobs.
+- Crop the ~32-sample oversampler edges in losses.
 
 ## P3 — Archetype readout and descriptors (interleaved, weeks 6–7)
 
