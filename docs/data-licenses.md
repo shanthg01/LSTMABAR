@@ -49,7 +49,7 @@
 - **Permits:** everything with attribution (including SA if we take the conservative reading).
 - **Attribution:** the Zenodo page asks for both citations. Pedroza, Meza, Roman, ISMIR LBD 2022 (EGFxSet), and Pedroza, Abreu, Corey, Roman, DAFx 2024.
 - **Contents:** 8,970 files of 5 s each (12 h 28 min). Single notes on a Fender American Stratocaster: 138 notes × 5 pickup positions. **Clean** (instrument input of an Audient iD14) plus the same notes through **12 real units**: Boss BD-2 Blues Driver, Ibanez Mini Tube Screamer, ProCo RAT2, Boss CE-3 Chorus, MXR Phase 45, Mooer E-Lady flanger, Line 6 DL4 (digital delay, tape echo, sweep echo), and Orange CR-60 amp reverbs (plate, hall, spring). A metadata CSV records effect settings. Recordings are normalized.
-- **Format:** 13 zips + CSV, 5.8 GB. Zenodo doesn't state the sample rate or bit depth (check on download). Also loadable via `mirdata`.
+- **Format:** 13 zips + CSV, 5.8 GB. Zenodo doesn't state the sample rate or bit depth; checked on 2026-10-12 (task 4.4, member headers read via HTTP range requests): **48 kHz, 24-bit, mono WAV, 5.0 s** (240,000 frames), files `<Unit>/<Pickup>/<string>-<fret>.wav`, 690 notes per unit (Clean.zip also has a stray `.DS_Store`). The CSV confirms one setting per unit (TS Mini overdrive 1.0 / tone 0.5 / level 0.5; RAT2 distortion 1.0 / filter 0.5 / volume 1.0; BD-2 gain 1.0 / tone 0.5 / level 0.5). TubeScreamer has `Bridge-Middle/1-23.wav` (no fret 23) where Clean has `1-17`; the ingest leaves it unpaired. Also loadable via `mirdata`.
 - **Red flags:** single notes only, no chords or phrases. The ToneTwist authors called it unsuitable for effects *modelling* because of background noise and artifacts. That matters less for a held-out test set, but listen first. Each pedal was captured at one setting (confirm against the CSV).
 
 ### pOD-set (Parametric Overdrive pedal dataset)
@@ -176,7 +176,7 @@
 ## Open questions / follow-ups
 1. **Fraunhofer IDMT:** does "provided for evaluation purpose" rule out training? Are model weights trained on IDMT-SMT-Guitar shareable under CC BY-NC-ND? (Contact via the IDMT dataset page.)
 2. **EGDB authors (Yu-Hua Chen, f08946011@ntu.edu.tw / Yi-Hsuan Yang):** what license covers the DI tracks? Can we train on them and publish weights and a demo?
-3. **EGFxSet:** confirm CC BY 4.0 (Zenodo) vs CC BY-SA 4.0 (mirdata index) with the authors or mirdata maintainers. Also check sample rate and bit depth on download.
+3. **EGFxSet:** confirm CC BY 4.0 (Zenodo) vs CC BY-SA 4.0 (mirdata index) with the authors or mirdata maintainers (still open; the Zenodo API license id is `cc-by-4.0` as of 2026-10-12). Sample rate and bit depth: done (48 kHz / 24-bit).
 4. **TONE3000 (support@tone3000.com):** is using a hand-picked set of captures to render ML training data, and publishing the resulting non-commercial model weights, acceptable under the ToS? Does "cco" mean CC0? Is there a way to filter by license in the UI?
 5. **GuitarML (smartguitarml@gmail.com):** what license covers the ToneLibrary / Proteus Tone Pack model files? Does the repo's GPL-3.0 apply to them?
 6. **IDMT-SMT-Audio-Effects:** were the effects hardware or software? (Check Stein et al., AES 2010.)
