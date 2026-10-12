@@ -19,13 +19,19 @@ ingest:
   # Guitar-TECHS DI is the only training DI (R2); EGFxSet is test-only (task 4.4).
   sources: [guitar_techs]
   pre_onset_ms: 20.0          # clip starts this long before a detected onset
-  min_rms_dbfs: -45.0         # skip near-silent windows (dBFS RMS of the clip)
+  min_rms_dbfs: -55.0         # skip near-silent windows (dBFS RMS of the clip, source level).
+                              # Guitar-TECHS DI noise floor is ~-80 dBFS; P1's quiet takes
+                              # (harmonics: median clip RMS -43 dBFS) lose half their clips at -45.
   dry_peak_dbfs: -1.0         # canonical stored dry level (R3)
   dry_subtype: PCM_16
   max_clips: null             # cap for smoke runs (the CLI's --limit overrides it)
-  # Performer split (decision 11). Filled in by the ingest task from the dataset's naming.
-  train_performers: []
-  heldout_performer: null
+  # Performer split (decision 11), Guitar-TECHS ids from the zip names (P1_*.zip, ...).
+  # P1/P2 recorded identical content (single notes, techniques, chords, scales; ~2.4-2.5 h DI
+  # each); P3 recorded only the 12 musical excerpts (~8 min DI). Held out = the last id, P3:
+  # it keeps both full-content players in train and is the only player with musical excerpts
+  # (12 recordings, so val/test split by recording works). Val/test are small (~65 clips each).
+  train_performers: [P1, P2]
+  heldout_performer: P3
 
 render:
   shard_size: 1000
@@ -80,14 +86,35 @@ captions:                      # R1
   max_resubmits: 1                # errored/expired requests are resubmitted at most once
 
 test_real:                     # task 4.4; audio stays in data.test_real_dir (gitignored)
-  egfxset:
-    units: [TubeScreamer, RAT, BluesDriver]   # dataset folder names; confirm on download
+  # Archives are listed via the Zenodo API + zip central directory, then downloaded one at a
+  # time, the planned members stored as lossless FLAC, and the archive deleted (R9).
+  # `lstmabar data test-real --list` prints the plan and disk estimate without downloading.
+  egfxset:                     # Zenodo 7044411, CC BY 4.0; 48 kHz / 24-bit mono 5 s notes
+    enabled: true
+    record: 7044411
+    units: [TubeScreamer, RAT, BluesDriver]   # zip / folder names (confirmed 2026-10-12)
+    clean: Clean
+    csv: egfxset_metadata.csv
+    csv_effect: {TubeScreamer: tube screamer, RAT: distortion, BluesDriver: blues driver}
     kb_map: {TubeScreamer: ts808, RAT: rat, BluesDriver: null}
-  podset:
+    # CSV knob name -> KB pot name (others already match: tone, level, distortion, ...).
+    knob_map: {TubeScreamer: {overdrive: drive}}
+    family: {TubeScreamer: overdrive, RAT: distortion, BluesDriver: overdrive}
+  podset:                      # Zenodo 15389653, CC BY-NC 4.0: internal only
+    enabled: true
+    record: 15389653
     max_pedals: 5
-    pedals: []                 # chosen at download time (R9: one archive at a time)
+    # Priority order (~1.6-1.8 GB zip each): TS-style, BD-2 (cross-check with EGFxSet's
+    # BD-2), Klon-style, MOSFET hard clipper, Bluesbreaker-style.
+    pedals: [tubedreamer, bluesdriver, ktr, ocd, kingoftone]
+    kinds: [a, s0, s1, s2]     # a = mixed material, s0/s1/s2 = sweeps at -6/-12/-24 dBFS
+    family: overdrive
+    kb_map: {}                 # no KB entries for these pedals (tubedreamer is TS-derived)
+    input_archive: 0_input.zip
+    metadata_csv: 0_dataset_metadata.csv
+    norm_csv: 0_normalization_summary.csv
   tonetwist:
-    enabled: false             # internal numbers only; opt-in
+    enabled: false             # internal numbers only; not implemented (raises if enabled)
 
 splits:
   seed: 0
