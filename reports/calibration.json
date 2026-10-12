@@ -1,0 +1,1481 @@
+{
+ "command": "lstmabar data calibrate",
+ "config": {
+  "gain_points": 5,
+  "tone_points": 3,
+  "max_jump": 0.25,
+  "f0s_hz": [
+   82.41,
+   146.83,
+   329.63
+  ],
+  "sine_levels_dbfs": [
+   -24.0,
+   -15.0,
+   -6.0
+  ],
+  "fit_steps": 200,
+  "restarts": 1,
+  "mrstft_weight": 0.0,
+  "fit_seconds": 0.2,
+  "sample_rate": 44100,
+  "whitebox_oversample": 4,
+  "drive_oversample": 4,
+  "settle": 0.15,
+  "seconds": 0.5,
+  "riff_seconds": 1.0,
+  "seed": 0,
+  "quick": false
+ },
+ "git": {
+  "sha": "312be33d34857aedfec5e7acb6fce7a4e6c64c22",
+  "dirty": true
+ },
+ "torch_threads": 10,
+ "seconds": 5476.494406999962,
+ "pedals": {
+  "ts808": {
+   "pedal_id": "ts808",
+   "gain_knob": "drive",
+   "tone_knob": "tone",
+   "level_knob": "level",
+   "level_default": 0.5,
+   "gain_values": [
+    0.0,
+    0.25,
+    0.5,
+    0.75,
+    1.0
+   ],
+   "tone_values": [
+    0.0,
+    0.5,
+    1.0
+   ],
+   "fit_error_db": [
+    [
+     2.067680500591297,
+     2.7905650463573513,
+     3.2984616000959015
+    ],
+    [
+     2.3155941479017437,
+     2.4785048405154053,
+     2.4717842373767613
+    ],
+    [
+     2.2460700864061542,
+     2.3701589392667004,
+     2.3207749537646993
+    ],
+    [
+     1.7035479048706341,
+     1.8727959466059527,
+     1.5210369136930948
+    ],
+    [
+     1.5832040252709854,
+     1.5517504363879016,
+     1.313547025192167
+    ]
+   ],
+   "derived_error_db": [
+    [
+     5.3951291467361004,
+     5.404930929505636,
+     5.842192882547477
+    ],
+    [
+     4.735693535112428,
+     4.646649034265527,
+     4.966923613880428
+    ],
+    [
+     4.777813810195505,
+     4.960981418195927,
+     5.334230346162515
+    ],
+    [
+     5.662100313546481,
+     5.846350959203247,
+     6.126302454648997
+    ],
+    [
+     5.46196445040428,
+     5.120713121311249,
+     5.0933236283752645
+    ]
+   ],
+   "fit_mean_db": 2.127031773619783,
+   "derived_mean_db": 5.291686642939405,
+   "fit_worse_than_derived": 0,
+   "max_gain_jump": 0.18413463234901428,
+   "max_tone_jump": 0.6145878434181213,
+   "gain_jumps": [
+    [
+     0.09193050861358643,
+     0.09154963493347168,
+     0.12364266812801361
+    ],
+    [
+     0.04546657204627991,
+     0.05822223424911499,
+     0.10592550039291382
+    ],
+    [
+     0.18311229348182678,
+     0.18413463234901428,
+     0.17983543872833252
+    ],
+    [
+     0.07414734363555908,
+     0.17066021263599396,
+     0.16036930680274963
+    ]
+   ],
+   "tone_jumps": [
+    [
+     0.6145878434181213,
+     0.27395106106996536
+    ],
+    [
+     0.5294889807701111,
+     0.1989793935790658
+    ],
+    [
+     0.5405477285385132,
+     0.2043233155272901
+    ],
+    [
+     0.5203012526035309,
+     0.2023137453943491
+    ],
+    [
+     0.5120387375354767,
+     0.2529638409614563
+    ]
+   ],
+   "derived_gain_jumps": [
+    [
+     0.05367138981819153,
+     0.05367138981819153,
+     0.05367138981819153
+    ],
+    [
+     0.0390666127204895,
+     0.0390666127204895,
+     0.0390666127204895
+    ],
+    [
+     0.16511905193328857,
+     0.16511905193328857,
+     0.16511905193328857
+    ],
+    [
+     0.5950629115104675,
+     0.09124356508255005,
+     0.07513535022735596
+    ]
+   ],
+   "derived_tone_jumps": [
+    [
+     0.6138001978397369,
+     0.34112648665905
+    ],
+    [
+     0.6100242435932159,
+     0.34373465180397034
+    ],
+    [
+     0.6049219071865082,
+     0.3473251760005951
+    ],
+    [
+     0.5386977195739746,
+     0.41283199936151505
+    ],
+    [
+     0.12431669235229492,
+     0.4545349255204201
+    ]
+   ],
+   "max_derived_gain_jump": 0.5950629115104675,
+   "max_derived_tone_jump": 0.6138001978397369,
+   "residual_gain_jumps": [
+    [
+     0.09084117412567139,
+     0.09132319688796997,
+     0.12316100299358368
+    ],
+    [
+     0.03259915532544255,
+     0.06166040897369385,
+     0.106000155210495
+    ],
+    [
+     0.10529905557632446,
+     0.12161844968795775,
+     0.16227301955223083
+    ],
+    [
+     0.5798906683921814,
+     0.20873326063156128,
+     0.16036930680274963
+    ]
+   ],
+   "residual_tone_jumps": [
+    [
+     0.20800839364528656,
+     0.09889565780758858
+    ],
+    [
+     0.14844764117151485,
+     0.14475525822490454
+    ],
+    [
+     0.16298569855280215,
+     0.143001860473305
+    ],
+    [
+     0.19507101958152068,
+     0.21051825396716595
+    ],
+    [
+     0.6156118214130402,
+     0.2895549535751343
+    ]
+   ],
+   "max_residual_gain_jump": 0.5798906683921814,
+   "max_residual_tone_jump": 0.6156118214130402,
+   "cells": [
+    {
+     "gain": [
+      0.0,
+      0.25
+     ],
+     "tone": [
+      0.0,
+      0.5
+     ],
+     "board_jump": 0.6214194893836975,
+     "board_jump_knob": "eq.mid_hz",
+     "board_fallback": true,
+     "max_jump": 0.20800839364528656,
+     "jump_knob": "eq.mid_db",
+     "fallback": false
+    },
+    {
+     "gain": [
+      0.0,
+      0.25
+     ],
+     "tone": [
+      0.5,
+      1.0
+     ],
+     "board_jump": 0.3226220617070794,
+     "board_jump_knob": "drive.tone_db",
+     "board_fallback": true,
+     "max_jump": 0.1903364285826683,
+     "jump_knob": "drive.tone_db",
+     "fallback": false
+    },
+    {
+     "gain": [
+      0.25,
+      0.5
+     ],
+     "tone": [
+      0.0,
+      0.5
+     ],
+     "board_jump": 0.5428621172904968,
+     "board_jump_knob": "eq.mid_hz",
+     "board_fallback": true,
+     "max_jump": 0.16858076769858593,
+     "jump_knob": "eq.high_db",
+     "fallback": false
+    },
+    {
+     "gain": [
+      0.25,
+      0.5
+     ],
+     "tone": [
+      0.5,
+      1.0
+     ],
+     "board_jump": 0.21265682950615883,
+     "board_jump_knob": "eq.high_db",
+     "board_fallback": false,
+     "max_jump": 0.14845335390418768,
+     "jump_knob": "drive.tone_db",
+     "fallback": false
+    },
+    {
+     "gain": [
+      0.5,
+      0.75
+     ],
+     "tone": [
+      0.0,
+      0.5
+     ],
+     "board_jump": 0.5405477285385132,
+     "board_jump_knob": "eq.mid_hz",
+     "board_fallback": true,
+     "max_jump": 0.28460414824075986,
+     "jump_knob": "eq.high_db",
+     "fallback": true
+    },
+    {
+     "gain": [
+      0.5,
+      0.75
+     ],
+     "tone": [
+      0.5,
+      1.0
+     ],
+     "board_jump": 0.220504492521286,
+     "board_jump_knob": "drive.gain_db",
+     "board_fallback": false,
+     "max_jump": 0.22477535717189312,
+     "jump_knob": "drive.tone_db",
+     "fallback": false
+    },
+    {
+     "gain": [
+      0.75,
+      1.0
+     ],
+     "tone": [
+      0.0,
+      0.5
+     ],
+     "board_jump": 0.5272109806537628,
+     "board_jump_knob": "eq.mid_hz",
+     "board_fallback": true,
+     "max_jump": 0.6156118214130402,
+     "jump_knob": "eq.mid_hz",
+     "fallback": true
+    },
+    {
+     "gain": [
+      0.75,
+      1.0
+     ],
+     "tone": [
+      0.5,
+      1.0
+     ],
+     "board_jump": 0.30509909242391586,
+     "board_jump_knob": "drive.softness",
+     "board_fallback": true,
+     "max_jump": 0.34820181131362915,
+     "jump_knob": "eq.mid_db",
+     "fallback": true
+    }
+   ],
+   "board_fallback_cells": 6,
+   "fallback_cells": 3,
+   "grid": [
+    [
+     {
+      "knobs": {
+       "drive": 0.0,
+       "tone": 0.0,
+       "level": 0.5
+      },
+      "fit_db": 2.067680500591297,
+      "derived_db": 5.3951291467361004,
+      "fit_all_terms_db": 0.6892268335304323,
+      "derived_all_terms_db": 1.7983763822453667,
+      "starts": {
+       "derived": 2.067680500591297,
+       "random 1": 12.306769617393664
+      },
+      "best_start": "derived",
+      "derive_clamps": [],
+      "seconds": 358.3003314000089
+     },
+     {
+      "knobs": {
+       "drive": 0.0,
+       "tone": 0.5,
+       "level": 0.5
+      },
+      "fit_db": 2.7905650463573513,
+      "derived_db": 5.404930929505636,
+      "fit_all_terms_db": 0.9611946270786431,
+      "derived_all_terms_db": 1.9818080074854,
+      "starts": {
+       "derived": 2.7905650463573513,
+       "random 1": 4.638140364064385
+      },
+      "best_start": "derived",
+      "derive_clamps": [],
+      "seconds": 1181.4953321000212
+     },
+     {
+      "knobs": {
+       "drive": 0.0,
+       "tone": 1.0,
+       "level": 0.5
+      },
+      "fit_db": 3.2984616000959015,
+      "derived_db": 5.842192882547477,
+      "fit_all_terms_db": 1.1727863467007649,
+      "derived_all_terms_db": 2.271963898768463,
+      "starts": {
+       "derived": 3.2984616000959015,
+       "random 1": 5.049056213249588
+      },
+      "best_start": "derived",
+      "derive_clamps": [],
+      "seconds": 140.18785390001722
+     }
+    ],
+    [
+     {
+      "knobs": {
+       "drive": 0.25,
+       "tone": 0.0,
+       "level": 0.5
+      },
+      "fit_db": 2.3155941479017437,
+      "derived_db": 4.735693535112428,
+      "fit_all_terms_db": 0.8747800114295478,
+      "derived_all_terms_db": 1.7890397799313613,
+      "starts": {
+       "warm (drive 0)": 2.3155941479017437
+      },
+      "best_start": "warm (drive 0)",
+      "derive_clamps": [],
+      "seconds": 174.872683900001
+     },
+     {
+      "knobs": {
+       "drive": 0.25,
+       "tone": 0.5,
+       "level": 0.5
+      },
+      "fit_db": 2.4785048405154053,
+      "derived_db": 4.646649034265527,
+      "fit_all_terms_db": 1.0464798215509492,
+      "derived_all_terms_db": 1.961918481134334,
+      "starts": {
+       "warm (drive 0)": 2.4785048405154053
+      },
+      "best_start": "warm (drive 0)",
+      "derive_clamps": [],
+      "seconds": 488.02524509996874
+     },
+     {
+      "knobs": {
+       "drive": 0.25,
+       "tone": 1.0,
+       "level": 0.5
+      },
+      "fit_db": 2.4717842373767613,
+      "derived_db": 4.966923613880428,
+      "fit_all_terms_db": 1.0711065028632634,
+      "derived_all_terms_db": 2.152333566014852,
+      "starts": {
+       "warm (drive 0)": 2.4717842373767613
+      },
+      "best_start": "warm (drive 0)",
+      "derive_clamps": [],
+      "seconds": 91.06402170000365
+     }
+    ],
+    [
+     {
+      "knobs": {
+       "drive": 0.5,
+       "tone": 0.0,
+       "level": 0.5
+      },
+      "fit_db": 2.2460700864061542,
+      "derived_db": 4.777813810195505,
+      "fit_all_terms_db": 0.9233843688558636,
+      "derived_all_terms_db": 1.9642123441914856,
+      "starts": {
+       "warm (drive 0.25)": 2.2460700864061542
+      },
+      "best_start": "warm (drive 0.25)",
+      "derive_clamps": [],
+      "seconds": 307.3774325000122
+     },
+     {
+      "knobs": {
+       "drive": 0.5,
+       "tone": 0.5,
+       "level": 0.5
+      },
+      "fit_db": 2.3701589392667004,
+      "derived_db": 4.960981418195927,
+      "fit_all_terms_db": 1.0270688736822369,
+      "derived_all_terms_db": 2.1497586145515677,
+      "starts": {
+       "warm (drive 0.25)": 2.3701589392667004
+      },
+      "best_start": "warm (drive 0.25)",
+      "derive_clamps": [],
+      "seconds": 184.1385429999791
+     },
+     {
+      "knobs": {
+       "drive": 0.5,
+       "tone": 1.0,
+       "level": 0.5
+      },
+      "fit_db": 2.3207749537646993,
+      "derived_db": 5.334230346162515,
+      "fit_all_terms_db": 1.0572419233816963,
+      "derived_all_terms_db": 2.430038268807368,
+      "starts": {
+       "warm (drive 0.25)": 2.3207749537646993
+      },
+      "best_start": "warm (drive 0.25)",
+      "derive_clamps": [],
+      "seconds": 60.433789500035346
+     }
+    ],
+    [
+     {
+      "knobs": {
+       "drive": 0.75,
+       "tone": 0.0,
+       "level": 0.5
+      },
+      "fit_db": 1.7035479048706341,
+      "derived_db": 5.662100313546481,
+      "fit_all_terms_db": 0.8328456423811988,
+      "derived_all_terms_db": 2.768137931067168,
+      "starts": {
+       "warm (drive 0.5)": 1.7035479048706341
+      },
+      "best_start": "warm (drive 0.5)",
+      "derive_clamps": [],
+      "seconds": 342.681476400001
+     },
+     {
+      "knobs": {
+       "drive": 0.75,
+       "tone": 0.5,
+       "level": 0.5
+      },
+      "fit_db": 1.8727959466059527,
+      "derived_db": 5.846350959203247,
+      "fit_all_terms_db": 0.9363979733029764,
+      "derived_all_terms_db": 2.8582160244993653,
+      "starts": {
+       "warm (drive 0.5)": 1.8727959466059527
+      },
+      "best_start": "warm (drive 0.5)",
+      "derive_clamps": [],
+      "seconds": 103.06145440001274
+     },
+     {
+      "knobs": {
+       "drive": 0.75,
+       "tone": 1.0,
+       "level": 0.5
+      },
+      "fit_db": 1.5210369136930948,
+      "derived_db": 6.126302454648997,
+      "fit_all_terms_db": 0.7436180466944019,
+      "derived_all_terms_db": 2.995081200050621,
+      "starts": {
+       "warm (drive 0.5)": 1.5210369136930948
+      },
+      "best_start": "warm (drive 0.5)",
+      "derive_clamps": [],
+      "seconds": 66.22190639999462
+     }
+    ],
+    [
+     {
+      "knobs": {
+       "drive": 1.0,
+       "tone": 0.0,
+       "level": 0.5
+      },
+      "fit_db": 1.5832040252709854,
+      "derived_db": 5.46196445040428,
+      "fit_all_terms_db": 0.7916020126354927,
+      "derived_all_terms_db": 2.73098222520214,
+      "starts": {
+       "warm (drive 0.75)": 1.5832040252709854
+      },
+      "best_start": "warm (drive 0.75)",
+      "derive_clamps": [],
+      "seconds": 401.2514579000417
+     },
+     {
+      "knobs": {
+       "drive": 1.0,
+       "tone": 0.5,
+       "level": 0.5
+      },
+      "fit_db": 1.5517504363879016,
+      "derived_db": 5.120713121311249,
+      "fit_all_terms_db": 0.7758752181939504,
+      "derived_all_terms_db": 2.560356560655625,
+      "starts": {
+       "warm (drive 0.75)": 1.5517504363879016
+      },
+      "best_start": "warm (drive 0.75)",
+      "derive_clamps": [],
+      "seconds": 85.6232047000085
+     },
+     {
+      "knobs": {
+       "drive": 1.0,
+       "tone": 1.0,
+       "level": 0.5
+      },
+      "fit_db": 1.313547025192167,
+      "derived_db": 5.0933236283752645,
+      "fit_all_terms_db": 0.6567735125960835,
+      "derived_all_terms_db": 2.5466618141876323,
+      "starts": {
+       "warm (drive 0.75)": 1.313547025192167
+      },
+      "best_start": "warm (drive 0.75)",
+      "derive_clamps": [],
+      "seconds": 43.54396209999686
+     }
+    ]
+   ],
+   "seconds": 4028.8837783999625,
+   "offgrid": {
+    "points": [
+     {
+      "gain": 0.125,
+      "tone": 0.25,
+      "derived_db": 4.886378942246026,
+      "nearest_fit_db": 4.802267031725854,
+      "residual_db": 2.7194879412617574,
+      "nearest_fit_corner_mean_db": 3.6016461771013617,
+      "source": "calibrated",
+      "seconds": 14.048453299968969
+     },
+     {
+      "gain": 0.125,
+      "tone": 0.75,
+      "derived_db": 5.122942291523807,
+      "nearest_fit_db": 4.191411045714527,
+      "residual_db": 2.7046260496591894,
+      "nearest_fit_corner_mean_db": 4.516504454983137,
+      "source": "calibrated",
+      "seconds": 7.533318699977826
+     },
+     {
+      "gain": 0.375,
+      "tone": 0.25,
+      "derived_db": 4.746696946238891,
+      "nearest_fit_db": 4.8254532955942295,
+      "residual_db": 2.5864153496941826,
+      "nearest_fit_corner_mean_db": 3.3778372362236646,
+      "source": "calibrated",
+      "seconds": 4.530414899985772
+     },
+     {
+      "gain": 0.375,
+      "tone": 0.75,
+      "derived_db": 4.777358574318021,
+      "nearest_fit_db": 3.3108287366020313,
+      "residual_db": 2.4257539788999765,
+      "nearest_fit_corner_mean_db": 3.8479095115010518,
+      "source": "calibrated",
+      "seconds": 5.142950799956452
+     },
+     {
+      "gain": 0.625,
+      "tone": 0.25,
+      "derived_db": 5.413786689757734,
+      "nearest_fit_db": 9.093208208599563,
+      "residual_db": 3.259286766809423,
+      "nearest_fit_corner_mean_db": 5.9533781442086,
+      "source": "calibrated_nearest",
+      "seconds": 24.921021400019526
+     },
+     {
+      "gain": 0.625,
+      "tone": 0.75,
+      "derived_db": 5.505548484482502,
+      "nearest_fit_db": 7.938327749159665,
+      "residual_db": 2.4781000334446333,
+      "nearest_fit_corner_mean_db": 6.30392344217664,
+      "source": "calibrated",
+      "seconds": 10.779480499972124
+     },
+     {
+      "gain": 0.875,
+      "tone": 0.25,
+      "derived_db": 5.588778906965698,
+      "nearest_fit_db": 4.1446646929793545,
+      "residual_db": 1.9368727642287344,
+      "nearest_fit_corner_mean_db": 2.909004881664602,
+      "source": "calibrated_nearest",
+      "seconds": 4.473453400016297
+     },
+     {
+      "gain": 0.875,
+      "tone": 0.75,
+      "derived_db": 5.625407027667075,
+      "nearest_fit_db": 2.6699987053302556,
+      "residual_db": 1.8222315659512351,
+      "nearest_fit_corner_mean_db": 3.3191408357340233,
+      "source": "calibrated_nearest",
+      "seconds": 5.445257100043818
+     }
+    ],
+    "derived_mean_db": 5.20836223289997,
+    "nearest_fit_mean_db": 5.122019933213186,
+    "residual_mean_db": 2.4915968062436415,
+    "nearest_fit_corner_mean_db": 4.228668085449135,
+    "residual_beats_nearest": 8,
+    "residual_beats_derived": 8,
+    "git": {
+     "sha": "4bc8e88253335eaef7fddd3300546d1461088317",
+     "dirty": false
+    },
+    "seconds": 77.56536220002454
+   }
+  },
+  "ds1": {
+   "pedal_id": "ds1",
+   "gain_knob": "dist",
+   "tone_knob": "tone",
+   "level_knob": "level",
+   "level_default": 0.5,
+   "gain_values": [
+    0.0,
+    0.25,
+    0.5,
+    0.75,
+    1.0
+   ],
+   "tone_values": [
+    0.0,
+    0.5,
+    1.0
+   ],
+   "fit_error_db": [
+    [
+     2.0422099720149087,
+     1.1559589235678018,
+     2.285493950218349
+    ],
+    [
+     1.2413781653286313,
+     0.44702508004753666,
+     0.48256348430683815
+    ],
+    [
+     1.1401263245842304,
+     0.38905508860358307,
+     0.42379625253071446
+    ],
+    [
+     1.0935787298805275,
+     0.37369503475359,
+     0.4106060865874953
+    ],
+    [
+     1.0603440445381818,
+     0.3661427897489852,
+     0.4045765592945878
+    ]
+   ],
+   "derived_error_db": [
+    [
+     4.132245775030274,
+     3.558011175911696,
+     3.795178297794755
+    ],
+    [
+     2.0994283513633656,
+     1.2085681811319788,
+     0.8502043033928393
+    ],
+    [
+     2.016559622341558,
+     1.0243566697839979,
+     0.6630464337078964
+    ],
+    [
+     1.931459895561816,
+     0.9864148771702961,
+     0.6254263741167342
+    ],
+    [
+     1.9278487834758142,
+     0.9968130604860057,
+     0.6340667300337804
+    ]
+   ],
+   "fit_mean_db": 0.8877700324003973,
+   "derived_mean_db": 1.7633085687535204,
+   "fit_worse_than_derived": 0,
+   "max_gain_jump": 0.22855937480926514,
+   "max_tone_jump": 0.6698970794677734,
+   "gain_jumps": [
+    [
+     0.12571120262145996,
+     0.12862420082092285,
+     0.14052897691726685
+    ],
+    [
+     0.18075179308652878,
+     0.06001627445220947,
+     0.22855937480926514
+    ],
+    [
+     0.1939363181591034,
+     0.07947063446044922,
+     0.14881476014852524
+    ],
+    [
+     0.17425209283828735,
+     0.016644179821014404,
+     0.06682184338569641
+    ]
+   ],
+   "tone_jumps": [
+    [
+     0.6310999095439911,
+     0.3920743465423584
+    ],
+    [
+     0.6549307405948639,
+     0.40935367345809937
+    ],
+    [
+     0.6677122712135315,
+     0.43353933095932007
+    ],
+    [
+     0.6635811626911163,
+     0.4387243390083313
+    ],
+    [
+     0.6698970794677734,
+     0.4395529627799988
+    ]
+   ],
+   "derived_gain_jumps": [
+    [
+     0.2668517231941223,
+     0.2668517231941223,
+     0.2668517231941223
+    ],
+    [
+     0.06243884563446045,
+     0.06243884563446045,
+     0.06243884563446045
+    ],
+    [
+     0.007634282112121582,
+     0.013414829969406128,
+     0.012346744537353516
+    ],
+    [
+     0.00993281602859497,
+     0.017302215099334717,
+     0.015914469957351685
+    ]
+   ],
+   "derived_tone_jumps": [
+    [
+     0.5476369559764862,
+     0.3504183590412111
+    ],
+    [
+     0.5457687973976135,
+     0.35066455602644675
+    ],
+    [
+     0.540207713842392,
+     0.35139146442489966
+    ],
+    [
+     0.5314331352710724,
+     0.35253176092248656
+    ],
+    [
+     0.533491492271422,
+     0.35399293899493345
+    ]
+   ],
+   "max_derived_gain_jump": 0.2668517231941223,
+   "max_derived_tone_jump": 0.5476369559764862,
+   "residual_gain_jumps": [
+    [
+     0.14114052057266235,
+     0.1442962884902954,
+     0.16461113095283508
+    ],
+    [
+     0.18075179308867595,
+     0.04011988639831543,
+     0.22855937480926514
+    ],
+    [
+     0.19393631817003262,
+     0.07947063446044922,
+     0.14881476014852524
+    ],
+    [
+     0.17425209283791304,
+     0.016644179821014404,
+     0.06682184338569641
+    ]
+   ],
+   "residual_tone_jumps": [
+    [
+     0.13584872754280677,
+     0.16055045276880264
+    ],
+    [
+     0.19599711151242988,
+     0.1596813201904297
+    ],
+    [
+     0.16491815447807312,
+     0.2574434280395508
+    ],
+    [
+     0.26713138818740845,
+     0.3267875537276268
+    ],
+    [
+     0.3900754004716873,
+     0.38626398891210556
+    ]
+   ],
+   "max_residual_gain_jump": 0.22855937480926514,
+   "max_residual_tone_jump": 0.3900754004716873,
+   "cells": [
+    {
+     "gain": [
+      0.0,
+      0.25
+     ],
+     "tone": [
+      0.0,
+      0.5
+     ],
+     "board_jump": 0.6643727030605078,
+     "board_jump_knob": "eq.high_db",
+     "board_fallback": true,
+     "max_jump": 0.24055134318783952,
+     "jump_knob": "eq.high_db",
+     "fallback": false
+    },
+    {
+     "gain": [
+      0.0,
+      0.25
+     ],
+     "tone": [
+      0.5,
+      1.0
+     ],
+     "board_jump": 0.42489421367645264,
+     "board_jump_knob": "drive.tone_db",
+     "board_fallback": true,
+     "max_jump": 0.22535672783851624,
+     "jump_knob": "eq.high_db",
+     "fallback": false
+    },
+    {
+     "gain": [
+      0.25,
+      0.5
+     ],
+     "tone": [
+      0.0,
+      0.5
+     ],
+     "board_jump": 0.6677122712135315,
+     "board_jump_knob": "eq.mid_hz",
+     "board_fallback": true,
+     "max_jump": 0.23385494203687446,
+     "jump_knob": "eq.high_db",
+     "fallback": false
+    },
+    {
+     "gain": [
+      0.25,
+      0.5
+     ],
+     "tone": [
+      0.5,
+      1.0
+     ],
+     "board_jump": 0.43353933095932007,
+     "board_jump_knob": "drive.tone_db",
+     "board_fallback": true,
+     "max_jump": 0.2975633144378662,
+     "jump_knob": "drive.softness",
+     "fallback": true
+    },
+    {
+     "gain": [
+      0.5,
+      0.75
+     ],
+     "tone": [
+      0.0,
+      0.5
+     ],
+     "board_jump": 0.6685229241847992,
+     "board_jump_knob": "eq.mid_hz",
+     "board_fallback": true,
+     "max_jump": 0.26713138818740845,
+     "jump_knob": "eq.mid_db",
+     "fallback": true
+    },
+    {
+     "gain": [
+      0.5,
+      0.75
+     ],
+     "tone": [
+      0.5,
+      1.0
+     ],
+     "board_jump": 0.4387243390083313,
+     "board_jump_knob": "drive.tone_db",
+     "board_fallback": true,
+     "max_jump": 0.406258188188076,
+     "jump_knob": "drive.softness",
+     "fallback": true
+    },
+    {
+     "gain": [
+      0.75,
+      1.0
+     ],
+     "tone": [
+      0.0,
+      0.5
+     ],
+     "board_jump": 0.6698970794677734,
+     "board_jump_knob": "eq.mid_hz",
+     "board_fallback": true,
+     "max_jump": 0.3900754004716873,
+     "jump_knob": "eq.mid_db",
+     "fallback": true
+    },
+    {
+     "gain": [
+      0.75,
+      1.0
+     ],
+     "tone": [
+      0.5,
+      1.0
+     ],
+     "board_jump": 0.440965473651886,
+     "board_jump_knob": "drive.tone_db",
+     "board_fallback": true,
+     "max_jump": 0.3936093971133232,
+     "jump_knob": "drive.softness",
+     "fallback": true
+    }
+   ],
+   "board_fallback_cells": 8,
+   "fallback_cells": 5,
+   "grid": [
+    [
+     {
+      "knobs": {
+       "dist": 0.0,
+       "tone": 0.0,
+       "level": 0.5
+      },
+      "fit_db": 2.0422099720149087,
+      "derived_db": 4.132245775030274,
+      "fit_all_terms_db": 0.9984137640961777,
+      "derived_all_terms_db": 2.0202090455703563,
+      "starts": {
+       "derived": 2.0422099720149087,
+       "random 1": 3.338316602706232
+      },
+      "best_start": "derived",
+      "derive_clamps": [],
+      "seconds": 104.23305530002108
+     },
+     {
+      "knobs": {
+       "dist": 0.0,
+       "tone": 0.5,
+       "level": 0.5
+      },
+      "fit_db": 1.1559589235678018,
+      "derived_db": 3.558011175911696,
+      "fit_all_terms_db": 0.5651354737442585,
+      "derived_all_terms_db": 1.739472130445718,
+      "starts": {
+       "derived": 1.1559589235678018,
+       "random 1": 3.123889429669883
+      },
+      "best_start": "derived",
+      "derive_clamps": [],
+      "seconds": 104.56970930000534
+     },
+     {
+      "knobs": {
+       "dist": 0.0,
+       "tone": 1.0,
+       "level": 0.5
+      },
+      "fit_db": 2.285493950218349,
+      "derived_db": 3.795178297794755,
+      "fit_all_terms_db": 1.1427469751091743,
+      "derived_all_terms_db": 1.8975891488973775,
+      "starts": {
+       "derived": 2.285493950218349,
+       "random 1": 32.11728935449693
+      },
+      "best_start": "derived",
+      "derive_clamps": [],
+      "seconds": 104.96323120000307
+     }
+    ],
+    [
+     {
+      "knobs": {
+       "dist": 0.25,
+       "tone": 0.0,
+       "level": 0.5
+      },
+      "fit_db": 1.2413781653286313,
+      "derived_db": 2.0994283513633656,
+      "fit_all_terms_db": 0.6206890826643158,
+      "derived_all_terms_db": 1.0497141756816832,
+      "starts": {
+       "warm (dist 0)": 1.2413781653286313
+      },
+      "best_start": "warm (dist 0)",
+      "derive_clamps": [],
+      "seconds": 61.99533830001019
+     },
+     {
+      "knobs": {
+       "dist": 0.25,
+       "tone": 0.5,
+       "level": 0.5
+      },
+      "fit_db": 0.44702508004753666,
+      "derived_db": 1.2085681811319788,
+      "fit_all_terms_db": 0.22351254002376833,
+      "derived_all_terms_db": 0.6042840905659894,
+      "starts": {
+       "warm (dist 0)": 0.44702508004753666
+      },
+      "best_start": "warm (dist 0)",
+      "derive_clamps": [],
+      "seconds": 63.5258213999914
+     },
+     {
+      "knobs": {
+       "dist": 0.25,
+       "tone": 1.0,
+       "level": 0.5
+      },
+      "fit_db": 0.48256348430683815,
+      "derived_db": 0.8502043033928393,
+      "fit_all_terms_db": 0.24128174215341908,
+      "derived_all_terms_db": 0.4251021516964198,
+      "starts": {
+       "warm (dist 0)": 0.48256348430683815
+      },
+      "best_start": "warm (dist 0)",
+      "derive_clamps": [],
+      "seconds": 134.005032200017
+     }
+    ],
+    [
+     {
+      "knobs": {
+       "dist": 0.5,
+       "tone": 0.0,
+       "level": 0.5
+      },
+      "fit_db": 1.1401263245842304,
+      "derived_db": 2.016559622341558,
+      "fit_all_terms_db": 0.5700631622921152,
+      "derived_all_terms_db": 1.0082798111707791,
+      "starts": {
+       "warm (dist 0.25)": 1.1401263245842304
+      },
+      "best_start": "warm (dist 0.25)",
+      "derive_clamps": [
+       "drive.gain_db 61.56 clamped to 60 dB: circuit gain into the clipper exceeds Drive's range (P2 decision 4); the shaper is already near-square there, so the excess mainly changes sustain and noise"
+      ],
+      "seconds": 62.87114460003795
+     },
+     {
+      "knobs": {
+       "dist": 0.5,
+       "tone": 0.5,
+       "level": 0.5
+      },
+      "fit_db": 0.38905508860358307,
+      "derived_db": 1.0243566697839979,
+      "fit_all_terms_db": 0.19452754430179153,
+      "derived_all_terms_db": 0.512178334891999,
+      "starts": {
+       "warm (dist 0.25)": 0.38905508860358307
+      },
+      "best_start": "warm (dist 0.25)",
+      "derive_clamps": [
+       "drive.gain_db 61.56 clamped to 60 dB: circuit gain into the clipper exceeds Drive's range (P2 decision 4); the shaper is already near-square there, so the excess mainly changes sustain and noise"
+      ],
+      "seconds": 164.6296474999981
+     },
+     {
+      "knobs": {
+       "dist": 0.5,
+       "tone": 1.0,
+       "level": 0.5
+      },
+      "fit_db": 0.42379625253071446,
+      "derived_db": 0.6630464337078964,
+      "fit_all_terms_db": 0.21189812626535723,
+      "derived_all_terms_db": 0.3315232168539482,
+      "starts": {
+       "warm (dist 0.25)": 0.42379625253071446
+      },
+      "best_start": "warm (dist 0.25)",
+      "derive_clamps": [
+       "drive.gain_db 61.56 clamped to 60 dB: circuit gain into the clipper exceeds Drive's range (P2 decision 4); the shaper is already near-square there, so the excess mainly changes sustain and noise"
+      ],
+      "seconds": 137.1926281999913
+     }
+    ],
+    [
+     {
+      "knobs": {
+       "dist": 0.75,
+       "tone": 0.0,
+       "level": 0.5
+      },
+      "fit_db": 1.0935787298805275,
+      "derived_db": 1.931459895561816,
+      "fit_all_terms_db": 0.5467893649402638,
+      "derived_all_terms_db": 0.9657299477809084,
+      "starts": {
+       "warm (dist 0.5)": 1.0935787298805275
+      },
+      "best_start": "warm (dist 0.5)",
+      "derive_clamps": [
+       "drive.gain_db 64.83 clamped to 60 dB: circuit gain into the clipper exceeds Drive's range (P2 decision 4); the shaper is already near-square there, so the excess mainly changes sustain and noise"
+      ],
+      "seconds": 195.09841500001494
+     },
+     {
+      "knobs": {
+       "dist": 0.75,
+       "tone": 0.5,
+       "level": 0.5
+      },
+      "fit_db": 0.37369503475359,
+      "derived_db": 0.9864148771702961,
+      "fit_all_terms_db": 0.186847517376795,
+      "derived_all_terms_db": 0.493207438585148,
+      "starts": {
+       "warm (dist 0.5)": 0.37369503475359
+      },
+      "best_start": "warm (dist 0.5)",
+      "derive_clamps": [
+       "drive.gain_db 64.83 clamped to 60 dB: circuit gain into the clipper exceeds Drive's range (P2 decision 4); the shaper is already near-square there, so the excess mainly changes sustain and noise"
+      ],
+      "seconds": 81.71134879998863
+     },
+     {
+      "knobs": {
+       "dist": 0.75,
+       "tone": 1.0,
+       "level": 0.5
+      },
+      "fit_db": 0.4106060865874953,
+      "derived_db": 0.6254263741167342,
+      "fit_all_terms_db": 0.20530304329374766,
+      "derived_all_terms_db": 0.3127131870583671,
+      "starts": {
+       "warm (dist 0.5)": 0.4106060865874953
+      },
+      "best_start": "warm (dist 0.5)",
+      "derive_clamps": [
+       "drive.gain_db 64.83 clamped to 60 dB: circuit gain into the clipper exceeds Drive's range (P2 decision 4); the shaper is already near-square there, so the excess mainly changes sustain and noise"
+      ],
+      "seconds": 49.608867199975066
+     }
+    ],
+    [
+     {
+      "knobs": {
+       "dist": 1.0,
+       "tone": 0.0,
+       "level": 0.5
+      },
+      "fit_db": 1.0603440445381818,
+      "derived_db": 1.9278487834758142,
+      "fit_all_terms_db": 0.5301720222690909,
+      "derived_all_terms_db": 0.9639243917379073,
+      "starts": {
+       "warm (dist 0.75)": 1.0603440445381818
+      },
+      "best_start": "warm (dist 0.75)",
+      "derive_clamps": [
+       "drive.gain_db 67.2 clamped to 60 dB: circuit gain into the clipper exceeds Drive's range (P2 decision 4); the shaper is already near-square there, so the excess mainly changes sustain and noise"
+      ],
+      "seconds": 74.00935959996423
+     },
+     {
+      "knobs": {
+       "dist": 1.0,
+       "tone": 0.5,
+       "level": 0.5
+      },
+      "fit_db": 0.3661427897489852,
+      "derived_db": 0.9968130604860057,
+      "fit_all_terms_db": 0.1830713948744926,
+      "derived_all_terms_db": 0.49840653024300285,
+      "starts": {
+       "warm (dist 0.75)": 0.3661427897489852
+      },
+      "best_start": "warm (dist 0.75)",
+      "derive_clamps": [
+       "drive.gain_db 67.2 clamped to 60 dB: circuit gain into the clipper exceeds Drive's range (P2 decision 4); the shaper is already near-square there, so the excess mainly changes sustain and noise"
+      ],
+      "seconds": 61.69099989999086
+     },
+     {
+      "knobs": {
+       "dist": 1.0,
+       "tone": 1.0,
+       "level": 0.5
+      },
+      "fit_db": 0.4045765592945878,
+      "derived_db": 0.6340667300337804,
+      "fit_all_terms_db": 0.2022882796472939,
+      "derived_all_terms_db": 0.3170333650168902,
+      "starts": {
+       "warm (dist 0.75)": 0.4045765592945878
+      },
+      "best_start": "warm (dist 0.75)",
+      "derive_clamps": [
+       "drive.gain_db 67.2 clamped to 60 dB: circuit gain into the clipper exceeds Drive's range (P2 decision 4); the shaper is already near-square there, so the excess mainly changes sustain and noise"
+      ],
+      "seconds": 46.31798470002832
+     }
+    ]
+   ],
+   "seconds": 1446.5863472000347,
+   "offgrid": {
+    "points": [
+     {
+      "gain": 0.125,
+      "tone": 0.25,
+      "derived_db": 1.6264359131404227,
+      "nearest_fit_db": 6.382444244151944,
+      "residual_db": 1.139220026621346,
+      "nearest_fit_corner_mean_db": 5.292943092493729,
+      "source": "calibrated",
+      "seconds": 11.61149270000169
+     },
+     {
+      "gain": 0.125,
+      "tone": 0.75,
+      "derived_db": 1.6528865522458243,
+      "nearest_fit_db": 9.15383870658486,
+      "residual_db": 1.1232087333920608,
+      "nearest_fit_corner_mean_db": 6.796581431068929,
+      "source": "calibrated",
+      "seconds": 6.804764900007285
+     },
+     {
+      "gain": 0.375,
+      "tone": 0.25,
+      "derived_db": 1.1143202926881814,
+      "nearest_fit_db": 3.2088665464045296,
+      "residual_db": 1.2077074349396228,
+      "nearest_fit_corner_mean_db": 3.596123790241678,
+      "source": "calibrated",
+      "seconds": 3.8394795000203885
+     },
+     {
+      "gain": 0.375,
+      "tone": 0.75,
+      "derived_db": 1.1199666389099847,
+      "nearest_fit_db": 5.215965563625496,
+      "residual_db": 0.6962794846673535,
+      "nearest_fit_corner_mean_db": 5.204010584243875,
+      "source": "calibrated_nearest",
+      "seconds": 2.9661257000407204
+     },
+     {
+      "gain": 0.625,
+      "tone": 0.25,
+      "derived_db": 1.008892012330487,
+      "nearest_fit_db": 3.132158204149475,
+      "residual_db": 2.1368449871064454,
+      "nearest_fit_corner_mean_db": 3.522603773179015,
+      "source": "calibrated_nearest",
+      "seconds": 4.976497099967673
+     },
+     {
+      "gain": 0.625,
+      "tone": 0.75,
+      "derived_db": 0.9737846180982852,
+      "nearest_fit_db": 5.070864171769419,
+      "residual_db": 0.46084274335392406,
+      "nearest_fit_corner_mean_db": 5.209138632820963,
+      "source": "calibrated_nearest",
+      "seconds": 3.062464100017678
+     },
+     {
+      "gain": 0.875,
+      "tone": 0.25,
+      "derived_db": 0.9993617139946716,
+      "nearest_fit_db": 3.0806494763484316,
+      "residual_db": 2.059534116788784,
+      "nearest_fit_corner_mean_db": 3.5019140123370542,
+      "source": "calibrated_nearest",
+      "seconds": 5.92834409995703
+     },
+     {
+      "gain": 0.875,
+      "tone": 0.75,
+      "derived_db": 0.9594856846825517,
+      "nearest_fit_db": 5.061282321715386,
+      "residual_db": 0.44447430923130565,
+      "nearest_fit_corner_mean_db": 5.220509358836539,
+      "source": "calibrated_nearest",
+      "seconds": 4.207620799948927
+     }
+    ],
+    "derived_mean_db": 1.181891678261301,
+    "nearest_fit_mean_db": 5.038258654343694,
+    "residual_mean_db": 1.1585139795126052,
+    "nearest_fit_corner_mean_db": 4.792978084402723,
+    "residual_beats_nearest": 8,
+    "residual_beats_derived": 5,
+    "git": {
+     "sha": "4bc8e88253335eaef7fddd3300546d1461088317",
+     "dirty": false
+    },
+    "seconds": 43.647404200048186
+   }
+  }
+ },
+ "report_rebuilt": true
+}

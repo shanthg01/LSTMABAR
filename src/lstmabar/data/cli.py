@@ -51,6 +51,18 @@ def add_data_parser(sub) -> None:
     )
     p.add_argument("--limit", type=int, default=None, help="cap the number of clips/items")
     p.add_argument("--workers", type=int, default=None, help="override render.workers")
+    p.add_argument("--quick", action="store_true", help="calibrate: tiny smoke-test grid")
+    p.add_argument("--pedals", nargs="+", default=None, help="calibrate: subset of pedal ids")
+    p.add_argument(
+        "--report-only",
+        action="store_true",
+        help="calibrate: rebuild the report from tables (adds missing derived boards; no refit)",
+    )
+    p.add_argument(
+        "--offgrid",
+        action="store_true",
+        help="calibrate --report-only: also run the off-grid held-out check (white-box)",
+    )
     p.add_argument(
         "--allow-derived-labels",
         action="store_true",

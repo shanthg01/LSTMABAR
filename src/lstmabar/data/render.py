@@ -490,7 +490,7 @@ def render_item(
             if table is None:
                 board, source = derived, "derived"
             else:
-                label = table.lookup(spec.pedal_knobs)
+                label = table.lookup(spec.pedal_knobs, derived=derived)
                 board, source = label.board, label.source
                 label_notes = list(label.clamp_notes)
         else:

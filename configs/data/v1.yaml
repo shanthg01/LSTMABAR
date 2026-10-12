@@ -57,8 +57,13 @@ calibration:                   # R4
   max_jump: 0.25               # max normalized-param jump between grid neighbours before
                                # falling back to the nearest grid point
   f0s_hz: [82.41, 146.83, 329.63]   # E2, D3, E4
-  fit_steps: 300               # optimizer steps per grid fit
+  fit_steps: 200               # optimizer steps per grid fit (300 planned; cut for the CPU
+                               # budget, see reports/calibration.md)
   restarts: 1                  # extra random starts at the gain = 0 row only
+  mrstft_weight: 0.0           # riff MR-STFT term of the fit loss (fidelity uses 1.0). Off:
+                               # the 1 s riff at 44.1 kHz cost ~10x the sines per step; the
+                               # label metric is the harmonic error
+  report_dir: reports          # reports/calibration.{md,json}
 
 freeze:                        # tasks 4.6-4.7 (`lstmabar data freeze`, `data vocab-audit`)
   data_card: DATA_CARD.md      # regenerated from data/manifests/<version>/index.json
