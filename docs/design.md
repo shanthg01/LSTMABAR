@@ -135,9 +135,9 @@ Module notes:
 | Source | Content | Role |
 |---|---|---|
 | DI guitar: Guitar-TECHS (CC BY 4.0, primary), EGFxSet clean notes (CC BY 4.0), own DI recordings; IDMT-SMT-Guitar private-only (CC BY-NC-ND); EGDB pending license confirmation | Clean input audio | Dry inputs |
-| Synthetic renders | dry × pedal preset × random knob settings → wet, via **white-box** sims (primary) and grey-box (secondary) | Training pairs with **ground-truth params** |
-| Real pedal recordings: EGFxSet (CC BY 4.0, primary), pOD-set (CC BY-NC 4.0, gain sweeps), ToneTwist AFx analog subset (internal numbers only) | Real hardware outputs | Sim-to-real test set |
-| TONE3000 (ex-ToneHunt) NAM captures, hand-picked (~20–50; site ToS forbids bulk/scripted download); manifest in repo, `.nam` files never redistributed | Named community captures of real pedals | Extra realistic renders + names for text grounding |
+| Synthetic renders | dry × (pedal preset \| free board) × random knob settings → wet, via **white-box** sims for TS808 and DS-1 (labels from a per-pedal calibration table) and the **grey-box** for the other pedals and the free board | Training pairs with **ground-truth params** |
+| Real pedal recordings: EGFxSet (CC BY 4.0, primary; test-only, including its clean notes), pOD-set (CC BY-NC 4.0, gain sweeps), ToneTwist AFx analog subset (internal numbers only) | Real hardware outputs | Sim-to-real test set |
+| TONE3000 (ex-ToneHunt) NAM captures, hand-picked (~20–50; site ToS forbids bulk/scripted download); manifest in repo, `.nam` files never redistributed. **Deferred past dataset v1** (license emails pending) | Named community captures of real pedals | Extra realistic renders + names for text grounding |
 | Pedal knowledge base + reviews | Specs, schematics, descriptive text | Text vocabulary, priors, explanations |
 | **Gold instruction set** | ~150 human-written instructions with matching target tones. Written by the owner **before** any caption template exists, plus ~50 from guitarist friends/volunteers who never see the templates | **Primary text test set** |
 
@@ -247,3 +247,4 @@ legacy/                  # v1 code, read-only reference for the paper
 | 2026-10-09 | Demo decodes uploads itself (libsndfile → PyAV) instead of relying on a system ffmpeg; user-facing errors never include server paths; 25 MB upload cap, 192 kHz sample-rate cap |
 | 2026-10-09 | P2 kickoff: one YAML per pedal (`pedals/`, SI-suffix strings, dataclass validator); 0 dBFS ↔ 1 V peak calibration; RAT gain clamped at Drive's 60 dB; white-box = one diode-clipper solver (feedback: TS808, shunt: DS-1/RAT) as the fidelity gate, Fuzz Face time-boxed stretch |
 | 2026-10-10 | P2 closed: fidelity gate on the *masked* mean (both-floored dBc terms excluded); DS-1 passes (1.13 dB), TS808 passes via a documented deviation with ceilings (3.48 dB; clean-path gap); numba is the `whitebox` extra |
+| 2026-10-12 | P4 kickoff (execution plan, resolutions R1–R10): captions paraphrased by `claude-haiku-5-5` via Batches under a $2.50 hard cap; EGFxSet test-only; per-render input level U(−24, −6) dBFS with 24-bit wet FLAC + stored gain; white-box labels from a 5 × 3 calibration table; 70/30 pedal/free-board mix; `rat` held out; 60 dB clamp kept and flagged; NAM deferred |

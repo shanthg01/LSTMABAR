@@ -290,6 +290,42 @@ Prepared 2026-10-12 for a fresh session. Read this, CLAUDE.md, design §5 (data)
 10. **The 60 dB gain clamp.** Derived gain exceeds `Drive`'s 60 dB for DS-1 above ~¼ Dist, Big Muff above ~½ Sustain, Fuzz Face Si at full and RAT at max, so those knob ranges render identically on the grey-box pedals (DS-1 renders through the white-box, so its clamped settings still sound different; only the derived label collapses). Options: (a) keep 60 dB and down-weight / dedupe clamped settings, reporting clamped counts in the data card; (b) raise `drive.gain_db` max (e.g. 75 dB) — changes the P1 contract, needs an `lstmabar recover` re-pass and design §4.3 update. Recommendation: (a) for v1, revisit after P5 baselines.
 11. **Splits (4.6).** Guitar-TECHS has 3 players: train = 2 players, val/test = the third, split by recording (no shared source file between val and test). EGFxSet clean notes: split by note/pickup block. Own DI (if any): test only. Val and test share the third player, so consider rotating the held-out player across seeds in P6. `test_unseen_pedal`: hold out **one KB pedal** from train entirely — recommendation **rat** (its family is covered by DS-1, so it tests within-family generalization); alternative fuzz_face_ge (tests device change with the Si variant in train). Holding out `rat` also makes the EGFxSet RAT2 `test_real` items unseen-pedal items, and captions must not name it. Hashes are computed on content, not paths; they identify the frozen dataset, not bit-identical re-renders across machines (CPU vs Colab float differences).
 
+**Kickoff resolutions (confirmed with the owner 2026-10-12; they supersede the recommendations above where they differ):**
+
+- **R1. Caption model and budget.** `claude-haiku-5-5` through the Message Batches API, `thinking: {type: "disabled"}`, `output_config.effort: "low"`, structured JSON output keyed by caption id, ~25 captions per request. Estimate at batch prices ($0.05 / $0.25 per MTok in/out): ~$0.30 for 20k paraphrases, ~$0.75 for 50k (Sonnet 5.5 would be ~$5.80 for 20k, over budget). The owner's key has $4.50 in total, so the hard cap is `captions.max_usd: 2.50`. Guards:
+  - `lstmabar data captions --estimate` prices the run with the free `count_tokens` endpoint and spends nothing;
+  - a pilot batch of ~100 captions runs first, to measure real token counts;
+  - a spend ledger (`data/cache/llm/ledger.jsonl`) is appended from each result's `usage`; a submit is refused when ledger + estimate > cap;
+  - a paraphrase rejected by the post-filter falls back to its template caption (no paid retry); errored/expired requests are resubmitted at most once;
+  - CI mocks the SDK; no test touches the network. The key comes only from `ANTHROPIC_API_KEY` (`.env` files are gitignored).
+  - The paraphrase prompt is written fresh. It is not derived from the prompts that produced the gold `llm_draft` / `llm_persona` items.
+- **R2. EGFxSet is entirely test-only.** Its clean notes are very likely the dry inputs of its pedal recordings, so any training use would leak into `test_real`. Training DI = Guitar-TECHS DI only (own DI, if recorded, is test-only).
+- **R3. Levels and storage.**
+  - Dry clips are stored peak-normalized to −1 dBFS (16-bit FLAC) with the source gain recorded.
+  - The input level is sampled **per render**: `input_peak_dbfs ~ U(−24, −6)`. The render input is `dry × 10^((input_peak_dbfs + 1)/20)`. Each dry clip is seen at several levels.
+  - Wet renders are stored peak-normalized to −1 dBFS as **24-bit FLAC**, with `wet_gain_db` in the manifest (true wet = file × 10^(wet_gain_db/20)). FLAC cannot hold values above full scale, and Drive's level reaches +6 dB.
+  - Inference rule (demo/eval): normalize the input peak to `audio.inference_peak_dbfs` (default −15 dBFS, the middle of the training range).
+- **R4. White-box labels (decision 3b).**
+  - Calibration grid = gain knob × tone knob, 5 × 3, for `ts808` and `ds1`. The level knob is handled analytically as output gain.
+  - One joint best fit per grid setting over sine levels spanning the input range (−24, −15, −6 dBFS peak) at a few f0s, reusing `physics.fidelity`.
+  - Fits are warm-started along the grid (each from its gain-axis neighbour), so neighbours are continuous. The label is the bilinear interpolation of the normalized fitted params. The max neighbour jump is reported, and the label falls back to the nearest grid point where the jump exceeds a threshold.
+  - Tables live in `data/calibration/<pedal>.json`. They are small, contain no audio, and are committed.
+  - Every white-box item stores both the calibrated label (`board_params`, used for training) and the derived one (`board_params_derived`).
+- **R5. Sampling mix.**
+  - 70 % pedal presets: pedal uniform over the **train** pedals; knobs U(0, 1); derived EQ3 on; compressor off; no user EQ.
+  - 30 % free board: bypass 5 %, EQ only 25 %, compressor only 15 %, compressor + EQ 15 %, generic drive (EQ and compressor each on with p = 0.5) 40 %.
+- **R6. Holdout `rat`; clamp option (a).**
+  - `rat` is never rendered for train or val. It is rendered only on test DI, as `test_unseen_pedal`. Captions never name it outside that split.
+  - Items record `clamped` (from the `derive` notes); the data card reports clamped counts.
+  - Clamped grey-box settings are kept but flagged, so P6 can down-weight or dedupe them.
+- **R7. Counts.**
+  - The two train players give at most ~4k non-overlapping 3 s clips (fewer after skipping silence).
+  - Plan ~3–4k train clips × 6 renders (≥ 18k train pairs). Val and test clips (player 3, split by recording) get 4 renders each, and `test_unseen_pedal` 2 `rat` renders per test clip.
+  - The data card reports the exact per-split counts.
+- **R8. Throughput gate in wave 0.** Benchmark render + analysis per item on the fixtures and extrapolate to 20k items. If it exceeds ~12 h on the local CPU, cut the analysis cost first (`max_frames`, analysis on a subset), not the dataset.
+- **R9. Downloads.** List the Zenodo record's files through its API first. Download one archive at a time, extract the DI tracks, and delete the archive before the next one, so the transient peak is one archive.
+- **R10. Gold set status.** Per its commit history, `instructions_human.yaml` holds *simulated*-human items; the per-item `source` field is authoritative. Real `human` items (friends, owner action) are needed before P5 reports a headline number.
+
 **Suggested parallel waves** (same workflow as P2):
 - wave 0 (main session): data contracts — item/manifest schema (dataclasses), `configs/data/*.yaml`, shard layout, CLI skeleton (`lstmabar data ingest|render|captions|split|freeze`), level policy, a tiny synthetic DI fixture set for tests.
 - wave 1, in parallel:
