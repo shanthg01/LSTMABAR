@@ -305,6 +305,7 @@ Prepared 2026-10-12 for a fresh session. Read this, CLAUDE.md, design §5 (data)
   - The input level is sampled **per render**: `input_peak_dbfs ~ U(−24, −6)`. The render input is `dry × 10^((input_peak_dbfs + 1)/20)`. Each dry clip is seen at several levels.
   - Wet renders are stored peak-normalized to −1 dBFS as **24-bit FLAC**, with `wet_gain_db` in the manifest (true wet = file × 10^(wet_gain_db/20)). FLAC cannot hold values above full scale, and Drive's level reaches +6 dB.
   - Inference rule (demo/eval): normalize the input peak to `audio.inference_peak_dbfs` (default −15 dBFS, the middle of the training range). Wiring it into the demo and eval input paths is a P5 task (5.4/5.6).
+  - Ingest skips dry clips below `ingest.min_rms_dbfs` = **−55 dBFS** RMS at the source level (−45 at kickoff). The Guitar-TECHS DI noise floor is ~−80 dBFS, and P1's quiet takes (harmonics: median clip RMS −43 dBFS) lost half their clips at −45. The data card must report the `source_gain_db` and clip-RMS distributions per performer.
 - **R4. White-box labels (decision 3b).**
   - Calibration grid = gain knob × tone knob, 5 × 3, for `ts808` and `ds1`. The level knob is handled analytically as output gain.
   - One joint best fit per grid setting over sine levels spanning the input range (−24, −15, −6 dBFS peak) at a few f0s, reusing `physics.fidelity` at the render sample rate (44.1 kHz, not `FidelityConfig`'s 22.05 kHz default). Each gain chain starts from the derived params at gain = 0.
@@ -324,6 +325,7 @@ Prepared 2026-10-12 for a fresh session. Read this, CLAUDE.md, design §5 (data)
   - The data card reports the exact per-split counts.
 - **R8. Throughput gate in wave 0.** Benchmark render + analysis per item on the fixtures and extrapolate to 20k items. If it exceeds ~12 h on the local CPU, cut the analysis cost first (`max_frames`, analysis on a subset), not the dataset.
 - **R9. Downloads.** List the Zenodo record's files through its API first. Download one archive at a time, extract the DI tracks, and delete the archive before the next one, so the transient peak is one archive.
+  - As implemented (4.1): Guitar-TECHS ingest streams only the DI members out of the remote zips via HTTP range requests instead of downloading archives. No archive is ever on disk, and the transient peak is one member.
 - **R10. Gold set status.** Per its commit history, `instructions_human.yaml` holds *simulated*-human items; the per-item `source` field is authoritative. Real `human` items (friends, owner action) are needed before P5 reports a headline number.
 
 **Suggested parallel waves** (same workflow as P2):

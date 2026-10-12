@@ -49,8 +49,11 @@ torch = [{ index = "pytorch-cpu" }]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q -m 'not slow'"
-markers = ["slow: long-running checks (parameter recovery); run with `pytest -m slow`"]
+addopts = "-q -m 'not slow and not network'"
+markers = [
+    "slow: long-running checks (parameter recovery); run with `pytest -m slow`",
+    "network: needs internet (Zenodo); run with `pytest -m network`",
+]
 
 [tool.ruff]
 line-length = 100
