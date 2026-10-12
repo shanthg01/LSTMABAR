@@ -88,7 +88,9 @@ def make_fixture_dataset(
                     license="synthetic",
                 )
             )
-    splits = assign_splits(((c.source, c.performer, c.recording_id) for c in clips), cfg)
+    splits = assign_splits(
+        ((c.source, c.performer, c.recording_id, c.technique) for c in clips), cfg
+    )
     clips = [replace(c, split=s) for c, s in zip(clips, splits, strict=True)]
     write_jsonl(layout.dry_manifest, clips)
     return clips
