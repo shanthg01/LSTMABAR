@@ -10,6 +10,8 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
+import sys
 from dataclasses import replace
 from pathlib import Path
 
@@ -136,7 +138,9 @@ def test_freeze_end_to_end_is_deterministic(frozen):
     assert ix["holdout_pedal"] == HOLDOUT and ix["partial"] is False
     assert ix["captions"]["by_kind"] == {"paraphrase": len(items), "template": len(items)}
     assert set(ix["shards"]) == {"shard-00000", "shard-00001"}
-    assert str(layout.rendered) not in index_1.decode()  # no local paths in committed files
+    for local in (str(layout.rendered), layout.rendered.as_posix(), str(layout.manifests)):
+        assert local not in index_1.decode()  # no local paths in committed files
+    assert "git_dirty" in ix and ix["config"]["physics"]["volts_per_full_scale"] == 1.0
     assert ix["dataset_sha256"] in card_1 and PENDING not in card_1
     assert f"{len(items)} rendered items" in card_1
 
@@ -254,6 +258,80 @@ def test_freeze_detects_missing_and_stray_files(frozen):
     assert "missing file" in str(e.value) and "stray audio file" in str(e.value)
 
 
+@pytest.mark.parametrize("target", ["train", "val"])
+def test_test_performer_must_not_be_in_train_or_val(frozen, target):
+    cfg, layout = frozen
+    clips = list(read_jsonl(layout.dry_manifest, DryClip))
+    test_clip = next(c for c in clips if c.split == "test")
+    extra = replace(
+        test_clip, clip_id="extra-0", recording_id="extra-rec", split=target, path=clips[0].path
+    )
+    write_jsonl(layout.dry_manifest, [*clips, extra])
+    with pytest.raises(freeze.FreezeError, match="test performer in train/val"):
+        freeze.verify(cfg, layout)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "match"),
+    [
+        ("split", "val", "item/clip split mismatch"),
+        ("scenario", "chorus", "bad scenario"),
+        ("engine", "neural", "bad engine"),
+        ("label_source", "guessed", "bad label_source"),
+    ],
+)
+def test_bad_item_fields_are_caught(frozen, field, value, match):
+    cfg, layout = frozen
+    path = layout.shard_dir(0) / "items.jsonl"
+    victim = next(it for it in read_jsonl(path, RenderItem) if it.split == "train")
+    _rewrite(
+        path,
+        RenderItem,
+        lambda it: replace(it, **{field: value}) if it.item_id == victim.item_id else it,
+    )
+    _fails(cfg, layout, match)
+
+
+def _write_test_real(layout: DataLayout, with_hash: bool = True) -> None:
+    from lstmabar.data.schema import TestRealItem
+
+    rng = np.random.default_rng(1)
+    paths = {}
+    for kind in ("dry", "wet"):
+        rel = f"egfxset/unit/{kind}.flac"
+        write_flac(layout.test_real / rel, 0.3 * rng.uniform(-1, 1, 1000), 48000, "PCM_24")
+        paths[kind] = (rel, sha256_file(layout.test_real / rel) if with_hash else "")
+    item = TestRealItem(
+        item_id="tr-0",
+        dataset="egfxset",
+        device="RAT",
+        family="distortion",
+        kb_pedal_id=HOLDOUT,
+        settings={},
+        dry_path=paths["dry"][0],
+        wet_path=paths["wet"][0],
+        sample_rate=48000,
+        internal_only=False,
+        license="CC BY 4.0",
+        sha256_dry=paths["dry"][1],
+        sha256_wet=paths["wet"][1],
+    )
+    write_jsonl(layout.test_real_manifest, [item])
+
+
+def test_test_real_checks(frozen):
+    cfg, layout = frozen
+    _write_test_real(layout)
+    freeze.verify(cfg, layout)
+    (layout.test_real / "egfxset/unit/wet.flac").unlink()
+    _fails(cfg, layout, "missing test_real file")
+    assert freeze.run(cfg, _args(allow_partial=True)) == 0  # counted, not silently skipped
+    ix = json.loads(layout.index.read_text())
+    assert ix["partial"] is True and ix["test_real"]["missing_files"] == 1
+    _write_test_real(layout, with_hash=False)
+    _fails(cfg, layout, "test_real record without hash")
+
+
 def test_partial_shards_need_allow_partial(frozen):
     cfg, layout = frozen
     (layout.shard_dir(1) / DONE_MARKER).unlink()
@@ -333,9 +411,25 @@ def test_vocab_audit_requires_frozen_captions(frozen):
         vocab_audit.load_frozen_captions(layout)
 
 
+def test_vocab_audit_refuses_partial_freeze(frozen, tmp_path):
+    cfg, layout = frozen
+    (layout.shard_dir(1) / DONE_MARKER).unlink()
+    assert freeze.run(cfg, _args(allow_partial=True)) == 0
+    with pytest.raises(RuntimeError, match="partial freeze"):
+        vocab_audit.load_index(layout)
+    report = tmp_path / "vocab_overlap.md"
+    from omegaconf import OmegaConf
+
+    cfg = OmegaConf.merge(cfg, {"freeze": {"vocab_report": report.as_posix()}})
+    assert vocab_audit.run(cfg, _args()) == 1 and not report.exists()
+
+
 def test_caption_code_does_not_import_the_audit():
-    src = (REPO_ROOT / "src" / "lstmabar" / "data" / "captions.py").read_text(encoding="utf-8")
-    assert "vocab_audit" not in src
+    code = (
+        "import sys, lstmabar.data.captions; "
+        "assert 'lstmabar.data.vocab_audit' not in sys.modules, 'captions imports the audit'"
+    )
+    subprocess.run([sys.executable, "-c", code], check=True, cwd=REPO_ROOT)
 
 
 def test_cli_registers_freeze_steps():

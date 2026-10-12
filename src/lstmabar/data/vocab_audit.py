@@ -84,11 +84,22 @@ def _first_list(doc: Any) -> list | None:
     return None
 
 
-def load_frozen_captions(layout: DataLayout) -> list[Caption]:
-    """Captions of every frozen shard; each file must match the freeze index's hash."""
+def load_index(layout: DataLayout) -> dict[str, Any]:
+    """The freeze index; a partial freeze (``--allow-partial``) is refused: the one-shot
+    audit must see the complete frozen caption set."""
     if not layout.index.exists():
         raise FileNotFoundError("no dataset index: run `lstmabar data freeze` first")
     index = json.loads(layout.index.read_text(encoding="utf-8"))
+    if index.get("partial"):
+        raise RuntimeError("the dataset index is a partial freeze; freeze the full dataset first")
+    return index
+
+
+def load_frozen_captions(
+    layout: DataLayout, index: Mapping[str, Any] | None = None
+) -> list[Caption]:
+    """Captions of every frozen shard; each file must match the freeze index's hash."""
+    index = index if index is not None else load_index(layout)
     manifests: Mapping[str, str] = index["files"]["manifests"]
     caps: list[Caption] = []
     for shard in sorted(index["shards"]):
@@ -254,10 +265,14 @@ def run(cfg, args) -> int:
             "deliberately to re-run (templates must not change after seeing it)."
         )
         return 1
-    captions = load_frozen_captions(layout)
+    try:
+        index = load_index(layout)
+        captions = load_frozen_captions(layout, index)
+    except (FileNotFoundError, RuntimeError) as e:
+        print(str(e))
+        return 1
     instructions, hashes = load_instructions(_cfg_path(cfg, "gold_dir", "data/gold"))
     result = audit(instructions, captions)
-    index = json.loads(layout.index.read_text(encoding="utf-8"))
     report.parent.mkdir(parents=True, exist_ok=True)
     report.write_text(
         render_report(result, hashes, index.get("dataset_sha256")), encoding="utf-8", newline="\n"
@@ -271,6 +286,7 @@ __all__ = [
     "audit",
     "bigrams",
     "coverage",
+    "load_index",
     "load_frozen_captions",
     "load_instructions",
     "render_report",

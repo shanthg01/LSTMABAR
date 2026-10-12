@@ -26,7 +26,7 @@ $status
 ## What it is
 
 Pairs of a clean DI guitar clip and a wet render of it through a physically grounded pedal
-(white-box circuit sims for TS808 and DS-1, the grey-box pedalboard for the other pedals and
+(white-box circuit sims for $whitebox, the grey-box pedalboard for the other pedals and
 for free-board settings), each with its parameter labels, measured descriptors, a harmonic
 archetype readout, and text captions (template + LLM paraphrase). It trains and evaluates
 text-driven tone transformation (design §5). Audio is never committed: the repository holds
@@ -47,8 +47,9 @@ $summary
   Abreu, Corey, Roman, DAFx 2024. mirdata lists CC BY-SA 4.0 (discrepancy); anything
   redistributed from it also honours SA.
 - **pOD-set** (`test_real` only). CC BY-NC 4.0 (https://zenodo.org/records/15389653;
-  Dal Rì, Stefani, Turchet, Conci, "Morphdrive", DAFx25). Non-commercial; used internally;
-  audio and per-item audio are not published.
+  Dal Rì, Stefani, Turchet, Conci, "Morphdrive", DAFx25). Non-commercial; used for internal
+  evaluation only. Neither its audio nor per-item results derived from it are published;
+  only aggregate numbers are reported.
 - **ToneTwist AFx**: internal numbers only, never republished (inherited rights of its dry
   inputs); not part of v1 unless enabled.
 - Licensing details: [docs/data-licenses.md](docs/data-licenses.md).
@@ -60,9 +61,9 @@ $test_real
 - `train`: the train performers' recordings, minus the val slice.
 - `val`: an in-domain **by-recording** slice of the train performers (R11). Val shares
   performers with train, so it measures new recordings, **not new players**.
-- `test`: every clip of the held-out performer (Guitar-TECHS P3) and any own DI. It is the
-  only performer-disjoint split. It is small, and P3 recorded only musical excerpts, so test
-  is also **out of domain** in content.
+- `test`: every clip of the held-out performer (Guitar-TECHS $heldout) and any own DI. It is
+  the only performer-disjoint split (checked at freeze). It is small, and $heldout recorded
+  only musical excerpts, so test is also **out of domain** in content.
 - `test_unseen_pedal`: renders of the holdout pedal on `test` clips only. The holdout pedal
   is never rendered for train or val, and no caption outside this split names it.
 - No source recording appears in two splits (checked at freeze).
@@ -71,11 +72,11 @@ $splits
 
 ## Levels (R3)
 
-Dry clips are stored peak-normalized to −1 dBFS (16-bit FLAC) with the source gain recorded.
-Each render samples its input peak uniformly in the configured range and scales the dry clip
-to it before the pedal (0 dBFS = 1 V peak). Wet renders are stored peak-normalized to
-−1 dBFS as 24-bit FLAC; true wet = file × 10^(`wet_gain_db`/20). At inference, inputs are
-peak-normalized to `audio.inference_peak_dbfs`.
+Dry clips are stored peak-normalized to $dry_level FLAC with the source gain recorded.
+Each render samples its input peak uniformly in $input_range and scales the dry clip to it
+before the pedal (0 dBFS = $volts peak). Wet renders are stored peak-normalized to $wet_level
+FLAC; true wet = file × 10^(`wet_gain_db`/20). At inference, inputs are peak-normalized to
+$inference_level.
 
 $levels
 
@@ -88,9 +89,11 @@ $levels
   `board_params_derived` for comparison. Free board: the sampled parameters (`free`).
 - `pedal_knobs` holds the pedal-space label (knob rotations in [0, 1]).
 - **Clamping (R6, decision 10):** `clamped` flags items whose *derived* label hit Drive's
-  60 dB gain limit. Those grey-box settings render identically above the limit; they are kept
-  and flagged so training can down-weight or dedupe them. `label_clamp_notes` records clamps
-  in the calibrated label (e.g. the level knob's analytic offset).
+  $clamp_db dB gain limit. Grey-box pedals sound identical above the limit (the clamped label
+  is what was rendered); for white-box pedals the audio still differs and only the derived
+  label is clamped. Clamped items are kept and flagged so training can down-weight or dedupe
+  them. `label_clamp_notes` records clamps in the calibrated label (e.g. the level knob's
+  analytic offset).
 - **Disabled blocks carry random knob values.** A block with `enabled = 0` still has knob
   numbers in `board_params`; they have no effect on the audio. Mask knob losses and metrics
   by `enabled`.
@@ -115,13 +118,16 @@ $captions
 
 ## Known limitations
 
-- **60 dB Drive clamp**: DS-1 above about a quarter Dist, Big Muff above about half Sustain,
-  Fuzz Face Si at full and RAT at max collapse to the same grey-box sound (flagged, above).
+- **$clamp_db dB Drive clamp** (P2 finding): derived gain exceeds the limit for DS-1 above
+  about a quarter Dist, Big Muff above about half Sustain, Fuzz Face Si at full and RAT at
+  max. Grey-box renders of those settings sound identical; white-box renders (here
+  $whitebox) still differ and only their derived label is clamped. Holdout pedal:
+  $holdout (rendered only in `test_unseen_pedal`). Counts are in Labels above.
 - **Fuzz Face source impedance**: renders inherit the fixed guitar source impedance assumed
   by the derivation (`physics.source_ohms`).
-- **`test_real` sample rate**: EGFxSet and pOD-set audio is stored at its native 48 kHz;
-  resample before comparing with 44.1 kHz renders. Its recordings are level-normalized, so
-  the true pedal input voltage is unknown.
+- **`test_real` sample rate**: EGFxSet and pOD-set audio is stored at its native rate
+  ($test_real_rates); resample before comparing with the $sample_rate renders. Its
+  recordings are level-normalized, so the true pedal input voltage is unknown.
 - **EGFxSet pairing**: each effected note is paired with the `Clean` note of the same
   pickup/string/fret, assuming they are the same take; not verified sample-by-sample.
 - **EGFxSet license**: CC BY on Zenodo vs CC BY-SA in mirdata (see above).
@@ -177,12 +183,15 @@ def _sections(ix: Mapping[str, Any]) -> dict[str, str]:
     clips, items, caps = ix["clips"], ix["items"], ix["captions"]
     status = (
         f"**Frozen.** Schema version {ix['schema_version']}, dataset SHA-256 "
-        f"`{ix['dataset_sha256']}`, built at commit `{ix.get('git_sha') or 'unknown'}`."
+        f"`{ix['dataset_sha256']}`, built at commit `{ix.get('git_sha') or 'unknown'}`"
+        + (" (uncommitted changes)" if ix.get("git_dirty") else "")
+        + "."
     )
     if ix.get("partial"):
         status += (
-            f"\n\n**PARTIAL freeze**: {len(ix['skipped_shards'])} unfinished shards were "
-            "skipped (`--allow-partial`); not a release."
+            f"\n\n**PARTIAL freeze** (`--allow-partial`; not a release): "
+            f"{len(ix['skipped_shards'])} unfinished shards skipped, "
+            f"{_get(ix, 'test_real.missing_files') or 0} `test_real` files missing."
         )
     summary = "\n\n".join(
         [
@@ -259,7 +268,7 @@ def _sections(ix: Mapping[str, Any]) -> dict[str, str]:
     )
     performers = "\n\n".join(
         [
-            "Source gain applied to reach the stored −1 dBFS peak (dB), per performer:",
+            "Source gain applied to reach the stored dry peak (dB), per performer:",
             _summary_table("performer", clips["source_gain_db_by_performer"]),
             "Clip RMS at the source level (dBFS), per performer:",
             _summary_table("performer", clips["source_rms_dbfs_by_performer"]),
@@ -301,6 +310,61 @@ def _sections(ix: Mapping[str, Any]) -> dict[str, str]:
     }
 
 
+def _get(d: Mapping[str, Any] | None, path: str) -> Any:
+    for k in path.split("."):
+        if not isinstance(d, Mapping) or k not in d:
+            return None
+        d = d[k]
+    return d
+
+
+def _db(x: Any) -> str:
+    return f"{float(x):g} dBFS".replace("-", "−")
+
+
+def _bits(subtype: Any) -> str:
+    s = str(subtype)
+    return f"{s.removeprefix('PCM_')}-bit" if s.startswith("PCM_") else s
+
+
+def _prose(ix: Mapping[str, Any] | None) -> dict[str, str]:
+    """Values quoted in the prose, from the index's config subset (config key names while
+    the dataset is not frozen). The Drive gain limit comes from the DSP contract."""
+    from lstmabar.dsp.blocks import Drive
+
+    clamp = next(s.max for s in Drive.param_specs if s.name == "gain_db")
+    cfg = (ix or {}).get("config")
+
+    def val(path: str, fmt=str) -> str:
+        v = _get(cfg, path)
+        return f"`{path}`" if v is None else fmt(v)
+
+    def level(peak: str, subtype: str) -> str:
+        if _get(cfg, peak) is None:
+            return f"`{peak}` (`{subtype}`)"
+        return f"{_db(_get(cfg, peak))} ({_bits(_get(cfg, subtype))})"
+
+    lo_hi = _get(cfg, "render.input_peak_dbfs")
+    rates = _get(ix, "test_real.sample_rates")
+    return {
+        "whitebox": val("render.whitebox_pedals", lambda v: " and ".join(map(str, v))),
+        "heldout": val("ingest.heldout_performer"),
+        "holdout": val("render.holdout_pedal", lambda v: f"`{v}`"),
+        "dry_level": level("ingest.dry_peak_dbfs", "ingest.dry_subtype"),
+        "wet_level": level("render.wet_peak_dbfs", "render.wet_subtype"),
+        "input_range": "`render.input_peak_dbfs`"
+        if lo_hi is None
+        else f"[{_db(lo_hi[0])}, {_db(lo_hi[1])}]",
+        "volts": val("physics.volts_per_full_scale", lambda v: f"{float(v):g} V"),
+        "inference_level": val("audio.inference_peak_dbfs", _db),
+        "sample_rate": val("audio.sample_rate", lambda v: f"{float(v) / 1000:g} kHz"),
+        "test_real_rates": "see the `test_real` table"
+        if not rates
+        else ", ".join(f"{float(r) / 1000:g} kHz" for r in rates),
+        "clamp_db": f"{clamp:g}",
+    }
+
+
 def render_data_card(index: Mapping[str, Any] | None, version: str = "v1") -> str:
     """The data card for ``index`` (``None``: not frozen yet)."""
     if index is None:
@@ -314,6 +378,7 @@ def render_data_card(index: Mapping[str, Any] | None, version: str = "v1") -> st
         }
     else:
         values = _sections(index)
+    values |= _prose(index)
     text = TEMPLATE.substitute(values)
     return "\n".join(line.rstrip() for line in text.splitlines()) + "\n"
 

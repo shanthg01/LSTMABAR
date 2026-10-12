@@ -6,13 +6,15 @@ shard's ``items.jsonl`` / ``captions.jsonl`` and, if present, the ``test_real`` 
 
 - **Splits** (decision 11 as revised by R11): clip ids are unique; every clip split is
   ``train`` / ``val`` / ``test``; no ``recording_id`` appears in two splits; no ``test``
-  performer appears in ``train`` (test is the performer-disjoint set; val may share
-  performers with train under R11, which the index records as ``performer_overlap``).
+  performer appears in ``train`` or ``val`` (test is the performer-disjoint set; val may
+  share performers with train under R11, which the index records as ``performer_overlap``).
 - **Items**: ids unique; each item's clip exists; ``item.split == clip.split``, except
   ``test_unseen_pedal`` items, which must sit on ``test`` clips and render the holdout pedal
   (``render.holdout_pedal``); the holdout pedal never appears in any other split.
 - **Files**: every dry and wet file exists and its SHA-256 matches its record; no stray audio
-  in shard dirs; ``test_real`` files exist and match ``sha256_dry`` / ``sha256_wet``.
+  in shard dirs; every ``test_real`` record carries both hashes and its files exist and match
+  ``sha256_dry`` / ``sha256_wet`` (with ``--allow-partial``, missing ``test_real`` files are
+  counted in the index as ``test_real.missing_files`` and the freeze is marked partial).
 - **Captions**: ids unique, each refers to an existing item, every item has a caption, and
   every caption passes :func:`lstmabar.data.vocab.item_caption_violations` (no numbers, units,
   brands, forbidden or holdout pedal names; the rule shared with the caption post-filter).
@@ -95,6 +97,7 @@ class Dataset:
     shards: list[Shard]
     test_real: list[TestRealItem] | None
     skipped_shards: list[str] = field(default_factory=list)
+    test_real_missing: set[str] = field(default_factory=set)  # only with --allow-partial
 
     @property
     def items(self) -> list[RenderItem]:
@@ -198,8 +201,8 @@ def check_splits(clips: Sequence[DryClip], issues: Issues) -> None:
         if len(splits) > 1:
             issues.add("recording in several splits", f"{rec}: {sorted(splits)}")
     for perf, splits in sorted(perf_splits.items()):
-        if {"train", "test"} <= splits:
-            issues.add("test performer in train", f"{perf}")
+        if "test" in splits and len(splits) > 1:  # R11: only val/train may share performers
+            issues.add("test performer in train/val", f"{perf}: {sorted(splits)}")
 
 
 def check_items(
@@ -291,13 +294,21 @@ def check_files(
                 rel = f.relative_to(layout.rendered).as_posix()
                 if rel not in hashes:
                     issues.add("stray audio file", rel)
+    seen: dict[str, str | None] = {}  # test_real dry notes are shared by several items
     for t in ds.test_real or []:
         for rel, expected in ((t.dry_path, t.sha256_dry), (t.wet_path, t.sha256_wet)):
-            path = layout.test_real / rel
-            if not path.is_file():
-                if not allow_partial:
+            if not expected:
+                issues.add("test_real record without hash", f"{t.item_id}: {rel}")
+                continue
+            if rel not in seen:
+                path = layout.test_real / rel
+                seen[rel] = sha256_file(path) if path.is_file() else None
+            if seen[rel] is None:
+                if allow_partial:  # counted in the index (test_real.missing_files)
+                    ds.test_real_missing.add(rel)
+                else:
                     issues.add("missing test_real file", f"{t.item_id}: {rel}")
-            elif expected and sha256_file(path) != expected:
+            elif seen[rel] != expected:
                 issues.add("test_real hash mismatch", f"{t.item_id}: {rel}")
     return hashes
 
@@ -362,7 +373,17 @@ def dataset_hash(file_lines: Sequence[str], manifest_hashes: Mapping[str, str]) 
     return _sha256_bytes(blob.encode("utf-8"))
 
 
-CONFIG_KEYS = ("seed", "audio", "data", "ingest", "render", "calibration", "analysis", "splits")
+CONFIG_KEYS = (
+    "seed",
+    "audio",
+    "data",
+    "physics",
+    "ingest",
+    "render",
+    "calibration",
+    "analysis",
+    "splits",
+)
 CAPTION_CONFIG_KEYS = (
     "model",
     "prompt_version",
@@ -391,7 +412,7 @@ def build_index(
     layout: DataLayout,
     ds: Dataset,
     file_hashes: Mapping[str, str],
-    git_sha: str | None = None,
+    git: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     items, caps, clips = ds.items, ds.captions, ds.clips
     holdout = _holdout(cfg)
@@ -454,8 +475,9 @@ def build_index(
         "schema_version": SCHEMA_VERSION,
         "version": layout.version,
         "dataset_sha256": dataset_hash(file_lines, manifests),
-        "git_sha": git_sha,
-        "partial": bool(ds.skipped_shards),
+        "git_sha": (git or {}).get("sha"),
+        "git_dirty": (git or {}).get("dirty"),
+        "partial": bool(ds.skipped_shards or ds.test_real_missing),
         "skipped_shards": sorted(ds.skipped_shards),
         "holdout_pedal": holdout,
         "files": {"count": len(file_lines), "manifests": dict(sorted(manifests.items()))},
@@ -531,13 +553,15 @@ def build_index(
                 1 for it in items if caps_by_item[it.item_id]["paraphrase"] < n_para
             ),
         },
-        "test_real": _test_real_summary(ds.test_real),
+        "test_real": _test_real_summary(ds.test_real, ds.test_real_missing),
         "config": config_subset(cfg),
     }
     return json.loads(json.dumps(index, sort_keys=True))
 
 
-def _test_real_summary(items: Sequence[TestRealItem] | None) -> dict[str, Any] | None:
+def _test_real_summary(
+    items: Sequence[TestRealItem] | None, missing: Iterable[str] = ()
+) -> dict[str, Any] | None:
     if items is None:
         return None
     return {
@@ -546,6 +570,7 @@ def _test_real_summary(items: Sequence[TestRealItem] | None) -> dict[str, Any] |
         "by_device": _counts(f"{t.dataset}/{t.device}" for t in items),
         "by_kb_pedal": _counts(t.kb_pedal_id or "(none)" for t in items),
         "internal_only": sum(t.internal_only for t in items),
+        "missing_files": len(set(missing)),
         "sample_rates": _counts(str(t.sample_rate) for t in items),
         "licenses": _counts(f"{t.dataset}: {t.license}" for t in items),
     }
@@ -601,7 +626,7 @@ def run(cfg, args) -> int:
     except FreezeError as e:
         print(str(e))
         return 1
-    index = build_index(cfg, layout, ds, hashes, git_info().get("sha"))
+    index = build_index(cfg, layout, ds, hashes, git_info())
     write_outputs(layout, index, hashes)
     card = data_card_path(cfg)
     card.parent.mkdir(parents=True, exist_ok=True)
@@ -611,8 +636,11 @@ def run(cfg, args) -> int:
         f"{index['captions']['total']} captions, {index['files']['count']} files; "
         f"dataset sha256 {index['dataset_sha256']}"
     )
-    if ds.skipped_shards:
-        print(f"PARTIAL: skipped {len(ds.skipped_shards)} unfinished shards")
+    if index["partial"]:
+        print(
+            f"PARTIAL: skipped {len(ds.skipped_shards)} unfinished shards, "
+            f"{len(ds.test_real_missing)} missing test_real files"
+        )
     return 0
 
 
