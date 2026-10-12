@@ -227,7 +227,7 @@ P2/P3 follow-ups (non-blocking; fold into P4 or later):
 
 | # | Task | Where | Output |
 |---|---|---|---|
-| 4.1 | Ingest licensed DI corpora (Guitar-TECHS DI, EGFxSet `Clean`, optional own DI) → mono 44.1 kHz, 2–4 s onset-aligned clips + manifest; level policy per kickoff decision 2 | L | audio in `data/sources/` (gitignored), `data/ingest.py`, manifest in `data/manifests/` |
+| 4.1 | Ingest licensed DI corpora (Guitar-TECHS DI; optional own DI, test-only; EGFxSet `Clean` is test-only, see 4.4 and R2) → mono 44.1 kHz, 2–4 s onset-aligned clips + manifest; level policy per R3 | L | audio in `data/sources/` (gitignored), `data/ingest.py`, manifest in `data/manifests/` |
 | 4.2 | Renderer: dry × (pedal preset \| free board) × sampled knobs → wet. White-box for TS808 and DS-1, grey-box for the rest (decision 3). Store pedal id, pedal knobs, board params + gates, engine, descriptors, archetype readout. Multiprocess, resumable shards | L (C if slow) | `data/render.py` |
 | 4.3 | Caption generator: templates from params/descriptors/KB vocab + LLM paraphrase (Claude API), no numeric leakage. **Never read `data/gold/` while writing or tuning it** (decision 6) | L | `data/captions.py` |
 | 4.4 | Real-pedal test set: EGFxSet (TS Mini, RAT2, BD-2 + clean), a few pOD-set pedals, ToneTwist analog subset internal only (decision 8) | L | audio in `data/test_real/` (gitignored), manifest in `data/manifests/` |
@@ -284,18 +284,18 @@ Prepared 2026-10-12 for a fresh session. Read this, CLAUDE.md, design §5 (data)
 7. **Gold pairing (4.5), in a separate later session.** Each gold item has a rough target description (pedal family, gain level, brightness). Recommendation: turn each into a target **board-param region** (owner-reviewable YAML, one row per item) and render the target on held-out test DI clips; the P5 2AFC metric then compares the model's render against the target vs a distractor. This step necessarily reads `data/gold/`, so it happens only after the caption code is frozen and in a session that does not touch caption code.
 8. **`test_real` (4.4).** EGFxSet units matching the KB: **Ibanez Mini Tube Screamer ↔ ts808**, **RAT2 ↔ rat**, plus BD-2 (no KB entry, family overdrive), each with the matching `Clean` note; settings from the EGFxSet CSV. pOD-set: download 3–5 pedals only (gain × tone grid, CC BY-NC; input is mixed material, not pure DI — use as a parametric drive/tone check). ToneTwist analog subset (has a Big Muff): internal numbers only, never republish audio. The P5 use: sim-to-real gap (KB render at the matched setting vs the real recording) and audio-target evaluation. EGFxSet and pOD-set audio is level-normalized, so the true input voltage is unknown: compare after loudness matching and/or sweep the assumed input level, and say so in the report.
 9. **Size, storage and format.**
-   - Start at **~20k pairs** (e.g. ~4k dry clips × 5 renders), scale toward 50k only if disk and time allow (train-player DI is only ~3.5 h, so 50k means more renders per clip, not more clips). 3 s mono 44.1 kHz FLAC is ~150–250 KB → 20k wet ≈ 4–5 GB, plus dry clips and raw sources (Guitar-TECHS DI extracted ≈ a few GB), test sets (EGFxSet zips ≈ 2 GB for the needed units + Clean; pOD-set ≈ 1.7 GB per pedal) and transient space for zip + extraction at once. Keep the ≤ ~30 GB total.
+   - Start at **~20k pairs** (e.g. ~4k dry clips × 5 renders; superseded by R7), scale toward 50k only if disk and time allow (train-player DI is only ~3.5 h, so 50k means more renders per clip, not more clips). 3 s mono 44.1 kHz FLAC is ~150–250 KB → 20k wet ≈ 4–5 GB, plus dry clips and raw sources (Guitar-TECHS DI extracted ≈ a few GB), test sets (EGFxSet zips ≈ 2 GB for the needed units + Clean; pOD-set ≈ 1.7 GB per pedal) and transient space for zip + extraction at once. Keep the ≤ ~30 GB total.
    - Shards of ~1k items: FLAC files + one JSONL manifest per shard (no new dependency); a top-level index with per-file SHA-256 and a dataset hash.
    - Rendering: multiprocessing, deterministic per-item seeds, resumable (skip finished shards). Throughput estimate: white-box ~0.15 s per 3 s clip per core; grey-box batched in torch; analysis (pYIN once per dry clip, reused for its wets) dominates — budget for it.
 10. **The 60 dB gain clamp.** Derived gain exceeds `Drive`'s 60 dB for DS-1 above ~¼ Dist, Big Muff above ~½ Sustain, Fuzz Face Si at full and RAT at max, so those knob ranges render identically on the grey-box pedals (DS-1 renders through the white-box, so its clamped settings still sound different; only the derived label collapses). Options: (a) keep 60 dB and down-weight / dedupe clamped settings, reporting clamped counts in the data card; (b) raise `drive.gain_db` max (e.g. 75 dB) — changes the P1 contract, needs an `lstmabar recover` re-pass and design §4.3 update. Recommendation: (a) for v1, revisit after P5 baselines.
-11. **Splits (4.6).** Guitar-TECHS has 3 players: train = 2 players, val/test = the third, split by recording (no shared source file between val and test). EGFxSet clean notes: split by note/pickup block. Own DI (if any): test only. Val and test share the third player, so consider rotating the held-out player across seeds in P6. `test_unseen_pedal`: hold out **one KB pedal** from train entirely — recommendation **rat** (its family is covered by DS-1, so it tests within-family generalization); alternative fuzz_face_ge (tests device change with the Si variant in train). Holding out `rat` also makes the EGFxSet RAT2 `test_real` items unseen-pedal items, and captions must not name it. Hashes are computed on content, not paths; they identify the frozen dataset, not bit-identical re-renders across machines (CPU vs Colab float differences).
+11. **Splits (4.6).** Guitar-TECHS has 3 players: train = 2 players, val/test = the third, split by recording (no shared source file between val and test). EGFxSet clean notes: test-only (R2). Own DI (if any): test only. Val and test share the third player, so consider rotating the held-out player across seeds in P6. `test_unseen_pedal`: hold out **one KB pedal** from train entirely — recommendation **rat** (its family is covered by DS-1, so it tests within-family generalization); alternative fuzz_face_ge (tests device change with the Si variant in train). Holding out `rat` also makes the EGFxSet RAT2 `test_real` items unseen-pedal items, and captions must not name it. Hashes are computed on content, not paths; they identify the frozen dataset, not bit-identical re-renders across machines (CPU vs Colab float differences).
 
 **Kickoff resolutions (confirmed with the owner 2026-10-12; they supersede the recommendations above where they differ):**
 
-- **R1. Caption model and budget.** `claude-haiku-5-5` through the Message Batches API, `thinking: {type: "disabled"}`, `output_config.effort: "low"`, structured JSON output keyed by caption id, ~25 captions per request. Estimate at batch prices ($0.05 / $0.25 per MTok in/out): ~$0.30 for 20k paraphrases, ~$0.75 for 50k (Sonnet 5.5 would be ~$5.80 for 20k, over budget). The owner's key has $4.50 in total, so the hard cap is `captions.max_usd: 2.50`. Guards:
-  - `lstmabar data captions --estimate` prices the run with the free `count_tokens` endpoint and spends nothing;
+- **R1. Caption model and budget.** `claude-haiku-5-5` through the Message Batches API, `thinking: {type: "disabled"}`, `output_config.effort: "low"`, structured JSON output keyed by caption id, ~25 captions per request. Estimate at batch prices ($0.05 / $0.25 per MTok in/out): ~$0.30 per 20k paraphrases, ~$0.75 per 50k; the planned v1 (R7: train + val/test + unseen renders) is ~28–34k paraphrases ≈ $0.45–0.55 (Sonnet 5.5 would be ~$5.80 for 20k, over budget). The owner's key has $4.50 in total, so the hard cap is `captions.max_usd: 2.50`. Guards:
+  - `lstmabar data captions --estimate` prices the run and spends nothing: input from the free `count_tokens` endpoint, output from the pilot's measured tokens per caption (45 before the pilot);
   - a pilot batch of ~100 captions runs first, to measure real token counts;
-  - a spend ledger (`data/cache/llm/ledger.jsonl`) is appended from each result's `usage`; a submit is refused when ledger + estimate > cap;
+  - a spend ledger (`data/cache/llm/ledger.jsonl`) is appended from each result's `usage`; submitted batches that have not returned count at their estimate; a submit is refused when ledger + in-flight + estimate > cap;
   - a paraphrase rejected by the post-filter falls back to its template caption (no paid retry); errored/expired requests are resubmitted at most once;
   - CI mocks the SDK; no test touches the network. The key comes only from `ANTHROPIC_API_KEY` (`.env` files are gitignored).
   - The paraphrase prompt is written fresh. It is not derived from the prompts that produced the gold `llm_draft` / `llm_persona` items.
@@ -304,19 +304,19 @@ Prepared 2026-10-12 for a fresh session. Read this, CLAUDE.md, design §5 (data)
   - Dry clips are stored peak-normalized to −1 dBFS (16-bit FLAC) with the source gain recorded.
   - The input level is sampled **per render**: `input_peak_dbfs ~ U(−24, −6)`. The render input is `dry × 10^((input_peak_dbfs + 1)/20)`. Each dry clip is seen at several levels.
   - Wet renders are stored peak-normalized to −1 dBFS as **24-bit FLAC**, with `wet_gain_db` in the manifest (true wet = file × 10^(wet_gain_db/20)). FLAC cannot hold values above full scale, and Drive's level reaches +6 dB.
-  - Inference rule (demo/eval): normalize the input peak to `audio.inference_peak_dbfs` (default −15 dBFS, the middle of the training range).
+  - Inference rule (demo/eval): normalize the input peak to `audio.inference_peak_dbfs` (default −15 dBFS, the middle of the training range). Wiring it into the demo and eval input paths is a P5 task (5.4/5.6).
 - **R4. White-box labels (decision 3b).**
   - Calibration grid = gain knob × tone knob, 5 × 3, for `ts808` and `ds1`. The level knob is handled analytically as output gain.
-  - One joint best fit per grid setting over sine levels spanning the input range (−24, −15, −6 dBFS peak) at a few f0s, reusing `physics.fidelity`.
-  - Fits are warm-started along the grid (each from its gain-axis neighbour), so neighbours are continuous. The label is the bilinear interpolation of the normalized fitted params. The max neighbour jump is reported, and the label falls back to the nearest grid point where the jump exceeds a threshold.
+  - One joint best fit per grid setting over sine levels spanning the input range (−24, −15, −6 dBFS peak) at a few f0s, reusing `physics.fidelity` at the render sample rate (44.1 kHz, not `FidelityConfig`'s 22.05 kHz default). Each gain chain starts from the derived params at gain = 0.
+  - Fits are warm-started along the grid (each from its gain-axis neighbour), so neighbours are continuous. The label is the bilinear interpolation of the normalized fitted params. The max neighbour jump is reported, and the label falls back to the nearest grid point where the jump exceeds `calibration.max_jump` (0.25 normalized). The level knob's analytic offset is added to the fitted `drive.level_db` and clamped to Drive's range (a clamp is recorded like any other).
   - Tables live in `data/calibration/<pedal>.json`. They are small, contain no audio, and are committed.
   - Every white-box item stores both the calibrated label (`board_params`, used for training) and the derived one (`board_params_derived`).
 - **R5. Sampling mix.**
-  - 70 % pedal presets: pedal uniform over the **train** pedals; knobs U(0, 1); derived EQ3 on; compressor off; no user EQ.
+  - 70 % pedal presets: pedal uniform over the five non-holdout pedals (the same mix for train, val and test); knobs U(0, 1); derived EQ3 on; compressor off; no user EQ.
   - 30 % free board: bypass 5 %, EQ only 25 %, compressor only 15 %, compressor + EQ 15 %, generic drive (EQ and compressor each on with p = 0.5) 40 %.
 - **R6. Holdout `rat`; clamp option (a).**
   - `rat` is never rendered for train or val. It is rendered only on test DI, as `test_unseen_pedal`. Captions never name it outside that split.
-  - Items record `clamped` (from the `derive` notes); the data card reports clamped counts.
+  - Items record `clamped` from `derive`'s `" clamped to "` notes only (other notes mention the clamp too, e.g. Big Muff's). For white-box items it describes the derived label; the calibrated label is in range by construction. The data card reports clamped counts.
   - Clamped grey-box settings are kept but flagged, so P6 can down-weight or dedupe them.
 - **R7. Counts.**
   - The two train players give at most ~4k non-overlapping 3 s clips (fewer after skipping silence).
@@ -329,10 +329,10 @@ Prepared 2026-10-12 for a fresh session. Read this, CLAUDE.md, design §5 (data)
 **Suggested parallel waves** (same workflow as P2):
 - wave 0 (main session): data contracts — item/manifest schema (dataclasses), `configs/data/*.yaml`, shard layout, CLI skeleton (`lstmabar data ingest|render|captions|split|freeze`), level policy, a tiny synthetic DI fixture set for tests.
 - wave 1, in parallel:
-  - (a) DI ingest (Guitar-TECHS DI + EGFxSet Clean): download, resample, onset-aligned clips, manifest;
+  - (a) DI ingest (Guitar-TECHS DI only, R2): download, resample, onset-aligned clips, manifest;
   - (b) renderer: pedal/free-board sampling, white-box/grey-box engines, calibration table (decision 3b), descriptors/archetypes, sharded multiprocess output — built against the synthetic fixtures;
   - (c) caption generator: templates + Batches-API paraphrase + cache — **gold-blind agent**, briefed explicitly;
-  - (d) `test_real` ingest (EGFxSet units + a few pOD-set pedals).
+  - (d) `test_real` ingest (EGFxSet units + their `Clean` notes + a few pOD-set pedals).
 - wave 2: full render of v1, splits, hashing, data card, leakage tests, one-shot vocab overlap report → freeze.
 - wave 3 (separate session): gold pairing (4.5) + friend instructions.
 

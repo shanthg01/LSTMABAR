@@ -134,7 +134,7 @@ Module notes:
 
 | Source | Content | Role |
 |---|---|---|
-| DI guitar: Guitar-TECHS (CC BY 4.0, primary), EGFxSet clean notes (CC BY 4.0), own DI recordings; IDMT-SMT-Guitar private-only (CC BY-NC-ND); EGDB pending license confirmation | Clean input audio | Dry inputs |
+| DI guitar: Guitar-TECHS (CC BY 4.0, primary), EGFxSet clean notes (CC BY 4.0; test-only, see below), own DI recordings; IDMT-SMT-Guitar private-only (CC BY-NC-ND); EGDB pending license confirmation | Clean input audio | Dry inputs |
 | Synthetic renders | dry × (pedal preset \| free board) × random knob settings → wet, via **white-box** sims for TS808 and DS-1 (labels from a per-pedal calibration table) and the **grey-box** for the other pedals and the free board | Training pairs with **ground-truth params** |
 | Real pedal recordings: EGFxSet (CC BY 4.0, primary; test-only, including its clean notes), pOD-set (CC BY-NC 4.0, gain sweeps), ToneTwist AFx analog subset (internal numbers only) | Real hardware outputs | Sim-to-real test set |
 | TONE3000 (ex-ToneHunt) NAM captures, hand-picked (~20–50; site ToS forbids bulk/scripted download); manifest in repo, `.nam` files never redistributed. **Deferred past dataset v1** (license emails pending) | Named community captures of real pedals | Extra realistic renders + names for text grounding |
@@ -224,12 +224,12 @@ legacy/                  # v1 code, read-only reference for the paper
 | Risk | Mitigation |
 |---|---|
 | CLAP barely knows guitar-tone words ("fizzy", "mid hump") | **Confirmed by spike A** (mean word AUC ≈ 0.6 in both checkpoints; jargon fails; brightness is model-dependent; only the drive-amount contrast is robust). Text side is learned from paired synthetic data into parameter space; `L_clap` is restricted to drive amount; evaluation leans on descriptors, the gold set and listening tests |
-| Sim-to-real gap | White-box data + NAM captures; dedicated real-pedal test set |
+| Sim-to-real gap | White-box data + NAM captures (deferred past dataset v1, §10 2026-10-12); dedicated real-pedal test set |
 | Template captions reintroduce circularity | Gold human set as the headline metric; held-out vocabulary audit |
 | Aliasing / vanishing gradients in clipping | Oversampling, smooth surrogates, gradient-flow tests |
 | Dataset licenses / scraping ToS | License check before ingestion; curated KB first, scraping only where permitted |
 | Compute (local machine has no NVIDIA GPU) | Local CPU: DSP dev, tests, rendering (multiprocess), CLAP embedding caching, head-only training on cached embeddings, demo inference. Colab GPU: training with `L_audio`/`L_clap` through the oversampled pedalboard, multi-seed sweeps. The code stays device-agnostic, and Colab notebooks only `pip install` the repo and call the CLI |
-| Solo bandwidth | Demo-first milestones (Demo v0 early on baselines, Demo v1 on the model); white-box sims limited to 2 circuits; NAM captures as the realism fallback; listening test sized to ~5–8 friends |
+| Solo bandwidth | Demo-first milestones (Demo v0 early on baselines, Demo v1 on the model); white-box sims limited to 2 circuits; NAM captures as the realism fallback (deferred past dataset v1); listening test sized to ~5–8 friends |
 
 ## 10. Decisions log
 
