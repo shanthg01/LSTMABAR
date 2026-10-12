@@ -322,7 +322,7 @@ Prepared 2026-10-12 for a fresh session. Read this, CLAUDE.md, design §5 (data)
   - The two train players give at most ~4k non-overlapping 3 s clips (fewer after skipping silence).
   - Plan ~3–4k train clips × 6 renders (≥ 18k train pairs). Val and test clips (player 3, split by recording) get 4 renders each, and `test_unseen_pedal` 2 `rat` renders per test clip.
   - The data card reports the exact per-split counts.
-- **R8. Throughput gate in wave 0.** Benchmark render + analysis per item on the fixtures and extrapolate to 20k items. If it exceeds ~12 h on the local CPU, cut the analysis cost first (`max_frames`, analysis on a subset), not the dataset.
+- **R8. Throughput gate in wave 0.** Benchmark render + analysis per item on the fixtures and extrapolate to 20k items. If it exceeds ~12 h on the local CPU, cut the analysis cost first (`max_frames`, analysis on a subset), not the dataset. *Measured in task 4.2 (`reports/render_bench.md`, fixtures, loaded CPU): ~24 h for the planned ~31k items at `max_frames: 64` on 4 workers, ~9.6 h at 16, so `analysis.max_frames` is now 16. Wet analysis dominates (~2.4 s/item at 16 frames); pYIN is ~3 s per dry clip.*
 - **R9. Downloads.** List the Zenodo record's files through its API first. Download one archive at a time, extract the DI tracks, and delete the archive before the next one, so the transient peak is one archive.
 - **R10. Gold set status.** Per its commit history, `instructions_human.yaml` holds *simulated*-human items; the per-item `source` field is authoritative. Real `human` items (friends, owner action) are needed before P5 reports a headline number.
 

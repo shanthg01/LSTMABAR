@@ -5,19 +5,22 @@ import pytest
 
 from lstmabar.analysis.archetypes import reference_spectra
 from lstmabar.analysis.descriptors import (
+    SIGNAL_KEYS,
     crest_factor,
     crest_factor_db,
     describe,
+    harmonic_descriptors,
     harmonic_energy_fraction,
     harmonic_slope,
     odd_even_ratio,
     rms,
     rms_db,
+    signal_descriptors,
     spectral_centroid,
     spectral_rolloff,
 )
-from lstmabar.analysis.harmonics import harmonic_amplitudes
-from tests.analysis.signals import SR, oscillator
+from lstmabar.analysis.harmonics import harmonic_amplitudes, harmonic_profile
+from tests.analysis.signals import SR, constant_track, oscillator
 
 F0 = 220.0
 
@@ -93,3 +96,25 @@ def test_silence():
     assert rms_db(z) < -150
     d = describe(z, SR, f0=F0)
     assert all(np.isnan(d[k]) for k in HARMONIC_KEYS)  # all frames below min_rms_db
+
+
+def test_describe_with_precomputed_track(monkeypatch):
+    monkeypatch.setitem(sys.modules, "librosa", None)  # the track makes pYIN unnecessary
+    x = oscillator("square", F0, 1.0, 0.5)
+    d = describe(x, SR, track=constant_track(x, F0), max_frames=8)
+    ref = describe(x, SR, f0=F0)
+    assert d["odd_even_db"] > 60 and d["f0_hz"] == pytest.approx(F0, rel=1e-3)
+    assert d["slope_db_per_oct"] == pytest.approx(ref["slope_db_per_oct"], abs=0.05)
+    assert d.keys() == ref.keys() == set(SIGNAL_KEYS) | HARMONIC_KEYS
+    unvoiced = describe(x, SR, track=constant_track(x, F0, voiced=False))
+    assert all(np.isnan(unvoiced[k]) for k in HARMONIC_KEYS)
+    assert unvoiced["centroid_hz"] == pytest.approx(d["centroid_hz"])
+
+
+def test_signal_and_harmonic_descriptors_split():
+    x = oscillator("saw", F0, 0.5, 0.5)
+    assert signal_descriptors(x, SR).keys() == set(SIGNAL_KEYS)
+    assert all(np.isnan(v) for v in harmonic_descriptors(None).values())
+    prof = harmonic_profile(x, SR, f0=F0)
+    assert harmonic_descriptors(prof)["odd_even_db"] == pytest.approx(-3.0, abs=0.1)
+    assert harmonic_descriptors(prof) == {k: describe(x, SR, f0=F0)[k] for k in HARMONIC_KEYS}

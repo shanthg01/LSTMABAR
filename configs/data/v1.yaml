@@ -55,8 +55,16 @@ calibration:                   # R4
 
 analysis:
   n_harmonics: 10
-  max_frames: 64
+  max_frames: 16               # R8: 64 frames priced at ~24 h for v1 on 4 workers (bench),
+                               # 16 at ~9 h; see reports/render_bench.md
   min_voiced_fraction: 0.3     # below this, harmonic descriptors are NaN (decision 5)
+
+bench:                         # R8 throughput gate (`lstmabar data bench`)
+  planned_clips: {train: 3500, val: 1000, test: 1000}   # R7 plan used for the extrapolation
+  max_clips: 6                 # dry clips timed (the CLI's --limit overrides it)
+  items_per_pedal: 2           # timed renders per KB pedal (+ one per free-board scenario)
+  max_frames_options: [64, 32, 16, 8]   # analysis.max_frames values priced (R8 reduction)
+  budget_hours: 12.0
 
 captions:                      # R1
   model: claude-haiku-5-5
