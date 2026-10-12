@@ -8,12 +8,12 @@ name: data_v1
 data:
   version: v1
   # Everything audio lives under gitignored dirs; only manifests/hashes/calibration are committed.
-  sources_dir: data/sources        # raw downloads, extracted DI (gitignored)
-  rendered_dir: data/rendered      # dry clips + wet shards (gitignored)
-  cache_dir: data/cache            # f0 tracks, LLM cache + spend ledger (gitignored)
-  test_real_dir: data/test_real    # real-pedal test audio (gitignored)
-  manifests_dir: data/manifests    # committed manifests, index, hashes
-  calibration_dir: data/calibration  # committed white-box calibration tables (R4)
+  sources_dir: ${paths.data}/sources        # raw downloads, extracted DI (gitignored)
+  rendered_dir: ${paths.data}/rendered      # dry clips + wet shards (gitignored)
+  cache_dir: ${paths.data}/cache            # f0 tracks, LLM cache + spend ledger (gitignored)
+  test_real_dir: ${paths.data}/test_real    # real-pedal test audio (gitignored)
+  manifests_dir: ${paths.data}/manifests    # committed manifests, index, hashes
+  calibration_dir: ${paths.data}/calibration  # committed white-box calibration tables (R4)
 
 ingest:
   # Guitar-TECHS DI is the only training DI (R2); EGFxSet is test-only (task 4.4).
@@ -22,7 +22,7 @@ ingest:
   min_rms_dbfs: -45.0         # skip near-silent windows (dBFS RMS of the clip)
   dry_peak_dbfs: -1.0         # canonical stored dry level (R3)
   dry_subtype: PCM_16
-  max_clips: null             # cap for smoke runs
+  max_clips: null             # cap for smoke runs (the CLI's --limit overrides it)
   # Performer split (decision 11). Filled in by the ingest task from the dataset's naming.
   train_performers: []
   heldout_performer: null
@@ -49,6 +49,9 @@ calibration:                   # R4
   sine_levels_dbfs: [-24.0, -15.0, -6.0]
   max_jump: 0.25               # max normalized-param jump between grid neighbours before
                                # falling back to the nearest grid point
+  f0s_hz: [82.41, 146.83, 329.63]   # E2, D3, E4
+  fit_steps: 300               # optimizer steps per grid fit
+  restarts: 1                  # extra random starts at the gain = 0 row only
 
 analysis:
   n_harmonics: 10
@@ -65,6 +68,18 @@ captions:                      # R1
   max_usd: 2.5
   pilot_items: 100
   price_per_mtok: {input: 0.05, output: 0.25}   # Batches API price for the model above
+  output_tokens_per_caption: 45   # output estimate until the pilot measures it (R1)
+  max_resubmits: 1                # errored/expired requests are resubmitted at most once
+
+test_real:                     # task 4.4; audio stays in data.test_real_dir (gitignored)
+  egfxset:
+    units: [TubeScreamer, RAT, BluesDriver]   # dataset folder names; confirm on download
+    kb_map: {TubeScreamer: ts808, RAT: rat, BluesDriver: null}
+  podset:
+    max_pedals: 5
+    pedals: []                 # chosen at download time (R9: one archive at a time)
+  tonetwist:
+    enabled: false             # internal numbers only; opt-in
 
 splits:
   seed: 0

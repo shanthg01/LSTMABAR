@@ -26,8 +26,14 @@ from lstmabar.data.schema import (
     to_dict,
     write_jsonl,
 )
-from lstmabar.data.splits import assign_clip_split, unit_hash
-from lstmabar.data.vocab import holdout_names, mentions, names_for, strip_allowed_names
+from lstmabar.data.splits import assign_clip_split, heldout_split_map, unit_hash
+from lstmabar.data.vocab import (
+    caption_violations,
+    holdout_names,
+    mentions,
+    names_for,
+    strip_allowed_names,
+)
 from lstmabar.dsp.pedalboard import default_pedalboard
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -45,6 +51,7 @@ def _item(**kw) -> RenderItem:
         pedal_knobs={"sustain": 0.5},
         board_params={"drive": {"gain_db": 0.4, "enabled": 1.0}},
         board_params_derived=None,
+        label_source="derived",
         clamped=False,
         clamp_notes=[],
         input_peak_dbfs=-12.0,
@@ -83,9 +90,55 @@ def test_from_dict_rejects_unknown_fields():
         from_dict(RenderItem, d)
 
 
-def test_all_records_constructible():
-    for cls in (DryClip, TestRealItem):
-        assert cls.__dataclass_fields__  # frozen dataclasses with explicit schemas
+def _clip(**kw) -> DryClip:
+    base = dict(
+        clip_id="gt-p1-r1-0",
+        source="guitar_techs",
+        performer="p1",
+        recording_id="r1",
+        technique="chords",
+        source_file="guitar_techs/p1/di/r1.wav",
+        offset_s=1.5,
+        duration_s=3.0,
+        sample_rate=44100,
+        source_gain_db=6.0,
+        path="v1/dry/gt-p1-r1-0.flac",
+    )
+    base.update(kw)
+    return DryClip(**base)
+
+
+def test_dryclip_and_test_real_round_trip(tmp_path):
+    real = TestRealItem(
+        item_id="egf-rat-1",
+        dataset="egfxset",
+        device="RAT",
+        family="distortion",
+        kb_pedal_id="rat",
+        settings={"distortion": 0.5},
+        dry_path=DataLayout.test_real_relpath("egfxset", "clean", "1.wav"),
+        wet_path=DataLayout.test_real_relpath("egfxset", "rat", "1.wav"),
+        sample_rate=48000,
+        internal_only=False,
+        license="CC BY 4.0",
+    )
+    write_jsonl(tmp_path / "a.jsonl", [_clip()])
+    write_jsonl(tmp_path / "b.jsonl", [real])
+    assert list(read_jsonl(tmp_path / "a.jsonl", DryClip)) == [_clip()]
+    assert list(read_jsonl(tmp_path / "b.jsonl", TestRealItem)) == [real]
+
+
+@pytest.mark.parametrize("bad", [r"C:\x.flac", "C:/x.flac", "/abs/x.flac", r"a\b.flac", "../x"])
+def test_record_paths_must_be_relative_posix(bad):
+    with pytest.raises(ValueError):
+        _clip(path=bad)
+    with pytest.raises(ValueError):
+        _item(wet_path=bad)
+
+
+def test_numpy_and_tensor_values_serialize():
+    d = to_dict(_item(input_peak_dbfs=np.float32(-12.0), descriptors_wet={"x": torch.tensor(1.5)}))
+    assert json.dumps(d) and d["descriptors_wet"]["x"] == 1.5
 
 
 def test_board_float_round_trip():
@@ -133,16 +186,20 @@ def test_layout_paths_are_relative_posix(tmp_path):
 
 def test_splits():
     tp = ("a", "b")
-    assert assign_clip_split("guitar_techs", "a", "r1", tp, "c") == "train"
-    assert assign_clip_split("own", "me", "r1", tp, "c") == "test"
+    hmap = heldout_split_map([f"r{i}" for i in range(10)])
+    assert sorted(hmap.values()).count("val") == 5
+    # Order-independent, and small sets always get both splits.
+    assert heldout_split_map(reversed(list(hmap))) == hmap
+    assert set(heldout_split_map(["x", "y"]).values()) == {"val", "test"}
+    assert assign_clip_split("guitar_techs", "a", "r1", tp, "c", hmap) == "train"
+    assert assign_clip_split("own", "me", "r1", tp, "c", hmap) == "test"
+    assert assign_clip_split("guitar_techs", "c", "r7", tp, "c", hmap) == hmap["r7"]
     with pytest.raises(ValueError):
-        assign_clip_split("egfxset", "a", "r1", tp, "c")
+        assign_clip_split("egfxset", "a", "r1", tp, "c", hmap)
     with pytest.raises(ValueError):
-        assign_clip_split("guitar_techs", "zz", "r1", tp, "c")
-    heldout = [assign_clip_split("guitar_techs", "c", f"r{i}", tp, "c") for i in range(200)]
-    assert set(heldout) == {"val", "test"}
-    # Same recording -> same split, whatever else changes.
-    assert assign_clip_split("guitar_techs", "c", "r7", tp, "c") == heldout[7]
+        assign_clip_split("guitar_techs", "zz", "r1", tp, "c", hmap)
+    with pytest.raises(KeyError):
+        assign_clip_split("guitar_techs", "c", "unknown", tp, "c", hmap)
     assert 0.0 <= unit_hash("x") < 1.0
 
 
@@ -153,6 +210,19 @@ def test_vocab():
     assert not any(ch.isdigit() for ch in strip_allowed_names(text, allowed))
     assert "RAT" in holdout_names("rat") and "Fuzz Face" not in holdout_names("fuzz_face_si")
     assert mentions("grated cheese", ["RAT"]) == []
+    assert mentions("a DS‑1 buzz", allowed) == ["DS-1"]  # unicode hyphen
+    assert "ProCo" in holdout_names("rat")
+    assert caption_violations("a TS808 with a scooped DS-1 edge", allowed) == []
+    for bad in (
+        "boost it 6 dB",
+        "cut the lows at a hundred hz",
+        "around twelve o'clock",
+        "dimed gain",
+        "a 50% blend",
+    ):
+        assert caption_violations(bad, allowed), bad
+    assert caption_violations("a ProCo-style grind", allowed, holdout_names("rat"))
+    assert caption_violations("like one of those vintage fuzzes", allowed) == []
 
 
 def test_fixture_dataset(tmp_path):
@@ -161,7 +231,7 @@ def test_fixture_dataset(tmp_path):
     lay = DataLayout.from_config(cfg)
     assert len(clips) == 6 and lay.dry_manifest.exists()
     assert {c.split for c in clips if c.performer != "fx3"} == {"train"}
-    assert {c.split for c in clips if c.performer == "fx3"} <= {"val", "test"}
+    assert {c.split for c in clips if c.performer == "fx3"} == {"val", "test"}
     for c in clips:
         x, sr = levels.read_audio(lay.resolve_rendered(c.path))
         assert sr == 44100 and levels.peak_dbfs(x) == pytest.approx(-1.0, abs=0.01)

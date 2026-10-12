@@ -7,6 +7,7 @@ Renderer, caption and split code are built and tested against it.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 from omegaconf import DictConfig, OmegaConf
@@ -16,10 +17,10 @@ from lstmabar.config import load_config
 from lstmabar.data.layout import DataLayout
 from lstmabar.data.levels import normalize_peak, sha256_file, write_flac
 from lstmabar.data.schema import DryClip, write_jsonl
-from lstmabar.data.splits import assign_from_config
+from lstmabar.data.splits import assign_splits
 
 FIXTURE_PERFORMERS = ("fx1", "fx2", "fx3")
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(__file__).resolve().parents[3]  # src layout, editable install (uv)
 
 
 def fixture_config(root: str | Path, overrides: list[str] | None = None) -> DictConfig:
@@ -83,10 +84,12 @@ def make_fixture_dataset(
                     source_gain_db=gain_db,
                     path=rel,
                     sha256=sha256_file(path),
-                    split=assign_from_config("fixture", performer, recording, cfg),
+                    split="",
                     license="synthetic",
                 )
             )
+    splits = assign_splits(((c.source, c.performer, c.recording_id) for c in clips), cfg)
+    clips = [replace(c, split=s) for c, s in zip(clips, splits, strict=True)]
     write_jsonl(layout.dry_manifest, clips)
     return clips
 

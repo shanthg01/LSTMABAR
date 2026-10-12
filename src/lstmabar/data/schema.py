@@ -15,11 +15,13 @@ from __future__ import annotations
 import dataclasses
 import json
 import math
+import re
 from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal, TypeVar
 
+import numpy as np
 import torch
 
 from lstmabar.dsp.pedalboard import BoardParams
@@ -37,10 +39,40 @@ Engine = Literal["whitebox", "greybox"]
 
 FloatBoard = dict[str, dict[str, float]]
 
+LabelSource = Literal["derived", "calibrated", "calibrated_nearest", "free"]
+"""How ``RenderItem.board_params`` was produced: ``derive()`` (grey-box pedals), the
+calibration table (white-box, interpolated or nearest grid point, R4), or sampled directly
+(free board)."""
+
+_DRIVE = re.compile(r"^[A-Za-z]:")
+
+
+def check_relpath(value: str, what: str) -> None:
+    """Paths in records are relative POSIX: no drive letter, root, backslash or ``..``."""
+    if not value:
+        return
+    if _DRIVE.match(value) or value.startswith("/") or "\\" in value:
+        raise ValueError(f"{what} must be a relative POSIX path, got {value!r}")
+    if ".." in value.split("/"):
+        raise ValueError(f"{what} must not contain '..', got {value!r}")
+
+
+class _RelPaths:
+    """Mixin: validate the dataclass fields named in ``_PATH_FIELDS``."""
+
+    _PATH_FIELDS: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        for name in self._PATH_FIELDS:
+            check_relpath(getattr(self, name), f"{type(self).__name__}.{name}")
+
 
 @dataclass(frozen=True)
-class DryClip:
-    """One onset-aligned DI clip stored at ``ingest.dry_peak_dbfs`` (R3)."""
+class DryClip(_RelPaths):
+    """One onset-aligned DI clip stored at ``ingest.dry_peak_dbfs`` (R3). Written by ingest
+    only; nothing rewrites ``dry_clips.jsonl`` afterwards."""
+
+    _PATH_FIELDS = ("source_file", "path")
 
     clip_id: str  # stable, e.g. "gt-p1-<recording>-<offset ms>"
     source: str  # "guitar_techs" | "egfxset" | "own" | "fixture"
@@ -54,14 +86,19 @@ class DryClip:
     source_gain_db: float  # gain applied to the source to reach the stored peak
     path: str  # FLAC path relative to data.rendered_dir
     sha256: str = ""
-    split: str = ""  # "train" | "val" | "test" once assigned (splits.assign_clip_split)
-    voiced_fraction: float | None = None  # from the pYIN track of the dry clip
+    split: str = ""  # "train" | "val" | "test" (lstmabar.data.splits)
     license: str = ""
 
 
 @dataclass(frozen=True)
-class RenderItem:
-    """One wet render of a dry clip, with its labels and measured analysis."""
+class RenderItem(_RelPaths):
+    """One wet render of a dry clip, with its labels and measured analysis.
+
+    Analysis values may be ``None`` after a JSONL round-trip (NaN is stored as ``null``):
+    readers such as the caption code must treat ``None`` as "not measured".
+    """
+
+    _PATH_FIELDS = ("wet_path",)
 
     item_id: str  # "<clip_id>-r<k>"
     clip_id: str
@@ -73,12 +110,15 @@ class RenderItem:
     pedal_knobs: dict[str, float] | None  # pedal-space label (knob rotations in [0, 1])
     board_params: FloatBoard  # training label (calibrated for white-box, R4)
     board_params_derived: FloatBoard | None  # derive() label (pedal items only)
-    clamped: bool  # a derive() clamp fired (decision 10, R6)
+    label_source: str  # LabelSource
+    clamped: bool  # a derive() " clamped to " note fired (decision 10, R6): derived label
     clamp_notes: list[str]
     input_peak_dbfs: float  # level the dry clip was scaled to before the pedal (R3)
     wet_gain_db: float  # true wet = stored file * 10**(wet_gain_db / 20)
     wet_path: str  # relative to data.rendered_dir
     sha256: str = ""
+    label_clamp_notes: list[str] = field(default_factory=list)  # clamps in the calibrated label
+    voiced_fraction: float | None = None  # of the dry clip's pYIN track (decision 5)
     descriptors_dry: dict[str, float] = field(default_factory=dict)
     descriptors_wet: dict[str, float] = field(default_factory=dict)
     archetype_dry: dict[str, float] = field(default_factory=dict)  # ARCHETYPES + "noise"
@@ -98,10 +138,11 @@ class Caption:
 
 
 @dataclass(frozen=True)
-class TestRealItem:
+class TestRealItem(_RelPaths):
     """A real-pedal recording with its clean input (task 4.4)."""
 
     __test__ = False  # not a pytest test class
+    _PATH_FIELDS = ("dry_path", "wet_path")
 
     item_id: str
     dataset: str  # "egfxset" | "podset" | "tonetwist"
@@ -125,6 +166,8 @@ R = TypeVar("R", DryClip, RenderItem, Caption, TestRealItem)
 
 def _clean(v: Any) -> Any:
     """JSON-safe value: NaN/inf floats -> None, tuples -> lists, recursively."""
+    if isinstance(v, np.generic | torch.Tensor):
+        v = v.item()
     if isinstance(v, float):
         return v if math.isfinite(v) else None
     if isinstance(v, Mapping):
@@ -139,6 +182,8 @@ def to_dict(rec: Record) -> dict[str, Any]:
 
 
 def from_dict(cls: type[R], d: Mapping[str, Any]) -> R:
+    """Strict: unknown fields raise, so a schema change bumps ``SCHEMA_VERSION`` (recorded in
+    the dataset index) instead of being silently dropped by old readers."""
     names = {f.name for f in dataclasses.fields(cls)}
     unknown = set(d) - names
     if unknown:
@@ -186,11 +231,13 @@ __all__ = [
     "DryClip",
     "Engine",
     "FloatBoard",
+    "LabelSource",
     "RenderItem",
     "Scenario",
     "Split",
     "TestRealItem",
     "board_to_floats",
+    "check_relpath",
     "floats_to_board",
     "from_dict",
     "read_jsonl",

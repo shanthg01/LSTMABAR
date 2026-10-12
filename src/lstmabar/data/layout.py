@@ -113,6 +113,11 @@ class DataLayout:
     def test_real_manifest(self) -> Path:
         return self.manifests / "test_real.jsonl"
 
+    @staticmethod
+    def test_real_relpath(dataset: str, *parts: str) -> str:
+        """POSIX path relative to ``test_real`` (e.g. ``egfxset/rat/E2_1.wav``)."""
+        return "/".join((dataset, *parts))
+
     def calibration_table(self, pedal_id: str) -> Path:
         return self.calibration / f"{pedal_id}.json"
 

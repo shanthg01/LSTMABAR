@@ -19,6 +19,15 @@ from lstmabar.data.schema import FloatBoard
 
 
 @dataclass(frozen=True)
+class Label:
+    """Result of :meth:`CalibrationTable.lookup`."""
+
+    board: FloatBoard  # normalized params, full BoardParams layout incl. "enabled"
+    source: str  # "calibrated" (interpolated) | "calibrated_nearest" (fallback)
+    clamp_notes: list[str] = field(default_factory=list)  # e.g. level offset hit the range
+
+
+@dataclass(frozen=True)
 class CalibrationTable:
     """Fitted normalized board params on a knob grid for one white-box pedal.
 
@@ -45,12 +54,13 @@ class CalibrationTable:
     def save(self, path: str | Path) -> None:
         raise NotImplementedError("P4 resolution R4 (wave 1b-cal)")
 
-    def lookup(self, knobs: Mapping[str, float]) -> tuple[FloatBoard, bool]:
+    def lookup(self, knobs: Mapping[str, float]) -> Label:
         """Normalized label for full pedal ``knobs`` (rotations in [0, 1]).
 
-        Returns ``(board, fell_back)``: bilinear interpolation of the grid fits, or the nearest
-        grid point (``fell_back=True``) where neighbouring fits differ by more than
-        ``max_jump``. The level knob's analytic offset is added to ``drive.level_db``.
+        Bilinear interpolation of the grid fits (``source="calibrated"``), or the nearest grid
+        point (``"calibrated_nearest"``) where neighbouring fits differ by more than
+        ``max_jump``. The level knob's analytic offset is added to ``drive.level_db`` and
+        clamped to Drive's range; a clamp is reported in ``Label.clamp_notes``.
         """
         raise NotImplementedError("P4 resolution R4 (wave 1b-cal)")
 
@@ -59,4 +69,4 @@ def run(cfg, args) -> int:
     raise NotImplementedError("P4 resolution R4 (wave 1b-cal)")
 
 
-__all__ = ["CalibrationTable", "run"]
+__all__ = ["CalibrationTable", "Label", "run"]
