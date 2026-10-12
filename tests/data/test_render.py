@@ -210,7 +210,7 @@ class FakeTable:
     def __init__(self, pedal_id):
         self.pedal_id = pedal_id
 
-    def lookup(self, knobs):
+    def lookup(self, knobs, derived=None):
         board = board_to_floats(default_pedalboard().default_params(1))  # full layout
         board["compressor"]["enabled"] = 0.0
         board["drive"].update(gain_db=0.25, level_db=1.0)
