@@ -12,7 +12,7 @@ model selection (different player, guitar and content). So:
   first ``min(max(1, round(n * splits.val_recording_fraction)), n - 1)`` go to val (groups
   with a single recording stay in train). No recording is shared between splits, and the
   result does not depend on file order. On Guitar-TECHS only chords and scales have more than
-  one take per performer, so val holds chords and scales only (~7 % of P1/P2 time).
+  one take per performer, so val holds chords and scales only (~8 % of P1/P2 time).
 - ``train``: the remaining train-performer recordings.
 - Own DI (``source == "own"``): test only.
 - ``test_unseen_pedal`` is not a clip split: it is the set of holdout-pedal renders made on
