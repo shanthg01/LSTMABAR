@@ -729,11 +729,12 @@ def run(cfg, args) -> int:
         "shard_sha256": hashes,
         "fingerprint": fp,
     }
-    _write_atomic(layout.wet_dir / PLAN_FILE, json.dumps(plan, indent=1, sort_keys=True) + "\n")
     stale = sorted(
         p.name
         for p in layout.wet_dir.glob("shard-*")
-        if p.is_dir() and int(p.name.split("-")[1]) >= len(shards)
+        if p.is_dir()
+        and p.name.split("-", 1)[1].isdigit()
+        and int(p.name.split("-", 1)[1]) >= len(shards)
     )
     if stale:
         warnings.warn(
@@ -763,6 +764,9 @@ def run(cfg, args) -> int:
                 "clips": [to_dict(by_id[c]) for c in clip_ids],
             }
         )
+    # Written only after every DONE shard is known to match, so plan.json never describes a
+    # rejected plan.
+    _write_atomic(layout.wet_dir / PLAN_FILE, json.dumps(plan, indent=1, sort_keys=True) + "\n")
     _print_plan(specs, len(shards), len(jobs))
     workers = int(getattr(args, "workers", None) or cfg.render.workers)
     workers = max(1, min(workers, len(jobs)))

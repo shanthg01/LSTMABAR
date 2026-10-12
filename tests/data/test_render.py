@@ -277,9 +277,9 @@ def test_run_on_fixtures_end_to_end_and_resume(tmp_path, monkeypatch):
     fcfg = R.fixture_setup(cfg, args)
     layout = DataLayout.from_config(fcfg)
     items = _items(layout)
-    # 6 clips: 4 train + 1 val + 1 test (+1 unseen) at one render each.
-    assert len(items) == 7 and len(list(layout.wet_dir.glob("shard-*"))) == 3
-    assert Counter(i.split for i in items)["test_unseen_pedal"] == 1
+    # 6 clips (R11): 2 train + 2 val + 2 test (+2 unseen) at one render each.
+    assert len(items) == 8 and len(list(layout.wet_dir.glob("shard-*"))) == 3
+    assert Counter(i.split for i in items)["test_unseen_pedal"] == 2
     for i in items:
         assert layout.resolve_rendered(i.wet_path).exists()
         assert (i.split == "test_unseen_pedal") == (i.pedal_id == "rat")
@@ -295,7 +295,7 @@ def test_run_on_fixtures_end_to_end_and_resume(tmp_path, monkeypatch):
             assert i.voiced_fraction is None and i.archetype_wet["saw"] is None
     # Resume: finished shards are skipped, a partial one is rewritten.
     plan = json.loads((layout.wet_dir / R.PLAN_FILE).read_text(encoding="utf-8"))
-    assert plan["shards"] == 3 and plan["items"] == 7 and len(plan["shard_sha256"]) == 3
+    assert plan["shards"] == 3 and plan["items"] == 8 and len(plan["shard_sha256"]) == 3
     first = (layout.shard_dir(0) / R.ITEMS_FILE).stat().st_mtime_ns
     (layout.shard_dir(2) / DONE_MARKER).unlink()
     (layout.shard_dir(2) / "junk.flac").write_bytes(b"x")
