@@ -40,6 +40,9 @@ def add_data_parser(sub) -> None:
     p.add_argument("--fixtures", action="store_true", help="run on the synthetic fixture set")
     p.add_argument("--estimate", action="store_true", help="captions: price the run, no spend")
     p.add_argument("--pilot", action="store_true", help="captions: pilot batch only")
+    p.add_argument(
+        "--list", action="store_true", help="ingest/test-real: print the download plan; no download"
+    )
     p.add_argument("--limit", type=int, default=None, help="cap the number of clips/items")
     p.add_argument("--workers", type=int, default=None, help="override render.workers")
     p.add_argument("--quick", action="store_true", help="calibrate: tiny smoke-test grid")
@@ -53,6 +56,11 @@ def add_data_parser(sub) -> None:
         "--offgrid",
         action="store_true",
         help="calibrate --report-only: also run the off-grid held-out check (white-box)",
+    )
+    p.add_argument(
+        "--allow-derived-labels",
+        action="store_true",
+        help="render: label white-box items with derived params if a calibration table is missing",
     )
     p.add_argument("overrides", nargs="*", help="dotlist overrides, e.g. render.workers=2")
     p.set_defaults(func=cmd_data)

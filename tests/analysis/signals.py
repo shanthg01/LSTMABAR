@@ -2,7 +2,19 @@
 
 import numpy as np
 
+from lstmabar.analysis.harmonics import F0Track, default_frame_length
+
 SR = 44100
+
+
+def constant_track(x: np.ndarray, f0: float, voiced: bool = True, sr: int = SR) -> F0Track:
+    """A pYIN-shaped :class:`F0Track` at a fixed f0 (no librosa needed)."""
+    frame = default_frame_length(sr)
+    hop = frame // 4
+    n = 1 + len(x) // hop
+    flags = np.full(n, voiced)
+    f0s = np.full(n, f0 if voiced else np.nan)
+    return F0Track(np.arange(n) * hop / sr, f0s, flags, flags.astype(float), hop, frame)
 
 
 def oscillator(

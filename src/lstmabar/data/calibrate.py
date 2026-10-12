@@ -109,7 +109,8 @@ class CalibrationTable:
     def save(self, path: str | Path) -> None:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(self.to_dict(), indent=1) + "\n", encoding="utf-8")
+        text = json.dumps(self.to_dict(), indent=1) + "\n"
+        path.write_text(text, encoding="utf-8", newline="\n")
 
     # --- Lookup ---------------------------------------------------------------------------------
 
@@ -835,6 +836,28 @@ def format_report(rep: dict) -> str:
                 f"{o['residual_beats_nearest']}/{n} | {o['residual_beats_derived']}/{n} | "
                 f"{o['seconds']:.0f} |"
             )
+        lines += [
+            "",
+            "Caveats: only the knob settings are held out (the input signals are the fits' own), "
+            "the points are cell centres only, and the metric scores the fitted knobs (gates and "
+            "knobs copied from the derived board are not exercised). Labels jump at the border "
+            "between a fallback cell and an interpolated one (inherent to the per-cell rule).",
+        ]
+        for pid, o in og.items():
+            worse = [q for q in o["points"] if q["residual_db"] > q["derived_db"]]
+            if not worse:
+                continue
+            pts = ", ".join(
+                f"({q['gain']:g}, {q['tone']:g}): {q['residual_db']:.2f} vs {q['derived_db']:.2f}"
+                for q in worse
+            )
+            lines += [
+                "",
+                f"`{pid}`: the residual-lookup label is **worse than the derived label** at "
+                f"{len(worse)}/{len(o['points'])} held-out settings ((gain, tone): residual vs "
+                f"derived dB: {pts}); on average {o['residual_mean_db']:.2f} vs "
+                f"{o['derived_mean_db']:.2f} dB. These labels are used for training as is.",
+            ]
     for p in rep["pedals"].values():
         g, t = p["gain_knob"], p["tone_knob"]
         lines += [
@@ -1014,9 +1037,11 @@ def write_report(rep: dict, report_dir: str | Path) -> None:
     report_dir = Path(report_dir)
     report_dir.mkdir(parents=True, exist_ok=True)
     (report_dir / f"{REPORT_NAME}.json").write_text(
-        json.dumps(rep, indent=1) + "\n", encoding="utf-8"
+        json.dumps(rep, indent=1) + "\n", encoding="utf-8", newline="\n"
     )
-    (report_dir / f"{REPORT_NAME}.md").write_text(format_report(rep), encoding="utf-8")
+    (report_dir / f"{REPORT_NAME}.md").write_text(
+        format_report(rep), encoding="utf-8", newline="\n"
+    )
 
 
 def rebuild_report(cfg, offgrid: bool = False, log=None) -> dict:
