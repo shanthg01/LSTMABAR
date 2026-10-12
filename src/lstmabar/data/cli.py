@@ -42,6 +42,8 @@ def add_data_parser(sub) -> None:
     p.add_argument("--pilot", action="store_true", help="captions: pilot batch only")
     p.add_argument("--limit", type=int, default=None, help="cap the number of clips/items")
     p.add_argument("--workers", type=int, default=None, help="override render.workers")
+    p.add_argument("--quick", action="store_true", help="calibrate: tiny smoke-test grid")
+    p.add_argument("--pedals", nargs="+", default=None, help="calibrate: subset of pedal ids")
     p.add_argument("overrides", nargs="*", help="dotlist overrides, e.g. render.workers=2")
     p.set_defaults(func=cmd_data)
 
