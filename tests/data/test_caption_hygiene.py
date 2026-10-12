@@ -9,9 +9,14 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
+DATA_SRC = REPO_ROOT / "src" / "lstmabar" / "data"
 CAPTION_FILES = [
-    REPO_ROOT / "src" / "lstmabar" / "data" / "captions.py",
-    # caption template data files would be listed here; templates currently live in code.
+    DATA_SRC / "captions.py",
+    DATA_SRC / "vocab.py",  # caption vocabulary rules shared with the leakage tests
+    # caption template data files (none yet; templates live in code) are picked up below
+    *sorted(DATA_SRC.glob("caption*.yaml")),
+    *sorted(DATA_SRC.glob("caption*.json")),
+    *sorted(DATA_SRC.glob("templates/**/*")),
 ]
 
 _FORBIDDEN = re.compile("g" + "old", re.IGNORECASE)  # split so this file does not match itself

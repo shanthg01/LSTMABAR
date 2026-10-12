@@ -13,7 +13,14 @@ from lstmabar.data import captions as cap
 from lstmabar.data.fixtures import fixture_config
 from lstmabar.data.layout import DataLayout
 from lstmabar.data.schema import Caption, RenderItem, read_jsonl, write_jsonl
-from lstmabar.data.vocab import PEDAL_ALIASES, caption_violations, holdout_names, mentions
+from lstmabar.data.vocab import (
+    PEDAL_ALIASES,
+    caption_violations,
+    forbidden_names,
+    holdout_names,
+    item_caption_violations,
+    mentions,
+)
 
 HOLDOUT = "rat"
 
@@ -40,8 +47,19 @@ class FakeClient:
     ``rewrite(template)`` -> paraphrase text (or None to omit the entry).
     """
 
-    def __init__(self, rewrite=default_rewrite, outcome=None, shuffle=True, raw=None):
+    def __init__(
+        self,
+        rewrite=default_rewrite,
+        outcome=None,
+        shuffle=True,
+        raw=None,
+        create_error=None,
+        count_error=None,
+    ):
         self.rewrite = rewrite
+        self.create_error = create_error  # exception raised by batches.create
+        self.count_error = count_error  # exception raised by count_tokens
+        self._opts = None
         self.outcome = outcome or (lambda cid, n: "succeeded")
         self.shuffle = shuffle
         self.raw = raw  # override the reply text entirely
@@ -54,12 +72,22 @@ class FakeClient:
             ),
         )
 
+    def with_options(self, **kw):
+        self._opts = kw
+        return self
+
     def _count(self, **kw):
         assert set(kw) <= {"model", "system", "messages", "thinking", "output_config"}
         self.count_calls += 1
+        if self.count_error is not None:
+            raise self.count_error
         return SimpleNamespace(input_tokens=1000)
 
     def _create(self, requests):
+        assert self._opts == {"max_retries": 0}, "batches.create must not use SDK retries"
+        self._opts = None
+        if self.create_error is not None:
+            raise self.create_error
         self.created.append(list(requests))
         return SimpleNamespace(id=f"msgbatch_{len(self.created)}", processing_status="in_progress")
 
@@ -87,8 +115,8 @@ class FakeClient:
                     ]
                     text = json.dumps({"captions": entries[::-1]})  # entries in any order
                 res = SimpleNamespace(type="succeeded", message=_message(text))
-            elif kind in ("errored", "invalid"):
-                etype = "invalid_request_error" if kind == "invalid" else "api_error"
+            elif kind in ("errored", "invalid") or kind.endswith("_error"):
+                etype = {"invalid": "invalid_request_error", "errored": "api_error"}.get(kind, kind)
                 res = SimpleNamespace(
                     type="errored",
                     error=SimpleNamespace(type="error", error=SimpleNamespace(type=etype)),
@@ -194,7 +222,8 @@ def test_templates_never_contain_numbers_or_leaks():
         for c in cap.template_captions(it, 2, 0.25, HOLDOUT):
             allowed, forbidden = _rules(c, it)
             assert caption_violations(c.text, allowed, forbidden) == [], c.text
-            assert cap.check_caption(c.text, allowed, forbidden) == [], c.text
+            v = item_caption_violations(c.text, it.pedal_id, c.names_pedal, HOLDOUT, it.split)
+            assert v == [], c.text
             # unnamed captions never mention any pedal name
             if not c.names_pedal:
                 assert not mentions(c.text, [n for ns in PEDAL_ALIASES.values() for n in ns])
@@ -569,3 +598,201 @@ def test_request_ids_carry_no_digits_and_schema_is_strict(cfg):
     schema = params["output_config"]["format"]["schema"]
     assert schema["additionalProperties"] is False
     assert "never" in cap.SYSTEM_PROMPT.lower()
+
+
+# --------------------------------------------------------------------------- review fixes
+
+
+class _Status(Exception):
+    def __init__(self, status_code):
+        super().__init__(f"status {status_code}")
+        self.status_code = status_code
+
+
+def test_ambiguous_create_failure_stays_in_flight(cfg):
+    client = FakeClient(create_error=TimeoutError("lost response"))
+    para = _para(cfg, client)
+    with pytest.raises(cap.SubmitUncertain):
+        para.submit(["a warm overdrive"])
+    ledger = cap.SpendLedger(para.ledger.path)
+    assert ledger.in_flight() > 0 and ledger.spent() == 0
+    for err in (_Status(500), _Status(408)):
+        client.create_error = err
+        with pytest.raises(cap.SubmitUncertain):
+            para.submit(["a warm overdrive"])
+    assert len(ledger.pending()) == 3
+
+
+def test_definite_4xx_create_failure_closes_entry_at_zero(cfg):
+    client = FakeClient(create_error=_Status(400))
+    para = _para(cfg, client)
+    with pytest.raises(_Status):
+        para.submit(["a warm overdrive"])
+    ledger = cap.SpendLedger(para.ledger.path)
+    assert ledger.in_flight() == 0 and ledger.spent() == 0
+    assert [r["status"] for r in ledger.state().values()] == ["rejected"]
+
+
+def test_run_returns_nonzero_on_ambiguous_submit(cfg):
+    _write_shards(cfg, 1, 10)
+    client = FakeClient(create_error=ConnectionError("reset"))
+    assert cap.run(cfg, _args(), client_factory=lambda: client) == 3
+    assert cap.SpendLedger(DataLayout.from_config(cfg).ledger).in_flight() > 0
+
+
+def test_cap_uses_worst_case_not_estimate(cfg):
+    layout = DataLayout.from_config(cfg)
+    texts = [f"tone {chr(97 + i % 26)}{chr(97 + i // 26)}" for i in range(50)]
+    client = FakeClient()
+    est = cap.estimate(texts, cfg.captions, layout, client)
+    assert est.max_output_tokens == 2 * cap.max_tokens_for(25)
+    assert est.worst_usd == pytest.approx((2000 * 0.05 + est.max_output_tokens * 0.25) / 1e6)
+    assert est.worst_usd > est.usd
+    # spent leaves room for the estimate but not for the worst case
+    room = (est.usd + est.worst_usd) / 2
+    ledger = cap.SpendLedger(layout.ledger)
+    ledger.append("submitted", "old", estimate_usd=0.0)
+    ledger.append("ended", "old", cost_usd=float(cfg.captions.max_usd) - room)
+    with pytest.raises(cap.BudgetExceeded):
+        _para(cfg, client).submit(texts)
+    assert client.created == []
+    # in-flight entries count at their worst case
+    layout.ledger.unlink()
+    ledger.append("submitted", "x", estimate_usd=0.1, worst_usd=float(cfg.captions.max_usd))
+    assert ledger.in_flight() == pytest.approx(0.1)
+    with pytest.raises(cap.BudgetExceeded):
+        _para(cfg, client).submit(texts[:1])
+
+
+def test_cache_written_before_ended(cfg):
+    client = FakeClient()
+    para = _para(cfg, client)
+    order = []
+    orig_put, orig_append = para.cache.put_many, para.ledger.append
+
+    def put(*a, **k):
+        order.append("cache")
+        return orig_put(*a, **k)
+
+    def append(ev, *a, **k):
+        order.append(ev)
+        return orig_append(ev, *a, **k)
+
+    para.cache.put_many = put
+    para.ledger.append = append
+    para.run(["a dark fuzz"])
+    assert order.index("cache") < order.index("ended")
+
+
+def test_non_retryable_errors(cfg):
+    for etype in ("authentication_error", "billing_error", "permission_error"):
+        client = FakeClient(outcome=lambda cid, n, e=etype: e)
+        para = _para(cfg, client)
+        para.run([f"a fuzzy tone {etype}"])
+        assert len(client.created) == 1  # not resubmitted
+        assert f"a fuzzy tone {etype}" not in para.cache  # logged, not cached
+    client = FakeClient(outcome=lambda cid, n: "invalid")
+    para = _para(cfg, client)
+    para.run(["an invalid one"])
+    assert "an invalid one" in para.cache and para.cache.get("an invalid one") is None
+    client2 = FakeClient()
+    _para(cfg, client2).run(["an invalid one"])
+    assert client2.created == []  # cached as failed: never resubmitted
+
+
+def test_resume_keeps_resubmit_count(cfg):
+    max_re = int(cfg.captions.max_resubmits)
+    # an earlier run submitted its last allowed attempt and crashed: errors are final
+    client = FakeClient(outcome=lambda cid, n: "errored")
+    _para(cfg, client).submit(["a gritty tone"], attempt=max_re)
+    _para(cfg, client).run(["a gritty tone"])
+    assert len(client.created) == 1  # collected, not resubmitted again
+    # an attempt-0 batch that errors gets exactly max_resubmits more tries after resuming
+    client = FakeClient(outcome=lambda cid, n: "errored")
+    _para(cfg, client).submit(["a crunchy tone"], attempt=0)
+    _para(cfg, client).run(["a crunchy tone"])
+    assert len(client.created) == 1 + max_re
+    assert client.created[-1][0]["custom_id"].startswith(f"a{max_re}-")
+
+
+def test_ledger_lock_refuses_concurrent_run(cfg):
+    layout = DataLayout.from_config(cfg)
+    client = FakeClient()
+    with cap.LedgerLock(layout.ledger):
+        with pytest.raises(cap.LedgerLocked):
+            _para(cfg, client).run(["a clean tone"])
+        _write_shards(cfg, 1, 5)
+        assert cap.run(cfg, _args(), client_factory=lambda: client) == 3
+    assert client.created == []
+    _para(cfg, client).run(["a clean tone"])  # lock released
+    assert len(client.created) == 1
+
+
+def test_estimate_falls_back_when_count_tokens_fails(cfg):
+    client = FakeClient(count_error=ConnectionError("no network"))
+    est = cap.estimate(["a bright tone"], cfg.captions, DataLayout.from_config(cfg), client)
+    assert est.input_source == "approx" and est.input_tokens > 0
+
+
+def test_prompt_hash_pinned_to_version(cfg):
+    # editing SYSTEM_PROMPT or OUTPUT_SCHEMA must come with a captions.prompt_version bump
+    # (and a new pin here); the hash is also part of every cache key
+    pins = {"p1": "d9294614b618db3a"}
+    assert pins[str(cfg.captions.prompt_version)] == cap.PROMPT_HASH
+    assert cap.cache_key("t", "m", "p1") != cap.cache_key("t", "m", "p2")
+
+
+def test_kb_character_dropped_when_measured():
+    it = _item(
+        pedal_id="ts808",
+        descriptors_wet={"harmonic_energy_fraction": 0.12, "odd_even_db": 12.0},
+        descriptors_dry={"harmonic_energy_fraction": 0.0},
+    )
+    a = cap.attributes(it)
+    assert a.character == "gritty"
+    assert "smooth" not in a.kb
+
+
+def test_modifiers_not_doubled():
+    for it in cap.synthetic_items(3000, HOLDOUT, seed=12):
+        text = cap.template_captions(it, 1, 0.25, HOLDOUT)[0].text
+        assert " and with " not in text, text
+        assert "make my guitar into" not in text
+
+
+def test_vocab_forbidden_names_shared_rule():
+    f = forbidden_names("ds1", False, HOLDOUT, "train")
+    assert "DS-1" in f and "RAT" in f and "Blues Driver" in f
+    f = forbidden_names("ds1", True, HOLDOUT, "train")
+    assert "DS-1" not in f and "Tube Screamer" in f
+    assert "RAT" not in forbidden_names(HOLDOUT, True, HOLDOUT, "test_unseen_pedal")
+    assert "RAT" in forbidden_names(HOLDOUT, True, HOLDOUT, "test")
+    assert item_caption_violations("a Boss DS-1 tone", "ds1", True, HOLDOUT, "train") == []
+    assert item_caption_violations("a Boss tone", "ds1", False, HOLDOUT, "train")
+
+
+def test_cli_accepts_overrides_after_flags(monkeypatch):
+    from lstmabar import cli
+    from lstmabar.data import cli as data_cli
+
+    seen = {}
+
+    def fake_cmd(args):
+        seen["args"] = args
+        return 0
+
+    real_build = cli.build_parser
+
+    def build():
+        parser = real_build()
+        data = parser._subparsers._group_actions[0].choices["data"]
+        data.set_defaults(func=fake_cmd)
+        return parser
+
+    monkeypatch.setattr(cli, "build_parser", build)
+    assert data_cli.cmd_data is not fake_cmd
+    assert cli.main(["data", "captions", "--estimate", "a.b=1", "--limit", "3", "c=2"]) == 0
+    a = seen["args"]
+    assert a.estimate and a.limit == 3 and a.overrides == ["a.b=1", "c=2"]
+    with pytest.raises(SystemExit):
+        cli.main(["data", "captions", "--bogus"])

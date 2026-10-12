@@ -48,7 +48,7 @@ data:
 Analysis values that are ``None``/NaN are never captioned. Pedal names appear in only
 ``captions.pedal_name_fraction`` of pedal items, only as :data:`vocab.PEDAL_ALIASES`, and the
 holdout pedal (``render.holdout_pedal``) is never named outside ``test_unseen_pedal``. Every
-caption passes :func:`check_caption` (``vocab.caption_violations`` plus extra brand names).
+caption passes :func:`vocab.item_caption_violations` (the rule shared with the leakage tests).
 
 **Paraphrase.** Unique template texts not yet in the cache are sent through the Message
 Batches API (``captions.model``, thinking disabled, effort low, JSON-schema output keyed by
@@ -61,12 +61,19 @@ dropped and only the template remains (no paid retry).
 endpoint on the largest request x number of requests; output = captions x
 ``captions.output_tokens_per_caption`` or the pilot's measured value) and spends nothing.
 Every submit is recorded in the ledger (``DataLayout.ledger``) *before* the batch is created;
-a batch counts at its estimate until its results are in, then at its actual usage priced by
-``captions.price_per_mtok``. A submit is refused when spent + in flight + new estimate >
-``captions.max_usd``. ``--pilot`` runs ``captions.pilot_items`` items and records the measured
-output tokens per caption. Errored/expired requests are resubmitted at most
-``captions.max_resubmits`` times. The API key is read only from ``ANTHROPIC_API_KEY`` by the
-SDK client and never logged or written.
+a batch is in flight until its results are in, then it counts at its actual usage priced by
+``captions.price_per_mtok``. The cap is hard: a submit is refused when spent + in flight +
+new batch > ``captions.max_usd``, with in-flight and new batches counted at their **worst
+case** (input estimate + every request at its ``max_tokens``); the estimate is shown and
+logged alongside. The create call runs without SDK retries (a retry after a lost response
+could create a second, unrecorded batch); an ambiguous failure leaves the entry in flight
+for the owner to close (see :class:`SpendLedger`), a definite 4xx closes it at cost 0. One
+run at a time (:class:`LedgerLock`). ``--pilot`` runs ``captions.pilot_items`` items and
+records the measured output tokens per caption. Errored/expired requests are resubmitted at
+most ``captions.max_resubmits`` times (counted across resumed runs); invalid requests are
+cached as failed and auth/billing/permission errors are logged, neither is resubmitted. The
+API key is read only from ``ANTHROPIC_API_KEY`` by the SDK client and never logged or
+written.
 """
 
 from __future__ import annotations
@@ -88,12 +95,11 @@ from typing import Any
 from lstmabar.data.layout import DONE_MARKER, DataLayout
 from lstmabar.data.schema import Caption, RenderItem, read_jsonl, write_jsonl
 from lstmabar.data.vocab import (
-    OTHER_DEVICE_NAMES,
     PEDAL_ALIASES,
-    caption_violations,
-    holdout_names,
+    allowed_names,
+    forbidden_names,
+    item_caption_violations,
     mentions,
-    strip_allowed_names,
 )
 
 # --------------------------------------------------------------------------- KB vocabulary
@@ -141,32 +147,11 @@ _KB_SKIP = {"sweepable treble"}  # a property of the pedal, not of a sound
 _KB_COMP = {"compressed", "sustaining"}
 _KB_GAIN = {"saturated", "high-gain fuzz"}
 _KB_HIGH_GAIN = {"aggressive", "harsh", "hard-clipped", "compressed", "sustaining", "thick"}
+_KB_SMOOTH = {"smooth", "creamy"}
+_KB_ROUGH = {"gritty", "harsh", "aggressive", "crunchy", "hard-clipped"}
 _KB_ADJ = {"high-gain fuzz": "high-gain"}  # KB phrases that already contain a family noun
 _NAME_SKIP = {"ProCo", "Pro Co"}  # brand-only aliases: valid names, but not used by templates
 
-EXTRA_BRANDS: tuple[str, ...] = (
-    "Boss",
-    "Ibanez",
-    "Electro-Harmonix",
-    "EHX",
-    "Dallas Arbiter",
-    "Arbiter",
-    "Klon",
-    "Centaur",
-    "Marshall",
-    "Fender",
-    "Vox",
-    "Mesa",
-    "Boogie",
-    "MXR",
-    "Dunlop",
-    "Fulltone",
-    "Strymon",
-    "Line 6",
-    "Kemper",
-)
-"""Brand/model names a paraphrase must not add (checked after removing allowed names, so
-"Boss DS-1" stays fine when the DS-1 is named)."""
 
 # --------------------------------------------------------------------------- thresholds
 
@@ -359,6 +344,8 @@ def attributes(item: RenderItem, min_voiced: float = 0.3) -> Attributes:
             drop |= _KB_GAIN  # the gain axis already has a word
         if a.drive == "light":
             drop |= _KB_HIGH_GAIN
+        if a.character:  # the measured character word wins over the pedal's general one
+            drop |= _KB_SMOOTH | _KB_ROUGH
         a.kb = [k for k in KB_DESCRIPTORS[item.pedal_id] if k not in drop]
     return a
 
@@ -459,7 +446,7 @@ _NP_FRAMES = [
     "switch to {np}",
     "give this part {np}",
     "this riff needs {np}",
-    "make my guitar into {np}",
+    "give my guitar {np}",
     "I'm going for {np}",
     "try {np}",
 ]
@@ -588,7 +575,9 @@ def _np(parts: _Parts) -> str:
     if mods and mods[0].startswith("like "):
         np_ += " " + mods.pop(0)
     if mods:
-        np_ += " " + " and ".join(mods)
+        # "with X and Y", not "with X and with Y"
+        rest = [m.removeprefix("with ") if m.startswith("with ") else m for m in mods[1:]]
+        np_ += " " + " and ".join([mods[0], *rest])
     return np_
 
 
@@ -624,30 +613,15 @@ def holdout_pedal(cfg) -> str | None:
 
 
 def name_rules(item: RenderItem, named: bool, holdout: str | None) -> tuple[list[str], list[str]]:
-    """``(allowed, forbidden)`` pedal names for an item's captions.
-
-    Allowed: the item's pedal aliases if the caption names it. Forbidden: every other KB
-    alias, the real-pedal test devices, and the holdout's names outside ``test_unseen_pedal``.
-    """
-    allowed = list(PEDAL_ALIASES.get(item.pedal_id, ())) if named and item.pedal_id else []
-    every = {n for ns in PEDAL_ALIASES.values() for n in ns} | set(OTHER_DEVICE_NAMES)
-    forbidden = {n for n in every if n not in allowed}
-    if holdout and item.split != "test_unseen_pedal":
-        forbidden |= set(holdout_names(holdout))
-        allowed = [n for n in allowed if n not in forbidden]
-    return allowed, sorted(forbidden)
+    """``(allowed, forbidden)`` pedal names for an item's captions (the shared rule in
+    :func:`vocab.allowed_names` / :func:`vocab.forbidden_names`)."""
+    args = (item.pedal_id, named, holdout, item.split)
+    return allowed_names(*args), forbidden_names(*args)
 
 
-def check_caption(text: str, allowed: Sequence[str], forbidden: Sequence[str]) -> list[str]:
-    """Post-filter: :func:`vocab.caption_violations` plus brand names and shape checks."""
-    out = caption_violations(text, list(allowed), list(forbidden))
-    rest = strip_allowed_names(text, list(allowed))
-    out += [f"names brand {n!r}" for n in mentions(rest, list(EXTRA_BRANDS))]
-    if not text.strip():
-        out.append("empty")
-    if "\n" in text:
-        out.append("multi-line")
-    return out
+def check_caption(text: str, item: RenderItem, named: bool, holdout: str | None) -> list[str]:
+    """Post-filter: :func:`vocab.item_caption_violations` for this item."""
+    return item_caption_violations(text, item.pedal_id, named, holdout, item.split)
 
 
 def _item_rng(item: RenderItem, salt: str) -> random.Random:
@@ -673,7 +647,7 @@ def template_captions(
 ) -> list[Caption]:
     """``n`` deterministic template captions (``<item_id>-c0`` ...) for one item."""
     named = names_pedal(item, pedal_name_fraction, holdout)
-    allowed, forbidden = name_rules(item, named, holdout)
+    allowed, _ = name_rules(item, named, holdout)
     attrs = attributes(item, min_voiced)
     out: list[Caption] = []
     for k in range(n):
@@ -682,7 +656,7 @@ def template_captions(
         name = _pick(rng, names) if named and names else None
         text, tid = _render_template(attrs, rng, name)
         text = re.sub(r"\s+", " ", text).strip()
-        bad = check_caption(text, allowed, forbidden)
+        bad = check_caption(text, item, named, holdout)
         if bad:  # a template bug, never data-dependent: fail loudly
             raise ValueError(f"template caption {text!r} for {item.item_id} breaks rules: {bad}")
         out.append(
@@ -821,6 +795,12 @@ def _local_id(i: int) -> str:
     return s
 
 
+def max_tokens_for(n_captions: int) -> int:
+    """Per-request ``max_tokens``: ~2x the expected ~45 output tokens per caption plus JSON
+    overhead. It bounds the worst-case cost that the cap check uses."""
+    return 256 + 100 * n_captions
+
+
 def request_params(texts: Sequence[str], cc) -> tuple[dict[str, Any], dict[str, str]]:
     """Message params for one request and its ``{local id: template text}`` map."""
     ids = {_local_id(i): t for i, t in enumerate(texts)}
@@ -829,7 +809,7 @@ def request_params(texts: Sequence[str], cc) -> tuple[dict[str, Any], dict[str, 
     )
     params = {
         "model": str(cc.model),
-        "max_tokens": 512 + 120 * len(texts),
+        "max_tokens": max_tokens_for(len(texts)),
         "thinking": {"type": "disabled"},
         "output_config": {
             "effort": "low",
@@ -845,14 +825,24 @@ def chunk(texts: Sequence[str], size: int) -> list[list[str]]:
     return [list(texts[i : i + size]) for i in range(0, len(texts), size)]
 
 
+PROMPT_HASH = hashlib.sha256(
+    (SYSTEM_PROMPT + "\n" + json.dumps(OUTPUT_SCHEMA, sort_keys=True)).encode()
+).hexdigest()[:16]
+"""Fingerprint of the prompt + output schema. Part of every cache key, so editing either
+never reuses stale replies; ``tests/data/test_captions.py`` pins it to ``prompt_version``
+"p1" so an edit without a version bump fails the tests."""
+
+
 def cache_key(text: str, model: str, prompt_version: str) -> str:
-    return hashlib.sha256(f"{model}\n{prompt_version}\n{text}".encode()).hexdigest()
+    return hashlib.sha256(f"{model}\n{prompt_version}\n{PROMPT_HASH}\n{text}".encode()).hexdigest()
 
 
 class ParaphraseCache:
-    """Append-only JSONL of raw paraphrase replies keyed by (template, model, prompt version).
+    """Append-only JSONL of raw paraphrase replies keyed by (template, model, prompt version,
+    prompt hash).
 
-    ``text`` is ``None`` for a malformed/missing reply (cached so it is never paid again).
+    ``text`` is ``None`` for a malformed/missing reply or a non-retryable request error
+    (cached so it is never paid again).
     """
 
     def __init__(self, path: Path, model: str, prompt_version: str) -> None:
@@ -876,7 +866,9 @@ class ParaphraseCache:
     def get(self, template: str) -> str | None:
         return self._data.get(self.key(template))
 
-    def put_many(self, entries: Mapping[str, str | None], status: str = "ok") -> None:
+    def put_many(self, entries: Mapping[str, str | None], status: str | None = None) -> None:
+        if not entries:
+            return
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.path.open("a", encoding="utf-8", newline="\n") as f:
             for template, text in entries.items():
@@ -886,9 +878,10 @@ class ParaphraseCache:
                     "key": k,
                     "model": self.model,
                     "prompt_version": self.prompt_version,
+                    "prompt_hash": PROMPT_HASH,
                     "template": template,
                     "text": text,
-                    "status": status if text is not None else "malformed",
+                    "status": status or ("ok" if text is not None else "malformed"),
                 }
                 f.write(json.dumps(rec, ensure_ascii=False, sort_keys=True) + "\n")
 
@@ -898,11 +891,18 @@ def usd(input_tokens: float, output_tokens: float, price: Mapping[str, float]) -
 
 
 class SpendLedger:
-    """JSONL spend ledger. Events per local ``ref``: ``submitted`` (estimate, written before the
-    batch is created), ``created`` (batch id), ``ended`` (actual usage and cost).
+    """JSONL spend ledger. Events per local ``ref``: ``submitted`` (estimate and worst case,
+    written before the batch is created), ``created`` (batch id), ``ended`` (actual usage and
+    cost; cost 0 for a create call the API definitely rejected).
 
-    A ref without ``ended`` is in flight and counts at its estimate (also if the process died
-    before the batch id was recorded: conservative).
+    A ref without ``ended`` is in flight. It counts at its estimate for display and at its
+    worst case (every request using its full ``max_tokens``) for the cap check, also when the
+    process died before the batch id was recorded or the create call failed ambiguously.
+
+    Clearing a stuck in-flight entry (owner action): look the batch up in the Console (or
+    ``client.messages.batches.list()``); if it exists, append its real cost, e.g.
+    ``{"event": "ended", "ref": "<ref>", "cost_usd": <real cost>, "note": "manual"}``; if no
+    batch was created, append the same with ``"cost_usd": 0``. Never delete ledger lines.
     """
 
     def __init__(self, path: Path) -> None:
@@ -925,8 +925,17 @@ class SpendLedger:
         return sum(float(r.get("cost_usd", 0.0)) for r in self.state().values() if _ended(r))
 
     def in_flight(self) -> float:
+        """In-flight batches at their estimate (for display)."""
         return sum(
             float(r.get("estimate_usd", 0.0)) for r in self.state().values() if not _ended(r)
+        )
+
+    def in_flight_worst(self) -> float:
+        """In-flight batches at their worst case (for the cap check)."""
+        return sum(
+            float(r.get("worst_usd", r.get("estimate_usd", 0.0)))
+            for r in self.state().values()
+            if not _ended(r)
         )
 
     def pending(self) -> list[dict[str, Any]]:
@@ -947,6 +956,37 @@ class BudgetExceeded(RuntimeError):
     pass
 
 
+class SubmitUncertain(RuntimeError):
+    """The batch create call failed in a way that may still have created a batch."""
+
+
+class LedgerLocked(RuntimeError):
+    pass
+
+
+class LedgerLock:
+    """One paraphrase run at a time: an exclusive lock file next to the ledger."""
+
+    def __init__(self, ledger_path: Path) -> None:
+        self.path = Path(ledger_path).with_suffix(".lock")
+
+    def __enter__(self) -> LedgerLock:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError as e:
+            raise LedgerLocked(
+                f"{self.path.name} exists: another captions run is active (or one crashed; "
+                "delete the lock file once no run is active)"
+            ) from e
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(f"pid {os.getpid()} since {time.strftime('%Y-%m-%dT%H:%M:%S%z')}\n")
+        return self
+
+    def __exit__(self, *exc) -> None:
+        self.path.unlink(missing_ok=True)
+
+
 @dataclass
 class Estimate:
     n_captions: int
@@ -957,17 +997,22 @@ class Estimate:
     input_source: str  # "count_tokens" | "approx"
     output_per_caption: float
     output_source: str  # "config" | "pilot"
+    max_output_tokens: int = 0  # sum of the requests' max_tokens
+    worst_usd: float = 0.0  # input estimate + every request at its max_tokens
 
     def lines(self, ledger: SpendLedger, max_usd: float) -> list[str]:
-        spent, flight = ledger.spent(), ledger.in_flight()
+        spent, flight, worst = ledger.spent(), ledger.in_flight(), ledger.in_flight_worst()
         return [
             f"paraphrases to request: {self.n_captions} in {self.n_requests} requests",
             f"input tokens: {self.input_tokens} ({self.input_source})",
             f"output tokens: {self.output_tokens} "
             f"({self.output_per_caption:g} per caption, {self.output_source})",
             f"estimated cost: ${self.usd:.4f}",
-            f"ledger: spent ${spent:.4f}, in flight ${flight:.4f}; cap ${max_usd:.2f}; "
-            f"after this run ${spent + flight + self.usd:.4f}",
+            f"worst case (all requests at max_tokens = {self.max_output_tokens} output tokens): "
+            f"${self.worst_usd:.4f}",
+            f"ledger: spent ${spent:.4f}, in flight ${flight:.4f} (worst ${worst:.4f}); "
+            f"cap ${max_usd:.2f}; after this run ${spent + flight + self.usd:.4f} "
+            f"(cap check uses ${spent + worst + self.worst_usd:.4f})",
         ]
 
 
@@ -1011,14 +1056,27 @@ def estimate(texts: Sequence[str], cc, layout: DataLayout, client=None) -> Estim
         return Estimate(0, 0, 0, 0, 0.0, "none", per_cap, out_src)
     biggest = max(groups, key=lambda g: sum(len(t) for t in g))
     params, _ = request_params(biggest, cc)
+    per_req, src = _approx_tokens(params), "approx"
     if client is not None:
-        per_req, src = count_input_tokens(client, params), "count_tokens"
-    else:
-        per_req, src = _approx_tokens(params), "approx"
+        try:
+            per_req, src = count_input_tokens(client, params), "count_tokens"
+        except Exception as e:  # noqa: BLE001 - any API/network failure: fall back
+            _log(f"count_tokens failed ({type(e).__name__}); input tokens approximated")
     tin = per_req * len(groups)
     tout = math.ceil(n_cap * per_cap)
+    max_out = sum(max_tokens_for(len(g)) for g in groups)
+    price = cc.price_per_mtok
     return Estimate(
-        n_cap, len(groups), tin, tout, usd(tin, tout, cc.price_per_mtok), src, per_cap, out_src
+        n_cap,
+        len(groups),
+        tin,
+        tout,
+        usd(tin, tout, price),
+        src,
+        per_cap,
+        out_src,
+        max_out,
+        usd(tin, max_out, price),
     )
 
 
@@ -1059,12 +1117,19 @@ def _usage_tokens(message) -> tuple[int, int]:
 class BatchOutcome:
     replies: dict[str, str | None]  # template -> raw paraphrase (None = malformed)
     retry: list[str]  # templates whose requests errored/expired/canceled (retryable)
-    failed: list[str]  # templates whose requests failed non-retryably
+    invalid: list[str]  # invalid_request errors: cached as failed, never resubmitted
+    failed: list[str]  # other non-retryable errors (auth, billing, ...): logged, not cached
     input_tokens: int
     output_tokens: int
 
 
-_NON_RETRYABLE = {"invalid_request_error", "invalid_request"}
+_INVALID = {"invalid_request_error", "invalid_request"}
+_NON_RETRYABLE = {
+    "authentication_error",
+    "billing_error",
+    "permission_error",
+    "not_found_error",
+}
 
 
 def _error_type(result) -> str:
@@ -1077,7 +1142,7 @@ def _error_type(result) -> str:
 
 def collect(client, batch_id: str, mapping: Mapping[str, Mapping[str, str]]) -> BatchOutcome:
     """Read a finished batch's results (any order) keyed by ``custom_id``."""
-    out = BatchOutcome({}, [], [], 0, 0)
+    out = BatchOutcome({}, [], [], [], 0, 0)
     seen: set[str] = set()
     for res in client.messages.batches.results(batch_id):
         cid = res.custom_id
@@ -1086,6 +1151,7 @@ def collect(client, batch_id: str, mapping: Mapping[str, Mapping[str, str]]) -> 
             continue
         seen.add(cid)
         r = res.result
+        etype = _error_type(r) if r.type == "errored" else ""
         if r.type == "succeeded":
             tin, tout = _usage_tokens(r.message)
             out.input_tokens += tin
@@ -1093,9 +1159,11 @@ def collect(client, batch_id: str, mapping: Mapping[str, Mapping[str, str]]) -> 
             parsed = _parse_reply(r.message)
             for lid, template in ids.items():
                 out.replies[template] = (parsed or {}).get(lid) or None
-        elif r.type == "errored" and _error_type(r) in _NON_RETRYABLE:
+        elif etype in _INVALID:
+            out.invalid.extend(ids.values())
+        elif etype in _NON_RETRYABLE:
             out.failed.extend(ids.values())
-        else:  # errored (server side), expired, canceled
+        else:  # errored (server side, overloaded, rate limit), expired, canceled
             out.retry.extend(ids.values())
     for cid, ids in mapping.items():  # results never returned: treat as retryable
         if cid not in seen:
@@ -1105,6 +1173,14 @@ def collect(client, batch_id: str, mapping: Mapping[str, Mapping[str, str]]) -> 
 
 def _log(msg: str) -> None:
     print(f"[captions] {msg}", file=sys.stderr, flush=True)
+
+
+def _definitely_rejected(exc: Exception) -> bool:
+    """True if a create call failed with a definite client error (4xx other than a timeout or
+    conflict): the API did not create a batch. Connection errors, timeouts and 5xx are
+    ambiguous (the batch may exist)."""
+    status = getattr(exc, "status_code", None)
+    return isinstance(status, int) and 400 <= status < 500 and status not in (408, 409)
 
 
 class Paraphraser:
@@ -1133,14 +1209,15 @@ class Paraphraser:
 
     # -- one batch --------------------------------------------------------------------
     def submit(self, texts: Sequence[str], attempt: int = 0) -> str:
-        """Price, check the cap, record, create. Returns the ledger ref."""
+        """Price, check the cap (worst case), record, create. Returns the ledger ref."""
         est = estimate(texts, self.cc, self.layout, self.client)
-        spent, flight = self.ledger.spent(), self.ledger.in_flight()
+        spent, flight = self.ledger.spent(), self.ledger.in_flight_worst()
         cap = float(self.cc.max_usd)
-        if spent + flight + est.usd > cap:
+        if spent + flight + est.worst_usd > cap:
             raise BudgetExceeded(
-                f"refusing to submit: spent ${spent:.4f} + in flight ${flight:.4f} + "
-                f"estimate ${est.usd:.4f} > cap ${cap:.2f}"
+                f"refusing to submit: spent ${spent:.4f} + in flight (worst case) "
+                f"${flight:.4f} + this batch's worst case ${est.worst_usd:.4f} "
+                f"(estimate ${est.usd:.4f}) > cap ${cap:.2f}"
             )
         ref = f"{time.strftime('%Y%m%dT%H%M%S')}-{uuid.uuid4().hex[:8]}"
         requests, mapping = [], {}
@@ -1156,15 +1233,40 @@ class Paraphraser:
             "submitted",
             ref,
             estimate_usd=est.usd,
+            worst_usd=est.worst_usd,
             n_requests=est.n_requests,
             n_captions=est.n_captions,
             est_input_tokens=est.input_tokens,
             est_output_tokens=est.output_tokens,
+            max_output_tokens=est.max_output_tokens,
             model=str(self.cc.model),
             prompt_version=str(self.cc.prompt_version),
+            prompt_hash=PROMPT_HASH,
             attempt=attempt,
         )
-        batch = self.client.messages.batches.create(requests=requests)
+        try:
+            # no SDK-level retries: a retried create after a lost response would make a
+            # second (paid) batch that the ledger does not know about
+            batch = self.client.with_options(max_retries=0).messages.batches.create(
+                requests=requests
+            )
+        except Exception as e:
+            if _definitely_rejected(e):
+                self.ledger.append(
+                    "ended",
+                    ref,
+                    cost_usd=0.0,
+                    status="rejected",
+                    error=type(e).__name__,
+                    status_code=getattr(e, "status_code", None),
+                )
+                raise
+            _log(
+                f"batch create for ledger ref {ref} failed ambiguously ({type(e).__name__}); "
+                "it stays in flight at its worst case. Check the Console or "
+                "client.messages.batches.list() and close the entry by hand (SpendLedger)."
+            )
+            raise SubmitUncertain(ref) from e
         self.ledger.append("created", ref, batch_id=batch.id)
         _log(f"submitted batch {batch.id}: {est.n_captions} captions, est ${est.usd:.4f}")
         return ref
@@ -1180,6 +1282,11 @@ class Paraphraser:
             self.sleep(self.poll_seconds)
         out = collect(self.client, batch_id, info["mapping"])
         cost = usd(out.input_tokens, out.output_tokens, self.cc.price_per_mtok)
+        # cache first: a crash after this re-collects the batch but never pays twice
+        self.cache.put_many(out.replies)
+        self.cache.put_many(dict.fromkeys(out.invalid), status="invalid_request")
+        if out.failed:
+            _log(f"{len(out.failed)} paraphrases failed with non-retryable errors (not cached)")
         self.ledger.append(
             "ended",
             ref,
@@ -1189,10 +1296,10 @@ class Paraphraser:
             cost_usd=cost,
             n_replies=len(out.replies),
             n_retry=len(out.retry),
+            n_invalid=len(out.invalid),
             n_failed=len(out.failed),
             status="ended",
         )
-        self.cache.put_many(out.replies)
         self.input_tokens += out.input_tokens
         self.output_tokens += out.output_tokens
         self.captions_returned += len(out.replies)
@@ -1200,31 +1307,57 @@ class Paraphraser:
         return out
 
     # -- full run ---------------------------------------------------------------------
-    def resume_pending(self) -> list[str]:
-        """Collect batches left in flight by an earlier run; returns retryable templates."""
-        retry: list[str] = []
+    def resume_pending(self) -> dict[str, int]:
+        """Collect batches left in flight by an earlier run.
+
+        Returns ``{template: attempt}`` for retryable failures, so resubmission continues
+        the count instead of restarting it.
+        """
+        retry: dict[str, int] = {}
         for r in self.ledger.pending():
             if "batch_id" not in r or not _batch_file(self.layout, r["ref"]).exists():
                 _log(
-                    f"ledger ref {r['ref']} has no batch id (process died before creation?); "
-                    "it stays counted at its estimate"
+                    f"ledger ref {r['ref']} has no batch id (process died before creation, or "
+                    "the create call failed ambiguously); it stays counted at its worst case "
+                    "until closed by hand (see SpendLedger)"
                 )
                 continue
-            retry += self.wait_and_collect(r["ref"]).retry
+            attempt = int(r.get("attempt", 0))
+            for t in self.wait_and_collect(r["ref"]).retry:
+                retry[t] = max(retry.get(t, 0), attempt)
         return retry
 
-    def run(self, templates: Iterable[str]) -> None:
-        self.resume_pending()
-        todo = [t for t in dict.fromkeys(templates) if t not in self.cache]
-        attempt = 0
+    def _loop(self, todo: list[str], attempt: int, skip: set[str]) -> None:
         while todo:
             ref = self.submit(todo, attempt)
             out = self.wait_and_collect(ref)
+            skip.update(out.failed)
             todo = [t for t in dict.fromkeys(out.retry) if t not in self.cache]
             if todo and attempt >= int(self.cc.max_resubmits):
                 _log(f"{len(todo)} paraphrases still failing after {attempt} resubmits; skipped")
-                break
+                skip.update(todo)
+                return
             attempt += 1
+
+    def run(self, templates: Iterable[str]) -> None:
+        with LedgerLock(self.ledger.path):
+            wanted = list(dict.fromkeys(templates))
+            resumed = self.resume_pending()
+            skip: set[str] = set()
+            max_re = int(self.cc.max_resubmits)
+            # resumed retries continue their resubmit count
+            by_attempt: dict[int, list[str]] = {}
+            for t in wanted:
+                if t in resumed and t not in self.cache:
+                    if resumed[t] >= max_re:
+                        skip.add(t)
+                    else:
+                        by_attempt.setdefault(resumed[t] + 1, []).append(t)
+            for attempt in sorted(by_attempt):
+                self._loop(by_attempt[attempt], attempt, skip)
+            fresh = [t for t in wanted if t not in self.cache and t not in skip]
+            fresh = [t for t in fresh if t not in resumed]
+            self._loop(fresh, 0, skip)
 
 
 def default_client_factory():
@@ -1273,7 +1406,8 @@ def build_captions(
         out += temps
         if not n_p or cache is None:
             continue
-        allowed, forbidden = name_rules(item, temps[0].names_pedal, holdout)
+        named = names_pedal(item, frac, holdout)
+        allowed, _ = name_rules(item, named, holdout)
         for j in range(n_p):
             src = temps[j % len(temps)]
             if src.text not in cache:
@@ -1287,7 +1421,7 @@ def build_captions(
             if text.casefold() == src.text.casefold():
                 stats["same_as_template"] += 1
                 continue
-            if check_caption(text, allowed, forbidden):
+            if check_caption(text, item, named, holdout):
                 stats["rejected"] += 1
                 continue
             stats["paraphrased"] += 1
@@ -1394,6 +1528,9 @@ def run(cfg, args, client_factory: Callable[[], Any] | None = None) -> int:
         except BudgetExceeded as e:
             _log(str(e))
             return 2
+        except (SubmitUncertain, LedgerLocked) as e:
+            _log(f"{type(e).__name__}: {e}")
+            return 3
         cache = para.cache
         if pilot and para.captions_returned:
             per = para.output_tokens / para.captions_returned
@@ -1431,13 +1568,16 @@ def run(cfg, args, client_factory: Callable[[], Any] | None = None) -> int:
 
 
 __all__ = [
-    "EXTRA_BRANDS",
     "FAMILY",
     "KB_DESCRIPTORS",
     "OUTPUT_SCHEMA",
     "SYSTEM_PROMPT",
     "Attributes",
     "BudgetExceeded",
+    "LedgerLock",
+    "LedgerLocked",
+    "PROMPT_HASH",
+    "SubmitUncertain",
     "Estimate",
     "ParaphraseCache",
     "Paraphraser",
