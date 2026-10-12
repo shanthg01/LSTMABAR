@@ -12,6 +12,8 @@ venv/
 data/raw/
 data/rendered/
 data/cache/
+data/sources/
+data/test_real/
 runs/
 *.pth
 *.pt
