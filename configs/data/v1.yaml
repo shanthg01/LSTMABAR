@@ -35,7 +35,7 @@ ingest:
   heldout_performer: P3
 
 render:
-  shard_size: 1000
+  shard_size: 250
   workers: 4
   renders_per_clip: {train: 6, val: 4, test: 4}
   unseen_renders_per_clip: 2   # extra holdout-pedal renders per test clip (R6, R7)
@@ -62,8 +62,21 @@ calibration:                   # R4
 
 analysis:
   n_harmonics: 10
-  max_frames: 64
+  max_frames: 32               # R8 (reports/render_bench.md): v1 ~6.9 h on 4 workers, the
+                               # largest option within bench.headroom x 12 h (64: ~11.0 h);
+                               # vs 64, odd/even |Δ| median 0.21 dB, archetype L1 median 0.008
   min_voiced_fraction: 0.3     # below this, harmonic descriptors are NaN (decision 5)
+
+bench:                         # R8 throughput gate (`lstmabar data bench`)
+  # R7 plan for the extrapolation, from the ingest facts (P1 2.40 h + P2 2.49 h DI, P3 ~0.13 h):
+  # train = P1/P2 minus a ~10% by-recording val slice, test = all of P3 (wave 2 splits).
+  planned_clips: {train: 3700, val: 450, test: 130}
+  max_clips: 6                 # dry clips timed (the CLI's --limit overrides it)
+  items_per_pedal: 2           # timed renders per KB pedal (+ one per free-board scenario)
+  max_frames_options: [64, 32, 16, 8]   # analysis.max_frames values priced (R8 reduction)
+  budget_hours: 12.0
+  headroom: 0.75               # choose the largest max_frames estimated within 0.75 x budget:
+                               # a loaded CPU measured ~2x slower, and worker scaling is assumed
 
 captions:                      # R1
   model: claude-haiku-5-5

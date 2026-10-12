@@ -18,7 +18,13 @@ from __future__ import annotations
 import numpy as np
 from scipy.signal import welch
 
-from lstmabar.analysis.harmonics import _as_numpy, harmonic_profile, hnr
+from lstmabar.analysis.harmonics import (
+    F0Track,
+    HarmonicProfile,
+    _as_numpy,
+    harmonic_profile,
+    hnr,
+)
 
 _EPS = 1e-12
 
@@ -141,47 +147,76 @@ def spectral_rolloff(x, sr: float, fraction: float = 0.85, nperseg: int = 4096) 
     return f[1:][idx]
 
 
-def describe(x, sr: int, f0: float | None = None, n_harmonics: int = 10) -> dict[str, float]:
-    """All descriptors for a mono clip ``x`` (``(T,)``) as a flat ``dict``.
+SIGNAL_KEYS: tuple[str, ...] = ("rms_db", "crest_factor_db", "centroid_hz", "rolloff_hz")
+HARMONIC_KEYS: tuple[str, ...] = (
+    "f0_hz",
+    "hnr_db",
+    "odd_even_db",
+    "slope_db_per_oct",
+    "harmonic_energy_fraction",
+)
 
-    Keys are always the same: ``rms_db``, ``crest_factor_db``, ``centroid_hz``, ``rolloff_hz``
-    (signal descriptors) and ``f0_hz``, ``hnr_db``, ``odd_even_db``, ``slope_db_per_oct``,
-    ``harmonic_energy_fraction`` (via :func:`harmonic_profile`, which runs pYIN unless ``f0``
-    is given, refining f0 either way). The harmonic ones are ``NaN`` when no harmonic profile
-    can be measured (no voiced frames, or no ``f0`` and librosa not installed).
-    """
+
+def signal_descriptors(x, sr: int) -> dict[str, float]:
+    """The :data:`SIGNAL_KEYS` descriptors of a mono clip (no pitch needed)."""
     y = _as_numpy(x)
-    out = {
+    return {
         "rms_db": float(rms_db(y)),
         "crest_factor_db": float(crest_factor_db(y)),
         "centroid_hz": float(spectral_centroid(y, sr)),
         "rolloff_hz": float(spectral_rolloff(y, sr)),
     }
-    harmonic_keys = (
-        "f0_hz",
-        "hnr_db",
-        "odd_even_db",
-        "slope_db_per_oct",
-        "harmonic_energy_fraction",
-    )
+
+
+def harmonic_descriptors(prof: HarmonicProfile | None) -> dict[str, float]:
+    """The :data:`HARMONIC_KEYS` descriptors of a harmonic profile (all ``NaN`` for ``None``)."""
+    if prof is None:
+        return dict.fromkeys(HARMONIC_KEYS, float("nan"))
+    return {
+        "f0_hz": prof.f0_hz,
+        "hnr_db": prof.hnr_db,
+        "odd_even_db": float(odd_even_ratio(prof.amplitudes)),
+        "slope_db_per_oct": float(harmonic_slope(prof.amplitudes)),
+        "harmonic_energy_fraction": float(harmonic_energy_fraction(prof.amplitudes)),
+    }
+
+
+def describe(
+    x,
+    sr: int,
+    f0: float | None = None,
+    n_harmonics: int = 10,
+    track: F0Track | None = None,
+    max_frames: int = 64,
+) -> dict[str, float]:
+    """All descriptors for a mono clip ``x`` (``(T,)``) as a flat ``dict``.
+
+    Keys are always the same: :data:`SIGNAL_KEYS` (``rms_db``, ``crest_factor_db``,
+    ``centroid_hz``, ``rolloff_hz``) and :data:`HARMONIC_KEYS` (``f0_hz``, ``hnr_db``,
+    ``odd_even_db``, ``slope_db_per_oct``, ``harmonic_energy_fraction``) via
+    :func:`harmonic_profile`, which runs pYIN unless ``f0`` or a precomputed ``track`` is
+    given, refining f0 either way. A ``track`` (e.g. a dry clip's pYIN track, reused for its
+    time-aligned wet renders) avoids re-running pYIN; ``max_frames`` bounds the frames fitted.
+    The harmonic ones are ``NaN`` when no harmonic profile can be measured (no voiced frames,
+    or neither ``f0`` nor ``track`` and librosa not installed).
+    """
+    y = _as_numpy(x)
     try:
-        prof = harmonic_profile(y, sr, n_harmonics=n_harmonics, f0=f0)
+        prof = harmonic_profile(
+            y, sr, n_harmonics=n_harmonics, f0=f0, track=track, max_frames=max_frames
+        )
     except (ValueError, ImportError):
-        return out | dict.fromkeys(harmonic_keys, float("nan"))
-    out.update(
-        f0_hz=prof.f0_hz,
-        hnr_db=prof.hnr_db,
-        odd_even_db=float(odd_even_ratio(prof.amplitudes)),
-        slope_db_per_oct=float(harmonic_slope(prof.amplitudes)),
-        harmonic_energy_fraction=float(harmonic_energy_fraction(prof.amplitudes)),
-    )
-    return out
+        prof = None
+    return signal_descriptors(y, sr) | harmonic_descriptors(prof)
 
 
 __all__ = [
+    "HARMONIC_KEYS",
+    "SIGNAL_KEYS",
     "crest_factor",
     "crest_factor_db",
     "describe",
+    "harmonic_descriptors",
     "harmonic_energy_fraction",
     "harmonic_slope",
     "hnr",
@@ -189,6 +224,7 @@ __all__ = [
     "power_spectrum",
     "rms",
     "rms_db",
+    "signal_descriptors",
     "spectral_centroid",
     "spectral_rolloff",
 ]
