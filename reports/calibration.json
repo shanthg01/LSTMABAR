@@ -201,6 +201,52 @@
    ],
    "max_derived_gain_jump": 0.5950629115104675,
    "max_derived_tone_jump": 0.6138001978397369,
+   "residual_gain_jumps": [
+    [
+     0.09084117412567139,
+     0.09132319688796997,
+     0.12316100299358368
+    ],
+    [
+     0.03259915532544255,
+     0.06166040897369385,
+     0.106000155210495
+    ],
+    [
+     0.10529905557632446,
+     0.12161844968795775,
+     0.16227301955223083
+    ],
+    [
+     0.5798906683921814,
+     0.20873326063156128,
+     0.16036930680274963
+    ]
+   ],
+   "residual_tone_jumps": [
+    [
+     0.20800839364528656,
+     0.09889565780758858
+    ],
+    [
+     0.14844764117151485,
+     0.14475525822490454
+    ],
+    [
+     0.16298569855280215,
+     0.143001860473305
+    ],
+    [
+     0.19507101958152068,
+     0.21051825396716595
+    ],
+    [
+     0.6156118214130402,
+     0.2895549535751343
+    ]
+   ],
+   "max_residual_gain_jump": 0.5798906683921814,
+   "max_residual_tone_jump": 0.6156118214130402,
    "cells": [
     {
      "gain": [
@@ -211,9 +257,12 @@
       0.0,
       0.5
      ],
-     "max_jump": 0.6214194893836975,
-     "jump_knob": "eq.mid_hz",
-     "fallback": true
+     "board_jump": 0.6214194893836975,
+     "board_jump_knob": "eq.mid_hz",
+     "board_fallback": true,
+     "max_jump": 0.20800839364528656,
+     "jump_knob": "eq.mid_db",
+     "fallback": false
     },
     {
      "gain": [
@@ -224,9 +273,12 @@
       0.5,
       1.0
      ],
-     "max_jump": 0.3226220617070794,
+     "board_jump": 0.3226220617070794,
+     "board_jump_knob": "drive.tone_db",
+     "board_fallback": true,
+     "max_jump": 0.1903364285826683,
      "jump_knob": "drive.tone_db",
-     "fallback": true
+     "fallback": false
     },
     {
      "gain": [
@@ -237,25 +289,31 @@
       0.0,
       0.5
      ],
-     "max_jump": 0.5428621172904968,
-     "jump_knob": "eq.mid_hz",
-     "fallback": true
-    },
-    {
-     "gain": [
-      0.25,
-      0.5
-     ],
-     "tone": [
-      0.5,
-      1.0
-     ],
-     "max_jump": 0.21265682950615883,
+     "board_jump": 0.5428621172904968,
+     "board_jump_knob": "eq.mid_hz",
+     "board_fallback": true,
+     "max_jump": 0.16858076769858593,
      "jump_knob": "eq.high_db",
      "fallback": false
     },
     {
      "gain": [
+      0.25,
+      0.5
+     ],
+     "tone": [
+      0.5,
+      1.0
+     ],
+     "board_jump": 0.21265682950615883,
+     "board_jump_knob": "eq.high_db",
+     "board_fallback": false,
+     "max_jump": 0.14845335390418768,
+     "jump_knob": "drive.tone_db",
+     "fallback": false
+    },
+    {
+     "gain": [
       0.5,
       0.75
      ],
@@ -263,8 +321,11 @@
       0.0,
       0.5
      ],
-     "max_jump": 0.5405477285385132,
-     "jump_knob": "eq.mid_hz",
+     "board_jump": 0.5405477285385132,
+     "board_jump_knob": "eq.mid_hz",
+     "board_fallback": true,
+     "max_jump": 0.28460414824075986,
+     "jump_knob": "eq.high_db",
      "fallback": true
     },
     {
@@ -276,8 +337,11 @@
       0.5,
       1.0
      ],
-     "max_jump": 0.220504492521286,
-     "jump_knob": "drive.gain_db",
+     "board_jump": 0.220504492521286,
+     "board_jump_knob": "drive.gain_db",
+     "board_fallback": false,
+     "max_jump": 0.22477535717189312,
+     "jump_knob": "drive.tone_db",
      "fallback": false
     },
     {
@@ -289,7 +353,10 @@
       0.0,
       0.5
      ],
-     "max_jump": 0.5272109806537628,
+     "board_jump": 0.5272109806537628,
+     "board_jump_knob": "eq.mid_hz",
+     "board_fallback": true,
+     "max_jump": 0.6156118214130402,
      "jump_knob": "eq.mid_hz",
      "fallback": true
     },
@@ -302,12 +369,16 @@
       0.5,
       1.0
      ],
-     "max_jump": 0.30509909242391586,
-     "jump_knob": "drive.softness",
+     "board_jump": 0.30509909242391586,
+     "board_jump_knob": "drive.softness",
+     "board_fallback": true,
+     "max_jump": 0.34820181131362915,
+     "jump_knob": "eq.mid_db",
      "fallback": true
     }
    ],
-   "fallback_cells": 6,
+   "board_fallback_cells": 6,
+   "fallback_cells": 3,
    "grid": [
     [
      {
@@ -578,7 +649,102 @@
      }
     ]
    ],
-   "seconds": 4028.8837783999625
+   "seconds": 4028.8837783999625,
+   "offgrid": {
+    "points": [
+     {
+      "gain": 0.125,
+      "tone": 0.25,
+      "derived_db": 4.886378942246026,
+      "nearest_fit_db": 4.802267031725854,
+      "residual_db": 2.7194879412617574,
+      "nearest_fit_corner_mean_db": 3.6016461771013617,
+      "source": "calibrated",
+      "seconds": 16.91488290001871
+     },
+     {
+      "gain": 0.125,
+      "tone": 0.75,
+      "derived_db": 5.122942291523807,
+      "nearest_fit_db": 4.191411045714527,
+      "residual_db": 2.7046260496591894,
+      "nearest_fit_corner_mean_db": 4.516504454983137,
+      "source": "calibrated",
+      "seconds": 6.084221599972807
+     },
+     {
+      "gain": 0.375,
+      "tone": 0.25,
+      "derived_db": 4.746696946238891,
+      "nearest_fit_db": 4.8254532955942295,
+      "residual_db": 2.5864153496941826,
+      "nearest_fit_corner_mean_db": 3.3778372362236646,
+      "source": "calibrated",
+      "seconds": 10.289901000040118
+     },
+     {
+      "gain": 0.375,
+      "tone": 0.75,
+      "derived_db": 4.777358574318021,
+      "nearest_fit_db": 3.3108287366020313,
+      "residual_db": 2.4257539788999765,
+      "nearest_fit_corner_mean_db": 3.8479095115010518,
+      "source": "calibrated",
+      "seconds": 4.801379600015935
+     },
+     {
+      "gain": 0.625,
+      "tone": 0.25,
+      "derived_db": 5.413786689757734,
+      "nearest_fit_db": 9.093208208599563,
+      "residual_db": 3.259286766809423,
+      "nearest_fit_corner_mean_db": 5.9533781442086,
+      "source": "calibrated_nearest",
+      "seconds": 8.341924500011373
+     },
+     {
+      "gain": 0.625,
+      "tone": 0.75,
+      "derived_db": 5.505548484482502,
+      "nearest_fit_db": 7.938327749159665,
+      "residual_db": 2.4781000334446333,
+      "nearest_fit_corner_mean_db": 6.30392344217664,
+      "source": "calibrated",
+      "seconds": 14.98476889997255
+     },
+     {
+      "gain": 0.875,
+      "tone": 0.25,
+      "derived_db": 5.588778906965698,
+      "nearest_fit_db": 4.1446646929793545,
+      "residual_db": 1.9368727642287344,
+      "nearest_fit_corner_mean_db": 2.909004881664602,
+      "source": "calibrated_nearest",
+      "seconds": 7.284948399988934
+     },
+     {
+      "gain": 0.875,
+      "tone": 0.75,
+      "derived_db": 5.625407027667075,
+      "nearest_fit_db": 2.6699987053302556,
+      "residual_db": 1.8222315659512351,
+      "nearest_fit_corner_mean_db": 3.3191408357340233,
+      "source": "calibrated_nearest",
+      "seconds": 4.628878400020767
+     }
+    ],
+    "derived_mean_db": 5.20836223289997,
+    "nearest_fit_mean_db": 5.122019933213186,
+    "residual_mean_db": 2.4915968062436415,
+    "nearest_fit_corner_mean_db": 4.228668085449135,
+    "residual_beats_nearest": 8,
+    "residual_beats_derived": 8,
+    "git": {
+     "sha": "b01601dc521bb42644c04d38b4bef4f0c33dce4e",
+     "dirty": true
+    },
+    "seconds": 73.79938169999514
+   }
   },
   "ds1": {
    "pedal_id": "ds1",
@@ -747,6 +913,52 @@
    ],
    "max_derived_gain_jump": 0.2668517231941223,
    "max_derived_tone_jump": 0.5476369559764862,
+   "residual_gain_jumps": [
+    [
+     0.14114052057266235,
+     0.1442962884902954,
+     0.16461113095283508
+    ],
+    [
+     0.18075179308867595,
+     0.04011988639831543,
+     0.22855937480926514
+    ],
+    [
+     0.19393631817003262,
+     0.07947063446044922,
+     0.14881476014852524
+    ],
+    [
+     0.17425209283791304,
+     0.016644179821014404,
+     0.06682184338569641
+    ]
+   ],
+   "residual_tone_jumps": [
+    [
+     0.13584872754280677,
+     0.16055045276880264
+    ],
+    [
+     0.19599711151242988,
+     0.1596813201904297
+    ],
+    [
+     0.16491815447807312,
+     0.2574434280395508
+    ],
+    [
+     0.26713138818740845,
+     0.3267875537276268
+    ],
+    [
+     0.3900754004716873,
+     0.38626398891210556
+    ]
+   ],
+   "max_residual_gain_jump": 0.22855937480926514,
+   "max_residual_tone_jump": 0.3900754004716873,
    "cells": [
     {
      "gain": [
@@ -757,9 +969,12 @@
       0.0,
       0.5
      ],
-     "max_jump": 0.6643727030605078,
+     "board_jump": 0.6643727030605078,
+     "board_jump_knob": "eq.high_db",
+     "board_fallback": true,
+     "max_jump": 0.24055134318783952,
      "jump_knob": "eq.high_db",
-     "fallback": true
+     "fallback": false
     },
     {
      "gain": [
@@ -770,9 +985,12 @@
       0.5,
       1.0
      ],
-     "max_jump": 0.42489421367645264,
-     "jump_knob": "drive.tone_db",
-     "fallback": true
+     "board_jump": 0.42489421367645264,
+     "board_jump_knob": "drive.tone_db",
+     "board_fallback": true,
+     "max_jump": 0.22535672783851624,
+     "jump_knob": "eq.high_db",
+     "fallback": false
     },
     {
      "gain": [
@@ -783,9 +1001,12 @@
       0.0,
       0.5
      ],
-     "max_jump": 0.6677122712135315,
-     "jump_knob": "eq.mid_hz",
-     "fallback": true
+     "board_jump": 0.6677122712135315,
+     "board_jump_knob": "eq.mid_hz",
+     "board_fallback": true,
+     "max_jump": 0.23385494203687446,
+     "jump_knob": "eq.high_db",
+     "fallback": false
     },
     {
      "gain": [
@@ -796,8 +1017,11 @@
       0.5,
       1.0
      ],
-     "max_jump": 0.43353933095932007,
-     "jump_knob": "drive.tone_db",
+     "board_jump": 0.43353933095932007,
+     "board_jump_knob": "drive.tone_db",
+     "board_fallback": true,
+     "max_jump": 0.2975633144378662,
+     "jump_knob": "drive.softness",
      "fallback": true
     },
     {
@@ -809,8 +1033,11 @@
       0.0,
       0.5
      ],
-     "max_jump": 0.6685229241847992,
-     "jump_knob": "eq.mid_hz",
+     "board_jump": 0.6685229241847992,
+     "board_jump_knob": "eq.mid_hz",
+     "board_fallback": true,
+     "max_jump": 0.26713138818740845,
+     "jump_knob": "eq.mid_db",
      "fallback": true
     },
     {
@@ -822,8 +1049,11 @@
       0.5,
       1.0
      ],
-     "max_jump": 0.4387243390083313,
-     "jump_knob": "drive.tone_db",
+     "board_jump": 0.4387243390083313,
+     "board_jump_knob": "drive.tone_db",
+     "board_fallback": true,
+     "max_jump": 0.406258188188076,
+     "jump_knob": "drive.softness",
      "fallback": true
     },
     {
@@ -835,8 +1065,11 @@
       0.0,
       0.5
      ],
-     "max_jump": 0.6698970794677734,
-     "jump_knob": "eq.mid_hz",
+     "board_jump": 0.6698970794677734,
+     "board_jump_knob": "eq.mid_hz",
+     "board_fallback": true,
+     "max_jump": 0.3900754004716873,
+     "jump_knob": "eq.mid_db",
      "fallback": true
     },
     {
@@ -848,12 +1081,16 @@
       0.5,
       1.0
      ],
-     "max_jump": 0.440965473651886,
-     "jump_knob": "drive.tone_db",
+     "board_jump": 0.440965473651886,
+     "board_jump_knob": "drive.tone_db",
+     "board_fallback": true,
+     "max_jump": 0.3936093971133232,
+     "jump_knob": "drive.softness",
      "fallback": true
     }
    ],
-   "fallback_cells": 8,
+   "board_fallback_cells": 8,
+   "fallback_cells": 5,
    "grid": [
     [
      {
@@ -1142,7 +1379,102 @@
      }
     ]
    ],
-   "seconds": 1446.5863472000347
+   "seconds": 1446.5863472000347,
+   "offgrid": {
+    "points": [
+     {
+      "gain": 0.125,
+      "tone": 0.25,
+      "derived_db": 1.6264359131404227,
+      "nearest_fit_db": 6.382444244151944,
+      "residual_db": 1.139220026621346,
+      "nearest_fit_corner_mean_db": 5.292943092493729,
+      "source": "calibrated",
+      "seconds": 18.21463949995814
+     },
+     {
+      "gain": 0.125,
+      "tone": 0.75,
+      "derived_db": 1.6528865522458243,
+      "nearest_fit_db": 9.15383870658486,
+      "residual_db": 1.1232087333920608,
+      "nearest_fit_corner_mean_db": 6.796581431068929,
+      "source": "calibrated",
+      "seconds": 13.547831499949098
+     },
+     {
+      "gain": 0.375,
+      "tone": 0.25,
+      "derived_db": 1.1143202926881814,
+      "nearest_fit_db": 3.2088665464045296,
+      "residual_db": 1.2077074349396228,
+      "nearest_fit_corner_mean_db": 3.596123790241678,
+      "source": "calibrated",
+      "seconds": 21.17631640000036
+     },
+     {
+      "gain": 0.375,
+      "tone": 0.75,
+      "derived_db": 1.1199666389099847,
+      "nearest_fit_db": 5.215965563625496,
+      "residual_db": 0.6962794846673535,
+      "nearest_fit_corner_mean_db": 5.204010584243875,
+      "source": "calibrated_nearest",
+      "seconds": 41.670159699977376
+     },
+     {
+      "gain": 0.625,
+      "tone": 0.25,
+      "derived_db": 1.008892012330487,
+      "nearest_fit_db": 3.132158204149475,
+      "residual_db": 2.1368449871064454,
+      "nearest_fit_corner_mean_db": 3.522603773179015,
+      "source": "calibrated_nearest",
+      "seconds": 18.39762669999618
+     },
+     {
+      "gain": 0.625,
+      "tone": 0.75,
+      "derived_db": 0.9737846180982852,
+      "nearest_fit_db": 5.070864171769419,
+      "residual_db": 0.46084274335392406,
+      "nearest_fit_corner_mean_db": 5.209138632820963,
+      "source": "calibrated_nearest",
+      "seconds": 8.38986290001776
+     },
+     {
+      "gain": 0.875,
+      "tone": 0.25,
+      "derived_db": 0.9993617139946716,
+      "nearest_fit_db": 3.0806494763484316,
+      "residual_db": 2.059534116788784,
+      "nearest_fit_corner_mean_db": 3.5019140123370542,
+      "source": "calibrated_nearest",
+      "seconds": 33.18371270003263
+     },
+     {
+      "gain": 0.875,
+      "tone": 0.75,
+      "derived_db": 0.9594856846825517,
+      "nearest_fit_db": 5.061282321715386,
+      "residual_db": 0.44447430923130565,
+      "nearest_fit_corner_mean_db": 5.220509358836539,
+      "source": "calibrated_nearest",
+      "seconds": 13.809119000041392
+     }
+    ],
+    "derived_mean_db": 1.181891678261301,
+    "nearest_fit_mean_db": 5.038258654343694,
+    "residual_mean_db": 1.1585139795126052,
+    "nearest_fit_corner_mean_db": 4.792978084402723,
+    "residual_beats_nearest": 8,
+    "residual_beats_derived": 5,
+    "git": {
+     "sha": "b01601dc521bb42644c04d38b4bef4f0c33dce4e",
+     "dirty": true
+    },
+    "seconds": 168.9592932999949
+   }
   }
  },
  "report_rebuilt": true

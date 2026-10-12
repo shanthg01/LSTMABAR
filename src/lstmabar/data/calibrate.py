@@ -21,7 +21,16 @@ Procedure per pedal (gain knob ``g``, tone knob ``t``, level knob at its pot def
    mean harmonic error (the fidelity gate metric) on the full analysis window.
 3. The fitted subset is expanded to a full normalized ``FloatBoard``: every other knob comes
    from the derived preset at the same setting; compressor disabled.
-4. The derived (unfitted) label's error at the same setting is stored for comparison.
+4. The derived (unfitted) label and its error at the same setting are stored
+   (``derived_boards``, ``derived_error_db``).
+
+Lookup is residual interpolation: ``label = clip(derived(knobs) + r, 0, 1)`` with the
+correction field ``r = fit - derived`` (normalized params) interpolated bilinearly over the
+gain × tone cell. Neighbouring fits jump along the tone axis because the derived tone → EQ
+mapping itself switches branch; the residual is smoother, so interpolating it keeps the
+derived mapping's shape between grid points. Where corner residuals still differ by more
+than ``max_jump`` the nearest grid point's residual is used (``"calibrated_nearest"``).
+Renderers pass the derived board they already computed (``lookup(knobs, derived=...)``).
 
 The level knob is applied analytically at :meth:`CalibrationTable.lookup`: the derivation's
 post-clip scalar gain (``Preset.info["post_gain_db"]``, the level pot's divider and fixed
@@ -81,6 +90,10 @@ class CalibrationTable:
     """Level knob rotation the grid was fitted at (the pot default)."""
     derived_error_db: list[list[float]] = field(default_factory=list)
     """Error of the derived (unfitted) label at each grid setting, same metric."""
+    derived_boards: list[list[FloatBoard]] = field(default_factory=list)
+    """Derived (unfitted) labels at each grid setting (level knob at ``level_default``); the
+    lookup interpolates the residual ``boards - derived_boards``. Tables written before this
+    field existed get it from ``lstmabar data calibrate --report-only`` (no refit)."""
 
     @classmethod
     def load(cls, path: str | Path) -> CalibrationTable:
@@ -100,58 +113,134 @@ class CalibrationTable:
 
     # --- Lookup ---------------------------------------------------------------------------------
 
-    def lookup(self, knobs: Mapping[str, float]) -> Label:
+    def lookup(self, knobs: Mapping[str, float], derived: FloatBoard | None = None) -> Label:
         """Normalized label for full pedal ``knobs`` (rotations in [0, 1]).
 
-        Bilinear interpolation of the grid fits (``source="calibrated"``), or the nearest grid
-        point (``"calibrated_nearest"``) where neighbouring fits differ by more than
-        ``max_jump``. The level knob's analytic offset is added to ``drive.level_db`` and
-        clamped to Drive's range; a clamp is reported in ``Label.clamp_notes``.
+        ``label = clip(derived + r, 0, 1)``: the derived label at ``knobs`` plus the
+        correction field ``r = fit - derived`` (normalized params) interpolated bilinearly
+        over the gain × tone cell (``source="calibrated"``). Where two of the cell's corner
+        residuals differ by more than ``max_jump``, the nearest grid point's residual is used
+        instead (``"calibrated_nearest"``). Gates are copied from the nearest grid fit. At a
+        grid point the label equals the fit. Then the level knob's analytic offset is added
+        to ``drive.level_db`` and clamped to Drive's range (reported in ``clamp_notes``).
+
+        ``derived`` is the derived board at ``knobs`` (``board_to_floats(preset_params(
+        derive(pedal, knobs, ctx)))``), as the renderer already computes it; if ``None`` it is
+        computed here (~0.5 s). The residuals refer to the level knob at ``level_default``:
+        a passed board's ``drive.level_db`` is moved back to that reference analytically, or
+        recomputed if the derivation clamped it.
         """
+        if not self.derived_boards:
+            raise ValueError(
+                f"calibration table {self.pedal_id!r} has no derived_boards (written before "
+                "residual lookup); run `lstmabar data calibrate --report-only` to add them "
+                "(no refit)"
+            )
         g = _rotation(knobs, self.gain_knob)
         t = _rotation(knobs, self.tone_knob)
+        level = ref = None
+        if self.level_knob is not None and self.level_knob in knobs:
+            level = _rotation(knobs, self.level_knob)
+            ref = self.level_default if self.level_default is not None else level
+        base = self._reference_derived(knobs, derived, g, t, level, ref)
         i0, i1, wg = _bracket(self.gain_values, g)
         j0, j1, wt = _bracket(self.tone_values, t)
         corners = [(i0, j0), (i0, j1), (i1, j0), (i1, j1)]
         weights = [(1 - wg) * (1 - wt), (1 - wg) * wt, wg * (1 - wt), wg * wt]
         nearest = (i1 if wg > 0.5 else i0, j1 if wt > 0.5 else j0)
-        nb = self.boards[nearest[0]][nearest[1]]
         if self.cell_jump(i0, j0, i1, j1) > self.max_jump:
-            board = {b: dict(v) for b, v in nb.items()}
+            used = [(1.0, nearest)]
             source = "calibrated_nearest"
         else:
-            board = {}
-            for b, kv in nb.items():
-                board[b] = {}
-                for k, v in kv.items():
-                    if k == ENABLED:  # gates are copied, never interpolated
-                        board[b][k] = v
-                    else:
-                        board[b][k] = sum(
-                            w * self.boards[i][j][b][k]
-                            for w, (i, j) in zip(weights, corners, strict=True)
-                            if w != 0.0
-                        )
+            used = [(w, c) for w, c in zip(weights, corners, strict=True) if w != 0.0]
             source = "calibrated"
+        board: FloatBoard = {}
+        for b, kv in self.boards[nearest[0]][nearest[1]].items():
+            board[b] = {}
+            for k, v in kv.items():
+                if k == ENABLED:  # gates are copied from the fit, never interpolated
+                    board[b][k] = v
+                    continue
+                r = sum(w * self.residual_value(i, j, b, k) for w, (i, j) in used)
+                board[b][k] = min(max(base[b][k] + r, 0.0), 1.0)
         notes: list[str] = []
-        if self.level_knob is not None and self.level_knob in knobs:
-            level = _rotation(knobs, self.level_knob)
-            ref = self.level_default if self.level_default is not None else level
-            if level != ref:
-                offset = level_offset_db(self.pedal_id, self.level_knob, level, ref)
-                _apply_level_offset(board, offset, notes)
+        if level is not None and level != ref:
+            offset = level_offset_db(self.pedal_id, self.level_knob, level, ref)
+            _apply_level_offset(board, offset, notes)
         return Label(board=board, source=source, clamp_notes=notes)
 
+    def residual_value(self, i: int, j: int, block: str, knob: str) -> float:
+        """Correction ``fit - derived`` of one normalized param at grid point ``(i, j)``."""
+        return self.boards[i][j][block][knob] - self.derived_boards[i][j][block][knob]
+
+    def residual(self, i: int, j: int) -> FloatBoard:
+        """Correction field ``fit - derived`` at grid point ``(i, j)`` (gates excluded)."""
+        return {
+            b: {k: self.residual_value(i, j, b, k) for k in kv if k != ENABLED}
+            for b, kv in self.boards[i][j].items()
+        }
+
     def cell_jump(self, i0: int, j0: int, i1: int, j1: int) -> float:
-        """Largest pairwise jump among the (up to 4) corner boards of a cell."""
-        pts = sorted({(i0, j0), (i0, j1), (i1, j0), (i1, j1)})
-        jump = 0.0
-        for a in range(len(pts)):
-            for b in range(a + 1, len(pts)):
-                ba = self.boards[pts[a][0]][pts[a][1]]
-                bb = self.boards[pts[b][0]][pts[b][1]]
-                jump = max(jump, board_jump(ba, bb))
-        return jump
+        """Largest pairwise jump among the (up to 4) corner residuals of a cell."""
+        return _max_pairwise(self.residual, i0, j0, i1, j1)
+
+    def board_cell_jump(self, i0: int, j0: int, i1: int, j1: int) -> float:
+        """Largest pairwise jump among the corner fitted boards (the pre-residual rule)."""
+        return _max_pairwise(lambda i, j: self.boards[i][j], i0, j0, i1, j1)
+
+    def derive_context(self):
+        """The :class:`~lstmabar.physics.derive.DeriveContext` the table was fitted with."""
+        from lstmabar.physics.derive import DeriveContext
+
+        kw = {}
+        if "volts_per_fs" in self.meta:
+            kw["volts_per_fs"] = float(self.meta["volts_per_fs"])
+        if "sample_rate" in self.meta:
+            kw["sample_rate"] = int(self.meta["sample_rate"])
+        if "source_ohms" in self.meta:
+            kw["source_ohms"] = float(self.meta["source_ohms"])
+        return DeriveContext(**kw)
+
+    def _reference_derived(self, knobs, derived, g, t, level, ref) -> FloatBoard:
+        """Derived board at ``knobs`` with the level knob at the reference ``ref``."""
+
+        def slow() -> FloatBoard:
+            kn = {k: float(v) for k, v in knobs.items()}
+            kn.update({self.gain_knob: g, self.tone_knob: t})
+            if level is not None:
+                kn[self.level_knob] = ref
+            return derived_board(self.pedal_id, kn, self.derive_context())
+
+        if derived is None:
+            return slow()
+        if level is None or level == ref:
+            return derived
+        import torch
+
+        block, knob = LEVEL_PARAM
+        u = derived[block][knob]
+        if u <= _EDGE or u >= 1.0 - _EDGE:  # the derivation clamped the level: recompute
+            return slow()
+        spec = _level_spec()
+        v = float(spec.denormalize(torch.tensor(u, dtype=torch.float64)))
+        v -= level_offset_db(self.pedal_id, self.level_knob, level, ref)
+        if not spec.min < v < spec.max:  # the reference itself was clamped
+            return slow()
+        out = {b: dict(kv) for b, kv in derived.items()}
+        out[block][knob] = float(spec.normalize(torch.tensor(v, dtype=torch.float64)))
+        return out
+
+
+_EDGE = 1e-6  # normalized distance from a range end treated as "clamped by derive"
+
+
+def _max_pairwise(get, i0: int, j0: int, i1: int, j1: int) -> float:
+    pts = sorted({(i0, j0), (i0, j1), (i1, j0), (i1, j1)})
+    vals = [get(i, j) for i, j in pts]
+    return max(
+        (board_jump(vals[a], vals[b]) for a in range(len(pts)) for b in range(a + 1, len(pts))),
+        default=0.0,
+    )
 
 
 def board_jump(a: FloatBoard, b: FloatBoard) -> float:
@@ -410,6 +499,7 @@ def calibrate_pedal(
             "whitebox_oversample": fcfg.whitebox_oversample,
             "drive_oversample": fcfg.drive_oversample,
             "volts_per_fs": fcfg.volts_per_fs,
+            "source_ohms": ctx.source_ohms,
             "seed": fcfg.seed,
             "quick": fcfg.quick,
             "fit_knobs": [f"{b}.{k}" for b, k in fk],
@@ -419,8 +509,9 @@ def calibrate_pedal(
         },
         level_default=level_default,
         derived_error_db=der_err,
+        derived_boards=dboards,  # type: ignore[arg-type]
     )
-    return table, pedal_report(table, cells, elapsed, dboards)
+    return table, pedal_report(table, cells, elapsed)
 
 
 def board_jump_knob(a: FloatBoard, b: FloatBoard) -> str:
@@ -437,47 +528,57 @@ def _axis_jumps(b, ng: int, nt: int) -> tuple[list[list[float]], list[list[float
     return gain, tone
 
 
-def pedal_report(table: CalibrationTable, cells, elapsed: float, derived_boards=None) -> dict:
-    """Grid errors, neighbour jumps and fallback cells of a fitted table. With
-    ``derived_boards`` (grid of derived labels), the derived labels' jumps for comparison."""
+def _worst_pair_knob(b, i: int, j: int, i1: int, j1: int) -> str:
+    corners = sorted({(i, j), (i, j1), (i1, j), (i1, j1)})
+    worst = max(
+        (
+            (board_jump(b[p][q], b[r][s]), (p, q), (r, s))
+            for p, q in corners
+            for r, s in corners
+            if (p, q) < (r, s)
+        ),
+        default=(0.0, (i, j), (i, j)),
+    )
+    return board_jump_knob(b[worst[1][0]][worst[1][1]], b[worst[2][0]][worst[2][1]])
+
+
+def pedal_report(table: CalibrationTable, cells, elapsed: float) -> dict:
+    """Grid errors, neighbour jumps and fallback cells of a fitted table: of the fitted
+    boards, of the derived labels and of the residuals ``fit - derived`` the lookup
+    interpolates (the last two only if the table has ``derived_boards``)."""
     ng, nt = len(table.gain_values), len(table.tone_values)
     b = table.boards
     gain_jumps, tone_jumps = _axis_jumps(b, ng, nt)
-    derived = {}
-    if derived_boards is not None:
-        dg, dt = _axis_jumps(derived_boards, ng, nt)
-        derived = {
-            "derived_gain_jumps": dg,
-            "derived_tone_jumps": dt,
-            "max_derived_gain_jump": max((v for r in dg for v in r), default=0.0),
-            "max_derived_tone_jump": max((v for r in dt for v in r), default=0.0),
-        }
+    extra: dict = {}
+    has_res = bool(table.derived_boards)
+    if has_res:
+        res = [[table.residual(i, j) for j in range(nt)] for i in range(ng)]
+        for name, grid in (("derived", table.derived_boards), ("residual", res)):
+            gj, tj = _axis_jumps(grid, ng, nt)
+            extra[f"{name}_gain_jumps"] = gj
+            extra[f"{name}_tone_jumps"] = tj
+            extra[f"max_{name}_gain_jump"] = max((v for r in gj for v in r), default=0.0)
+            extra[f"max_{name}_tone_jump"] = max((v for r in tj for v in r), default=0.0)
     cell_rows = []
     for i in range(max(ng - 1, 1)):
         for j in range(max(nt - 1, 1)):
             i1, j1 = min(i + 1, ng - 1), min(j + 1, nt - 1)
-            jump = table.cell_jump(i, j, i1, j1)
-            corners = sorted({(i, j), (i, j1), (i1, j), (i1, j1)})
-            worst = max(
-                (
-                    (board_jump(b[p][q], b[r][s]), (p, q), (r, s))
-                    for p, q in corners
-                    for r, s in corners
-                    if (p, q) < (r, s)
-                ),
-                default=(0.0, (i, j), (i, j)),
-            )
-            cell_rows.append(
-                {
-                    "gain": [table.gain_values[i], table.gain_values[i1]],
-                    "tone": [table.tone_values[j], table.tone_values[j1]],
-                    "max_jump": jump,
-                    "jump_knob": board_jump_knob(
-                        b[worst[1][0]][worst[1][1]], b[worst[2][0]][worst[2][1]]
-                    ),
-                    "fallback": jump > table.max_jump,
-                }
-            )
+            bj = table.board_cell_jump(i, j, i1, j1)
+            row = {
+                "gain": [table.gain_values[i], table.gain_values[i1]],
+                "tone": [table.tone_values[j], table.tone_values[j1]],
+                "board_jump": bj,
+                "board_jump_knob": _worst_pair_knob(b, i, j, i1, j1),
+                "board_fallback": bj > table.max_jump,
+            }
+            if has_res:
+                rj = table.cell_jump(i, j, i1, j1)
+                row.update(
+                    max_jump=rj,
+                    jump_knob=_worst_pair_knob(res, i, j, i1, j1),
+                    fallback=rj > table.max_jump,
+                )
+            cell_rows.append(row)
     fit = [v for row in table.fit_error_db for v in row]
     der = [v for row in table.derived_error_db for v in row]
     return {
@@ -497,15 +598,122 @@ def pedal_report(table: CalibrationTable, cells, elapsed: float, derived_boards=
         "max_tone_jump": max((v for r in tone_jumps for v in r), default=0.0),
         "gain_jumps": gain_jumps,
         "tone_jumps": tone_jumps,
-        **derived,
+        **extra,
         "cells": cell_rows,
-        "fallback_cells": sum(c["fallback"] for c in cell_rows),
+        "board_fallback_cells": sum(c["board_fallback"] for c in cell_rows),
+        "fallback_cells": sum(c["fallback"] for c in cell_rows) if has_res else None,
         "grid": cells,
         "seconds": elapsed,
     }
 
 
+def cell_centres(table: CalibrationTable) -> list[tuple[float, float]]:
+    """``(gain, tone)`` at the centre of every grid cell (off-grid held-out settings)."""
+    gv, tv = table.gain_values, table.tone_values
+    gs = [(a + b) / 2 for a, b in zip(gv, gv[1:], strict=False)] or list(gv)
+    ts = [(a + b) / 2 for a, b in zip(tv, tv[1:], strict=False)] or list(tv)
+    return [(g, t) for g in gs for t in ts]
+
+
+OFFGRID_LABELS = ("derived", "nearest_fit", "residual")
+
+
+def offgrid_check(table: CalibrationTable, fcfg, ctx, points=None, log=None) -> dict:
+    """White-box vs grey-box harmonic error (fidelity masked mean, same signals as the fits)
+    at off-grid settings (default: cell centres, level at ``level_default``) for three labels:
+    ``derived``; ``nearest_fit``, the fitted board of the nearest grid point (lookup's
+    tie-break at a centre: the lower corner); and ``residual``, :meth:`CalibrationTable.lookup`.
+    ``nearest_fit_corner_mean_db`` is the mean over all 4 corner fits (centres are equidistant)."""
+    import torch
+
+    from lstmabar.physics.fidelity import _amps, _board, _white, evaluate, fit_knobs, make_signals
+
+    log = log or functools.partial(print, flush=True)
+    t_start = time.perf_counter()
+    pedal = _kb()[table.pedal_id]
+    sig = make_signals(fcfg)
+    board = _board(fcfg)
+    fk = fit_knobs(board)
+    rows = []
+    for g, t in points or cell_centres(table):
+        t0 = time.perf_counter()
+        kn = {table.gain_knob: g, table.tone_knob: t}
+        if table.level_knob is not None and table.level_default is not None:
+            kn[table.level_knob] = table.level_default
+        knobs = pedal.knobs(kn)
+        white, white_riff = _white(pedal, knobs, sig, fcfg)
+        white_amps = _amps(white, sig, fcfg)
+        d = derived_board(table.pedal_id, knobs, ctx)
+        lab = table.lookup(knobs, derived=d)
+        i0, i1, wg = _bracket(table.gain_values, g)
+        j0, j1, wt = _bracket(table.tone_values, t)
+        near = (i1 if wg > 0.5 else i0, j1 if wt > 0.5 else j0)
+        corners = sorted({(i0, j0), (i0, j1), (i1, j0), (i1, j1)})
+        boards = [d, table.boards[near[0]][near[1]], lab.board] + [
+            table.boards[i][j] for i, j in corners
+        ]
+        u = torch.tensor([[bd[b][k] for b, k in fk] for bd in boards], dtype=torch.float32)
+        ev = [e["mean_db"] for e in evaluate(board, fk, u, sig, white_amps, white_riff, fcfg)]
+        row = {
+            "gain": g,
+            "tone": t,
+            **{f"{name}_db": float(v) for name, v in zip(OFFGRID_LABELS, ev, strict=False)},
+            "nearest_fit_corner_mean_db": float(sum(ev[3:]) / len(ev[3:])),
+            "source": lab.source,
+            "seconds": time.perf_counter() - t0,
+        }
+        rows.append(row)
+        log(
+            f"{table.pedal_id} off-grid {table.gain_knob}={g:g} {table.tone_knob}={t:g}: "
+            + ", ".join(f"{n} {row[n + '_db']:.2f}" for n in OFFGRID_LABELS)
+            + f" dB ({lab.source}, {row['seconds']:.0f}s)"
+        )
+    from lstmabar.runs import git_info
+
+    def mean(key):
+        return sum(r[key] for r in rows) / len(rows)
+
+    return {
+        "points": rows,
+        **{f"{n}_mean_db": mean(f"{n}_db") for n in OFFGRID_LABELS},
+        "nearest_fit_corner_mean_db": mean("nearest_fit_corner_mean_db"),
+        "residual_beats_nearest": sum(r["residual_db"] < r["nearest_fit_db"] for r in rows),
+        "residual_beats_derived": sum(r["residual_db"] < r["derived_db"] for r in rows),
+        "git": git_info(),
+        "seconds": time.perf_counter() - t_start,
+    }
+
+
 # --- Report -------------------------------------------------------------------------------------
+
+
+def _f3(v) -> str:
+    return "n/a" if v is None else f"{v:.3f}"
+
+
+def _jump_cell(p: dict, axis: str, i: int, j: int) -> str:
+    """``fit (derived) [residual]`` neighbour jump along ``axis`` for one report cell."""
+    s = f"{p[axis + '_jumps'][i][j]:.3f}"
+    if f"derived_{axis}_jumps" in p:
+        s += f" ({p['derived_' + axis + '_jumps'][i][j]:.3f})"
+    if f"residual_{axis}_jumps" in p:
+        s += f" [{p['residual_' + axis + '_jumps'][i][j]:.3f}]"
+    return s
+
+
+def _cell_list(p: dict, flag: str, jump: str, knob: str) -> str:
+    g, t = p["gain_knob"], p["tone_knob"]
+    fb = [cl for cl in p["cells"] if cl.get(flag)]
+    return f"{len(fb)} of {len(p['cells'])}" + (
+        ": "
+        + "; ".join(
+            f"{g} {cl['gain'][0]:g}–{cl['gain'][1]:g} × {t} "
+            f"{cl['tone'][0]:g}–{cl['tone'][1]:g} (jump {cl[jump]:.3f}, `{cl[knob]}`)"
+            for cl in fb
+        )
+        if fb
+        else ""
+    )
 
 
 def format_report(rep: dict) -> str:
@@ -525,8 +733,26 @@ def format_report(rep: dict) -> str:
         + (" (dirty)" if rep["git"].get("dirty") else "")
         + "."
         + (
-            " Per-pedal summaries (jumps, fallback cells, derived-label jumps) recomputed "
-            "from the written tables by `lstmabar data calibrate --report-only` (no refit)."
+            " Per-pedal summaries (fit, derived and residual jumps, fallback cells) recomputed "
+            "from the written tables by `lstmabar data calibrate --report-only` (no refit); "
+            "the off-grid check by `--report-only --offgrid`"
+            + (
+                " (git "
+                + ", ".join(
+                    sorted(
+                        {
+                            (p["offgrid"]["git"].get("sha") or "n/a")[:7]
+                            + (" dirty" if p["offgrid"]["git"].get("dirty") else "")
+                            for p in rep["pedals"].values()
+                            if "offgrid" in p
+                        }
+                    )
+                )
+                + ")"
+                if any("offgrid" in p for p in rep["pedals"].values())
+                else ""
+            )
+            + "."
             if rep.get("report_rebuilt")
             else ""
         ),
@@ -553,25 +779,62 @@ def format_report(rep: dict) -> str:
         "start(s), best kept; every next gain point is warm-started from the previous gain "
         "point's fit at the same tone. Unfitted knobs come from the derived preset; "
         "compressor off.",
-        f"- Lookup: bilinear interpolation of normalized params over the gain × tone cell; "
-        f"if any two of the cell's corners differ by more than max_jump = {c['max_jump']:g} "
-        "(max abs normalized difference over knobs), the nearest grid point is used instead "
-        "(`calibrated_nearest`). Gates are copied.",
+        "- Lookup (residual interpolation): label = clip(derived(knobs) + r, 0, 1), where "
+        "r = fit − derived (normalized params) at the grid points is interpolated "
+        "bilinearly over the gain × tone cell. The derived labels jump along the tone axis "
+        "as much as the fits do (the tone → EQ mapping switches branch), so the residual is "
+        "smoother than the fit. If any two of the cell's corner residuals differ by more "
+        f"than max_jump = {c['max_jump']:g} (max abs normalized difference over knobs), the "
+        "nearest grid point's residual is used, still added to derived(knobs) "
+        "(`calibrated_nearest`). Gates are copied from the nearest fit. At grid points the "
+        "label equals the fit. The level offset is applied afterwards.",
         "",
         "## Summary",
         "",
         "| pedal | calibrated mean (dB) | derived mean (dB) | grid points where fit > derived | "
-        "max gain-axis jump | max tone-axis jump | fallback cells | time (s) |",
+        "max gain-axis jump: fit / residual | max tone-axis jump: fit / residual | "
+        "fallback cells: residual lookup (fit-board rule) | time (s) |",
         "|---|---|---|---|---|---|---|---|",
     ]
+
+    def frac(v, n):
+        return "n/a" if v is None else f"{v}/{n}"
+
     for p in rep["pedals"].values():
         n = len(p["gain_values"]) * len(p["tone_values"])
+        rg, rt = p.get("max_residual_gain_jump"), p.get("max_residual_tone_jump")
         lines.append(
             f"| {p['pedal_id']} | **{p['fit_mean_db']:.2f}** | {p['derived_mean_db']:.2f} | "
-            f"{p['fit_worse_than_derived']}/{n} | {p['max_gain_jump']:.3f} | "
-            f"{p['max_tone_jump']:.3f} | {p['fallback_cells']}/{len(p['cells'])} | "
-            f"{p['seconds']:.0f} |"
+            f"{p['fit_worse_than_derived']}/{n} | {p['max_gain_jump']:.3f} / "
+            f"{_f3(rg)} | {p['max_tone_jump']:.3f} / {_f3(rt)} | "
+            f"**{frac(p['fallback_cells'], len(p['cells']))}** "
+            f"({p['board_fallback_cells']}/{len(p['cells'])}) | {p['seconds']:.0f} |"
         )
+    og = {k: p["offgrid"] for k, p in rep["pedals"].items() if "offgrid" in p}
+    if og:
+        lines += [
+            "",
+            "## Off-grid held-out check",
+            "",
+            "At the centre of every grid cell (settings no fit saw; level at its default), the "
+            "same metric for three labels: the derived label, the nearest grid point's fit "
+            "(the centre is equidistant from 4 corners; the lookup's tie-break takes the lower "
+            "corner, and the mean over all 4 corner fits is in parentheses) and the residual "
+            "lookup. Same signals, levels and f0s as the fits; one white-box render per "
+            "setting.",
+            "",
+            "| pedal | settings | derived (dB) | nearest fit (dB) | residual lookup (dB) | "
+            "residual < nearest | residual < derived | time (s) |",
+            "|---|---|---|---|---|---|---|---|",
+        ]
+        for pid, o in og.items():
+            n = len(o["points"])
+            lines.append(
+                f"| {pid} | {n} | {o['derived_mean_db']:.2f} | {o['nearest_fit_mean_db']:.2f} "
+                f"({o['nearest_fit_corner_mean_db']:.2f}) | **{o['residual_mean_db']:.2f}** | "
+                f"{o['residual_beats_nearest']}/{n} | {o['residual_beats_derived']}/{n} | "
+                f"{o['seconds']:.0f} |"
+            )
     for p in rep["pedals"].values():
         g, t = p["gain_knob"], p["tone_knob"]
         lines += [
@@ -590,16 +853,18 @@ def format_report(rep: dict) -> str:
             )
             lines.append(f"| {gv:g} | {cells} |")
         has_d = "derived_gain_jumps" in p
-        dg = p.get("derived_gain_jumps")
-        dt = p.get("derived_tone_jumps")
-
-        def jcell(v, d):
-            return f"{v:.3f}" + (f" ({d:.3f})" if d is not None else "")
-
+        has_r = "residual_gain_jumps" in p
+        jcell = functools.partial(_jump_cell, p)
+        cell_list = functools.partial(_cell_list, p)
         lines += [
             "",
-            "Neighbour jumps (max abs normalized difference over knobs"
+            "Neighbour jumps of the fits (max abs normalized difference over knobs"
             + ("; the derived labels' jump in parentheses" if has_d else "")
+            + (
+                "; the residual's (fit − derived, what the lookup interpolates) in brackets"
+                if has_r
+                else ""
+            )
             + ") along the gain axis (rows = gain pair):",
             "",
             f"| {g} pair \\ {t} | " + " | ".join(f"{v:g}" for v in p["tone_values"]) + " |",
@@ -607,7 +872,7 @@ def format_report(rep: dict) -> str:
         ]
         for i, row in enumerate(p["gain_jumps"]):
             pair = f"{p['gain_values'][i]:g}–{p['gain_values'][i + 1]:g}"
-            cells = [jcell(v, dg[i][j] if has_d else None) for j, v in enumerate(row)]
+            cells = [jcell("gain", i, j) for j in range(len(row))]
             lines.append(f"| {pair} | " + " | ".join(cells) + " |")
         if p["tone_jumps"] and p["tone_jumps"][0]:
             lines += [
@@ -623,24 +888,39 @@ def format_report(rep: dict) -> str:
                 "|---|" + "---|" * (len(p["tone_values"]) - 1),
             ]
             for i, row in enumerate(p["tone_jumps"]):
-                cells = [jcell(v, dt[i][j] if has_d else None) for j, v in enumerate(row)]
+                cells = [jcell("tone", i, j) for j in range(len(row))]
                 lines.append(f"| {p['gain_values'][i]:g} | " + " | ".join(cells) + " |")
-        fb = [cl for cl in p["cells"] if cl["fallback"]]
+
+        if has_r:
+            lines += [
+                "",
+                "Fallback cells of the residual lookup (nearest grid point's residual): "
+                + cell_list("fallback", "max_jump", "jump_knob")
+                + ".",
+            ]
         lines += [
             "",
-            f"Fallback cells (nearest grid point): {len(fb)} of {len(p['cells'])}"
-            + (
-                ": "
-                + "; ".join(
-                    f"{g} {cl['gain'][0]:g}–{cl['gain'][1]:g} × {t} "
-                    f"{cl['tone'][0]:g}–{cl['tone'][1]:g} (jump {cl['max_jump']:.3f}, "
-                    f"`{cl.get('jump_knob', '?')}`)"
-                    for cl in fb
-                )
-                if fb
-                else ""
-            )
+            "Cells where the fitted boards themselves jump > max_jump (the pre-residual "
+            "lookup's fallback rule): "
+            + cell_list("board_fallback", "board_jump", "board_jump_knob")
             + ".",
+        ]
+        if "offgrid" in p:
+            lines += [
+                "",
+                "Off-grid check at cell centres (dB; source = residual lookup's):",
+                "",
+                f"| {g} | {t} | derived | nearest fit | 4-corner fit mean | residual lookup "
+                "| source |",
+                "|---|---|---|---|---|---|---|",
+            ]
+            for r in p["offgrid"]["points"]:
+                lines.append(
+                    f"| {r['gain']:g} | {r['tone']:g} | {r['derived_db']:.2f} | "
+                    f"{r['nearest_fit_db']:.2f} | {r['nearest_fit_corner_mean_db']:.2f} | "
+                    f"**{r['residual_db']:.2f}** | {r['source']} |"
+                )
+        lines += [
             "",
             "Winning start at gain index 0: "
             + "; ".join(
@@ -686,7 +966,7 @@ def run(cfg, args) -> int:
     from lstmabar.runs import git_info
 
     if getattr(args, "report_only", False):
-        rebuild_report(cfg)
+        rebuild_report(cfg, offgrid=bool(getattr(args, "offgrid", False)))
         return 0
     quick = bool(getattr(args, "quick", False))
     pedals = getattr(args, "pedals", None) or list(cfg.render.whitebox_pedals)
@@ -739,10 +1019,13 @@ def write_report(rep: dict, report_dir: str | Path) -> None:
     (report_dir / f"{REPORT_NAME}.md").write_text(format_report(rep), encoding="utf-8")
 
 
-def rebuild_report(cfg) -> dict:
+def rebuild_report(cfg, offgrid: bool = False, log=None) -> dict:
     """Recompute the per-pedal summaries of ``reports/calibration.json`` from the committed
     tables (keeping the stored per-grid fit details and timings) and rewrite the report.
-    No fitting; used to add report fields without a re-run."""
+    No fitting; used to add report fields without a re-run. Tables without
+    ``derived_boards`` get them (derived labels at the grid settings) and are re-saved.
+    With ``offgrid``, also runs :func:`offgrid_check` (white-box renders; minutes per pedal);
+    otherwise a previously stored off-grid result is kept."""
     from lstmabar.data.layout import DataLayout
     from lstmabar.physics.derive import DeriveContext
 
@@ -750,11 +1033,28 @@ def rebuild_report(cfg) -> dict:
     rep = json.loads((report_dir / f"{REPORT_NAME}.json").read_text(encoding="utf-8"))
     layout = DataLayout.from_config(cfg)
     ctx = DeriveContext.from_config(cfg)
+    fcfg = fidelity_config(cfg, bool(rep["config"].get("quick", False)))
     for pid, old in rep["pedals"].items():
-        table = CalibrationTable.load(layout.calibration_table(pid))
-        rep["pedals"][pid] = pedal_report(
-            table, old["grid"], old["seconds"], table_derived_boards(table, ctx)
-        )
+        path = layout.calibration_table(pid)
+        table = CalibrationTable.load(path)
+        if not table.derived_boards:
+            table = CalibrationTable.from_dict(
+                {**table.to_dict(), "derived_boards": table_derived_boards(table, ctx)}
+            )
+            table.save(path)
+        new = pedal_report(table, old["grid"], old["seconds"])
+        if offgrid:
+            for key, want in (
+                ("sine_levels_dbfs", list(fcfg.levels_dbfs)),
+                ("f0s_hz", list(fcfg.pitches_hz)),
+                ("sample_rate", fcfg.sample_rate),
+            ):
+                if table.meta.get(key, want) != want:
+                    raise SystemExit(f"{pid}: table meta {key} {table.meta[key]} != {want}")
+            new["offgrid"] = offgrid_check(table, fcfg, ctx, log=log)
+        elif "offgrid" in old:
+            new["offgrid"] = old["offgrid"]
+        rep["pedals"][pid] = new
     rep["report_rebuilt"] = True
     write_report(rep, report_dir)
     return rep
