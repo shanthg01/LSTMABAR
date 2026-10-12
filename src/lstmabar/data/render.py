@@ -759,7 +759,7 @@ def bench(cfg, args) -> int:
         result = _bench(cfg, args, opts, tmp)
     print(result)
     BENCH_REPORT.parent.mkdir(parents=True, exist_ok=True)
-    BENCH_REPORT.write_text(result + "\n", encoding="utf-8")
+    BENCH_REPORT.write_text(result + "\n", encoding="utf-8", newline="\n")
     print(f"wrote {BENCH_REPORT.as_posix()}")
     return 0
 
