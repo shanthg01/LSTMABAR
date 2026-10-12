@@ -30,8 +30,13 @@ Details:
   fraction is below ``analysis.min_voiced_fraction`` the harmonic descriptors and the
   archetype readout are NaN (``null`` in JSON); spectral descriptors are always measured.
   The dry analysis is computed once per clip (per worker) and shifted to each item's level.
-- **Shards**: ``DONE`` holds the hash of the shard's spec list; a finished shard from a
-  different plan is an error (never silently mixed). Partial shards are rewritten.
+- **Shards**: ``DONE`` (written atomically, last) holds the hash of the shard's spec list plus
+  the render fingerprint (:func:`render_fingerprint`: analysis/render/physics settings and
+  the calibration tables' sha256); a finished shard from a different plan is an error (never
+  silently mixed). Partial shards (no or unreadable ``DONE``) are rewritten. ``wet/plan.json``
+  records the shard count and hashes; shard dirs beyond the plan trigger a warning.
+- **Disabled blocks** keep knob values in ``board_params`` (random for free board, defaults
+  or derived values for pedals); consumers must mask by ``"enabled"``.
 """
 
 from __future__ import annotations
@@ -584,18 +589,60 @@ def render_shard(job: dict) -> dict:
     items = [render_item(s, clips[s.clip_id], shard, ctx, timings) for s in specs]
     write_jsonl(sdir / ITEMS_FILE, items)
     done = {"plan_sha256": job["plan_sha256"], "items": len(items)}
-    (sdir / DONE_MARKER).write_text(json.dumps(done, sort_keys=True) + "\n", encoding="utf-8")
+    _write_atomic(sdir / DONE_MARKER, json.dumps(done, sort_keys=True) + "\n")
     return {"shard": shard, "items": len(items), "seconds": time.perf_counter() - t0}
 
 
+def _write_atomic(path: Path, text: str) -> None:
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    tmp.write_text(text, encoding="utf-8", newline="\n")
+    os.replace(tmp, path)
+
+
 def _done_hash(layout: DataLayout, shard: int) -> str | None:
+    """The plan hash a finished shard was rendered from; ``None`` if missing or unreadable
+    (treated as partial and re-rendered)."""
     path = layout.shard_dir(shard) / DONE_MARKER
-    if not path.exists():
-        return None
     try:
         return str(json.loads(path.read_text(encoding="utf-8"))["plan_sha256"])
-    except (ValueError, KeyError):
-        return ""
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+PLAN_FILE = "plan.json"
+
+
+def render_fingerprint(cfg, opts: Options) -> dict:
+    """Everything besides the specs that changes a shard's content: render/analysis settings,
+    physics calibration, label options and the calibration tables' content hashes."""
+    layout = DataLayout.from_config(cfg)
+    r = cfg.render
+    tables = {}
+    for pid in r.whitebox_pedals:
+        path = layout.calibration_table(str(pid))
+        tables[str(pid)] = levels.sha256_file(path) if path.exists() else None
+    return {
+        "sample_rate": int(cfg.audio.sample_rate),
+        "physics": OmegaConf.to_container(cfg.physics, resolve=True),
+        "analysis": OmegaConf.to_container(cfg.analysis, resolve=True),
+        "render": {
+            k: OmegaConf.to_container(r, resolve=True)[k]
+            for k in (
+                "wet_peak_dbfs",
+                "wet_subtype",
+                "whitebox_pedals",
+                "whitebox_oversample",
+                "input_peak_dbfs",
+            )
+        },
+        "calibration_tables": tables,
+        "options": asdict(opts),
+    }
+
+
+def shard_hash(specs: Sequence[RenderSpec], fingerprint: Mapping) -> str:
+    blob = json.dumps({"specs": plan_hash(specs), "fp": fingerprint}, sort_keys=True)
+    return hashlib.sha256(blob.encode()).hexdigest()
 
 
 # ============================================================================ CLI steps
@@ -671,9 +718,32 @@ def run(cfg, args) -> int:
     shards = shard_specs(specs, int(cfg.render.shard_size))
     by_id = {c.clip_id: c for c in clips}
     cfg_dict = OmegaConf.to_container(cfg, resolve=True)
+    fp = render_fingerprint(cfg, opts)
+    hashes = [shard_hash(shard, fp) for shard in shards]
+    layout.wet_dir.mkdir(parents=True, exist_ok=True)
+    plan = {
+        "shards": len(shards),
+        "items": len(specs),
+        "shard_size": int(cfg.render.shard_size),
+        "plan_sha256": hashlib.sha256("".join(hashes).encode()).hexdigest(),
+        "shard_sha256": hashes,
+        "fingerprint": fp,
+    }
+    _write_atomic(layout.wet_dir / PLAN_FILE, json.dumps(plan, indent=1, sort_keys=True) + "\n")
+    stale = sorted(
+        p.name
+        for p in layout.wet_dir.glob("shard-*")
+        if p.is_dir() and int(p.name.split("-")[1]) >= len(shards)
+    )
+    if stale:
+        warnings.warn(
+            f"{len(stale)} shard dirs beyond the plan ({stale[0]}...): not part of this "
+            "dataset; delete them",
+            stacklevel=2,
+        )
     jobs = []
     for i, shard in enumerate(shards):
-        h = plan_hash(shard)
+        h = hashes[i]
         done = _done_hash(layout, i)
         if done == h:
             continue
@@ -698,8 +768,13 @@ def run(cfg, args) -> int:
     workers = max(1, min(workers, len(jobs)))
     t0 = time.perf_counter()
     if workers == 1:
-        for job in jobs:
-            _report(render_shard(job), t0)
+        threads = torch.get_num_threads()
+        torch.set_num_threads(1)  # same numerics/threading as the pool workers
+        try:
+            for job in jobs:
+                _report(render_shard(job), t0)
+        finally:
+            torch.set_num_threads(threads)
     else:
         ctx = multiprocessing.get_context("spawn")  # Windows-safe; no forked torch state
         with ProcessPoolExecutor(workers, mp_context=ctx, initializer=_init_worker) as pool:
@@ -800,6 +875,7 @@ def _bench(cfg, args, opts: Options, tmp: Path) -> str:
     cases = [("pedal", pid) for pid in sorted(pots) for _ in range(per_pedal)]
     cases += [(sc, None) for sc in FREE_SCENARIOS]
     rows: dict[str, list[dict[str, float]]] = defaultdict(list)
+    results: dict[int, list[tuple[dict, dict]]] = defaultdict(list)  # wet analysis per option
     for k, (scenario, pid) in enumerate(cases):
         clip = clips[k % len(clips)]
         spec = sample_spec(
@@ -811,8 +887,9 @@ def _bench(cfg, args, opts: Options, tmp: Path) -> str:
         stored, _ = levels.read_audio(tmp / "wet" / item.wet_path)
         for mf in frames_opts:
             t0 = time.perf_counter()
-            analyse(stored, sr, tracks[clip.clip_id], True, ctx.n_harmonics, mf)
+            out = analyse(stored, sr, tracks[clip.clip_id], True, ctx.n_harmonics, mf)
             t[f"wet_analysis@{mf}"] = time.perf_counter() - t0
+            results[mf].append(out)
         t.pop("wet_analysis", None)
         cat = spec.engine if scenario == "pedal" else "free"
         if scenario == "pedal" and pid == s.holdout_pedal:
@@ -820,14 +897,36 @@ def _bench(cfg, args, opts: Options, tmp: Path) -> str:
         rows[cat].append(t)
         rows[f"pedal:{pid}" if pid else f"free:{scenario}"].append(t)
 
-    return _bench_report(cfg, s, ctx, clips, clip_t, rows, frames_opts, numba_available())
+    noise = _analysis_noise(results, frames_opts)
+    return _bench_report(cfg, s, ctx, clips, clip_t, rows, frames_opts, noise, numba_available())
 
 
 def _mean(rows: list[dict[str, float]], key: str) -> float:
     return float(np.mean([r.get(key, 0.0) for r in rows])) if rows else 0.0
 
 
-def _bench_report(cfg, s, ctx, clips, clip_t, rows, frames_opts, numba: bool) -> str:
+def _analysis_noise(results: Mapping[int, list], frames_opts: Sequence[int]) -> dict[int, str]:
+    """Wet-analysis change vs the largest ``max_frames`` option, per option (bench report)."""
+    ref = results[max(frames_opts)]
+    out = {}
+    for mf in frames_opts:
+        d_oe, d_arch = [], []
+        for (desc, arch), (rdesc, rarch) in zip(results[mf], ref, strict=True):
+            d_oe.append(abs(desc["odd_even_db"] - rdesc["odd_even_db"]))
+            d_arch.append(sum(abs(arch[k] - rarch[k]) for k in ARCHETYPE_KEYS))
+        d_oe = np.array(d_oe)[np.isfinite(d_oe)]
+        d_arch = np.array(d_arch)[np.isfinite(d_arch)]
+        if not len(d_oe) or not len(d_arch):
+            out[mf] = "n/a | n/a"
+            continue
+        out[mf] = (
+            f"{np.median(d_oe):.2f} / {np.max(d_oe):.2f} | "
+            f"{np.median(d_arch):.3f} / {np.max(d_arch):.3f}"
+        )
+    return out
+
+
+def _bench_report(cfg, s, ctx, clips, clip_t, rows, frames_opts, noise, numba: bool) -> str:
     workers = int(cfg.render.workers)
     counts = planned_counts(cfg, s)
     n_items = sum(v for k, v in counts.items() if k != "clips")
@@ -898,9 +997,13 @@ def _bench_report(cfg, s, ctx, clips, clip_t, rows, frames_opts, numba: bool) ->
         f"free board {share['free']:.0%}; unseen items are {holdout_cat}. "
         f"Wall time = CPU time / `render.workers` ({workers}), assuming linear scaling.",
         "",
+        f"Analysis noise: change of the wet analysis vs `max_frames={max(frames_opts)}` on the "
+        f"same {sum(len(rows[c]) for c in (*share, holdout_cat))} bench renders: |Δ odd/even| "
+        "in dB and the L1 distance of the 5-way archetype vector, as median / max.",
+        "",
         "| analysis.max_frames | wet analysis s/item | full v1 (h) | per 20k items (h) | "
-        f"within {budget_h:g} h |",
-        "|---:|---:|---:|---:|---|",
+        f"within {budget_h:g} h | odd/even abs Δ dB (med / max) | archetype L1 (med / max) |",
+        "|---:|---:|---:|---:|---|---|---|",
     ]
     for mf in frames_opts:
         h = total_hours(mf)
@@ -908,21 +1011,29 @@ def _bench_report(cfg, s, ctx, clips, clip_t, rows, frames_opts, numba: bool) ->
         mark = " (current)" if mf == ctx.max_frames else ""
         lines.append(
             f"| {mf}{mark} | {wa:.3f} | {h:.1f} | {h * 20000 / n_items:.1f} | "
-            f"{'yes' if h <= budget_h else 'no'} |"
+            f"{'yes' if h <= budget_h else 'no'} | {noise[mf]} |"
         )
     current = total_hours(ctx.max_frames)
-    ok = [mf for mf in frames_opts if total_hours(mf) <= budget_h]
-    lines.append("")
-    if current <= budget_h:
+    headroom = float(cfg.bench.headroom)
+    target = budget_h * headroom
+    ok = [mf for mf in frames_opts if total_hours(mf) <= target]
+    lines += [
+        "",
+        f"Choice rule (R8): the largest `max_frames` whose estimate is within {headroom:g} x "
+        f"the budget (= {target:g} h; `bench.headroom` covers timing noise and the unverified "
+        "linear scaling over workers).",
+        "",
+    ]
+    if ok and max(ok) != ctx.max_frames:
         lines.append(
-            f"**Gate: pass.** The current config renders v1 in ~{current:.1f} h "
-            f"(budget {budget_h:g} h)."
+            f"**Gate: {'pass' if current <= budget_h else 'fail'}** at the current "
+            f"`max_frames={ctx.max_frames}` (~{current:.1f} h). Recommended: "
+            f"`analysis.max_frames={max(ok)}` (~{total_hours(max(ok)):.1f} h)."
         )
     elif ok:
         lines.append(
-            f"**Gate: fail at max_frames={ctx.max_frames}** (~{current:.1f} h). Cheapest "
-            f"analysis reduction within budget (R8): `analysis.max_frames={max(ok)}` "
-            f"(~{total_hours(max(ok)):.1f} h)."
+            f"**Gate: pass.** The current `max_frames={ctx.max_frames}` renders v1 in "
+            f"~{current:.1f} h and is the largest option within {target:g} h."
         )
     else:
         lines.append(

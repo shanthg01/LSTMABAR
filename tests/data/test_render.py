@@ -1,5 +1,6 @@
 """P4 task 4.2: renderer (spec sampling, labels, levels, analysis, shards)."""
 
+import json
 from argparse import Namespace
 from collections import Counter
 from dataclasses import replace
@@ -12,7 +13,14 @@ from lstmabar.data import render as R
 from lstmabar.data.calibrate import CalibrationTable, Label
 from lstmabar.data.fixtures import fixture_config, make_fixture_dataset
 from lstmabar.data.layout import DONE_MARKER, DataLayout
-from lstmabar.data.schema import FREE_SCENARIOS, DryClip, RenderItem, read_jsonl
+from lstmabar.data.schema import (
+    FREE_SCENARIOS,
+    DryClip,
+    RenderItem,
+    board_to_floats,
+    read_jsonl,
+)
+from lstmabar.dsp.pedalboard import default_pedalboard
 from lstmabar.physics.derive import derive
 from lstmabar.physics.kb import load_kb
 from tests.analysis.signals import constant_track, oscillator
@@ -121,7 +129,7 @@ def test_plan_is_deterministic_and_holds_out_the_pedal(sampling):
 
 def test_planned_counts(tmp_path, sampling):
     c = R.planned_counts(fixture_config(tmp_path), sampling)
-    assert c["train"] == 3500 * 6 and c["test_unseen_pedal"] == 1000 * 2 and c["clips"] == 5500
+    assert c["train"] == 3700 * 6 and c["test_unseen_pedal"] == 130 * 2 and c["clips"] == 4280
 
 
 # --------------------------------------------------------------------------- labels / levels
@@ -203,7 +211,9 @@ class FakeTable:
         self.pedal_id = pedal_id
 
     def lookup(self, knobs):
-        board = {"drive": {"gain_db": 0.25, "level_db": 1.0, "enabled": 1.0}}
+        board = board_to_floats(default_pedalboard().default_params(1))  # full layout
+        board["compressor"]["enabled"] = 0.0
+        board["drive"].update(gain_db=0.25, level_db=1.0)
         return Label(board=board, source="calibrated", clamp_notes=["level offset clamped"])
 
 
@@ -284,16 +294,24 @@ def test_run_on_fixtures_end_to_end_and_resume(tmp_path, monkeypatch):
         else:
             assert i.voiced_fraction is None and i.archetype_wet["saw"] is None
     # Resume: finished shards are skipped, a partial one is rewritten.
+    plan = json.loads((layout.wet_dir / R.PLAN_FILE).read_text(encoding="utf-8"))
+    assert plan["shards"] == 3 and plan["items"] == 7 and len(plan["shard_sha256"]) == 3
     first = (layout.shard_dir(0) / R.ITEMS_FILE).stat().st_mtime_ns
     (layout.shard_dir(2) / DONE_MARKER).unlink()
     (layout.shard_dir(2) / "junk.flac").write_bytes(b"x")
+    (layout.shard_dir(1) / DONE_MARKER).write_text("{trunc", encoding="utf-8")  # unreadable
     calls = []
     orig = R.render_shard
     monkeypatch.setattr(R, "render_shard", lambda job: calls.append(job["shard"]) or orig(job))
     assert R.run(cfg, args) == 0
-    assert calls == [2] and not (layout.shard_dir(2) / "junk.flac").exists()
+    assert calls == [1, 2] and not (layout.shard_dir(2) / "junk.flac").exists()
     assert (layout.shard_dir(0) / R.ITEMS_FILE).stat().st_mtime_ns == first
     assert _items(layout) == items  # deterministic re-render
-    # A finished shard from a different plan is never silently mixed in.
-    with pytest.raises(RuntimeError, match="different plan"):
-        R.run(cfg, Namespace(**{**vars(args), "overrides": [*SMALL, "seed=7"]}))
+    # A finished shard from a different plan (specs or render settings) is never mixed in.
+    for extra in ("seed=7", "analysis.max_frames=9", "render.wet_peak_dbfs=-3.0"):
+        with pytest.raises(RuntimeError, match="different plan"):
+            R.run(cfg, Namespace(**{**vars(args), "overrides": [*SMALL, extra]}))
+    # Shard dirs beyond the plan are flagged.
+    (layout.shard_dir(9)).mkdir()
+    with pytest.warns(UserWarning, match="beyond the plan"):
+        R.run(cfg, args)

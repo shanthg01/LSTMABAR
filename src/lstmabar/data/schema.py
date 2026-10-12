@@ -96,6 +96,10 @@ class RenderItem(_RelPaths):
 
     Analysis values may be ``None`` after a JSONL round-trip (NaN is stored as ``null``):
     readers such as the caption code must treat ``None`` as "not measured".
+
+    Blocks whose ``"enabled"`` gate is 0 still carry knob values in ``board_params`` (random
+    for free-board items, defaults/derived values for pedal presets) that had no effect on the
+    audio: consumers (losses, kNN, captions) must mask knobs by ``"enabled"``.
     """
 
     _PATH_FIELDS = ("wet_path",)
