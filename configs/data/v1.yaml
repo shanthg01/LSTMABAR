@@ -72,14 +72,35 @@ captions:                      # R1
   max_resubmits: 1                # errored/expired requests are resubmitted at most once
 
 test_real:                     # task 4.4; audio stays in data.test_real_dir (gitignored)
-  egfxset:
-    units: [TubeScreamer, RAT, BluesDriver]   # dataset folder names; confirm on download
+  # Archives are listed via the Zenodo API + zip central directory, then downloaded one at a
+  # time, the planned members stored as lossless FLAC, and the archive deleted (R9).
+  # `lstmabar data test-real --list` prints the plan and disk estimate without downloading.
+  egfxset:                     # Zenodo 7044411, CC BY 4.0; 48 kHz / 24-bit mono 5 s notes
+    enabled: true
+    record: 7044411
+    units: [TubeScreamer, RAT, BluesDriver]   # zip / folder names (confirmed 2026-10-12)
+    clean: Clean
+    csv: egfxset_metadata.csv
+    csv_effect: {TubeScreamer: tube screamer, RAT: distortion, BluesDriver: blues driver}
     kb_map: {TubeScreamer: ts808, RAT: rat, BluesDriver: null}
-  podset:
+    # CSV knob name -> KB pot name (others already match: tone, level, distortion, ...).
+    knob_map: {TubeScreamer: {overdrive: drive}}
+    family: {TubeScreamer: overdrive, RAT: distortion, BluesDriver: overdrive}
+  podset:                      # Zenodo 15389653, CC BY-NC 4.0: internal only
+    enabled: true
+    record: 15389653
     max_pedals: 5
-    pedals: []                 # chosen at download time (R9: one archive at a time)
+    # Priority order (~1.6-1.8 GB zip each): TS-style, BD-2 (cross-check with EGFxSet's
+    # BD-2), Klon-style, MOSFET hard clipper, Bluesbreaker-style.
+    pedals: [tubedreamer, bluesdriver, ktr, ocd, kingoftone]
+    kinds: [a, s0, s1, s2]     # a = mixed material, s0/s1/s2 = sweeps at -6/-12/-24 dBFS
+    family: overdrive
+    kb_map: {}                 # no KB entries for these pedals (tubedreamer is TS-derived)
+    input_archive: 0_input.zip
+    metadata_csv: 0_dataset_metadata.csv
+    norm_csv: 0_normalization_summary.csv
   tonetwist:
-    enabled: false             # internal numbers only; opt-in
+    enabled: false             # internal numbers only; not implemented (raises if enabled)
 
 splits:
   seed: 0
