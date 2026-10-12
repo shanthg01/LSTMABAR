@@ -191,6 +191,13 @@ def test_splits():
     vset = val_recordings(recs, 0.1)
     assert len(vset) == 3 and "only" not in vset  # 2 + 1; single-recording groups stay train
     assert val_recordings(reversed(recs), 0.1) == vset  # order-independent
+    assert val_recordings(recs, 0.0) == set()
+    # Shared content: the same take goes to val for every performer.
+    shared = [(p, "chords", f"{p}_chords_{t}") for p in ("P1", "P2") for t in range(10)]
+    vs = val_recordings(shared, 0.2)
+    assert {r.split("_", 1)[1] for r in vs if r.startswith("P1")} == {
+        r.split("_", 1)[1] for r in vs if r.startswith("P2")
+    }
     assert assign_clip_split("guitar_techs", "a", "a0", tp, "c", vset) in {"train", "val"}
     assert {assign_clip_split("guitar_techs", "a", r, tp, "c", vset) for r in vset} == {"val"}
     assert assign_clip_split("guitar_techs", "c", "anything", tp, "c", vset) == "test"
@@ -230,7 +237,7 @@ def test_fixture_dataset(tmp_path):
     lay = DataLayout.from_config(cfg)
     assert len(clips) == 6 and lay.dry_manifest.exists()
     assert {c.split for c in clips if c.performer == "fx3"} == {"test"}
-    assert {c.split for c in clips if c.performer != "fx3"} <= {"train", "val"}
+    assert {c.split for c in clips if c.performer != "fx3"} == {"train", "val"}
     for c in clips:
         x, sr = levels.read_audio(lay.resolve_rendered(c.path))
         assert sr == 44100 and levels.peak_dbfs(x) == pytest.approx(-1.0, abs=0.01)

@@ -76,7 +76,7 @@ def make_fixture_dataset(
                     source="fixture",
                     performer=performer,
                     recording_id=recording,
-                    technique=kind,
+                    technique="fixture",  # one group per performer, so val is non-empty
                     source_file=f"fixture/{recording}.wav",
                     offset_s=0.0,
                     duration_s=seconds,

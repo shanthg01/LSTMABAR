@@ -6,10 +6,13 @@ model selection (different player, guitar and content). So:
 
 - ``test``: every clip of the ``ingest.heldout_performer`` (performer-disjoint from train).
 - ``val``: an in-domain, **by-recording** slice of the train performers: within each
-  (performer, technique) group, recordings are sorted by a hash of their id and the first
-  ``max(1, round(n * splits.val_recording_fraction))`` go to val (groups with a single
-  recording stay in train). No recording is shared between splits, and the result does not
-  depend on file order.
+  (performer, technique) group, recordings are sorted by a hash of their *content key* (the
+  recording id without the ``<performer>_`` prefix, so the same take of shared material goes
+  to val for every performer and val measures unseen content, not just unseen takes) and the
+  first ``min(max(1, round(n * splits.val_recording_fraction)), n - 1)`` go to val (groups
+  with a single recording stay in train). No recording is shared between splits, and the
+  result does not depend on file order. On Guitar-TECHS only chords and scales have more than
+  one take per performer, so val holds chords and scales only (~7 % of P1/P2 time).
 - ``train``: the remaining train-performer recordings.
 - Own DI (``source == "own"``): test only.
 - ``test_unseen_pedal`` is not a clip split: it is the set of holdout-pedal renders made on
@@ -32,6 +35,12 @@ def unit_hash(key: str, seed: int = 0) -> float:
     return int.from_bytes(h[:8], "big") / 2.0**64
 
 
+def content_key(performer: str, recording_id: str) -> str:
+    """Recording id without a leading ``<performer>_`` (shared content across performers)."""
+    prefix = f"{performer}_"
+    return recording_id[len(prefix) :] if recording_id.startswith(prefix) else recording_id
+
+
 def val_recordings(
     recordings: Iterable[tuple[str, str, str]], fraction: float = 0.1, seed: int = 0
 ) -> set[str]:
@@ -40,10 +49,10 @@ def val_recordings(
     for performer, technique, rec in recordings:
         groups[(performer, technique)].add(rec)
     out: set[str] = set()
-    for recs in groups.values():
+    for (performer, _), recs in groups.items():
         if len(recs) < 2 or fraction <= 0:
             continue
-        ids = sorted(recs, key=lambda r: (unit_hash(r, seed), r))
+        ids = sorted(recs, key=lambda r: (unit_hash(content_key(performer, r), seed), r))
         n_val = min(max(round(len(ids) * fraction), 1), len(ids) - 1)
         out.update(ids[:n_val])
     return out
@@ -83,4 +92,4 @@ def assign_splits(clips: Iterable[tuple[str, ...]], cfg) -> list[str]:
     return [assign_clip_split(c[0], c[1], c[2], train, heldout, vset) for c in clips]
 
 
-__all__ = ["assign_clip_split", "assign_splits", "unit_hash", "val_recordings"]
+__all__ = ["assign_clip_split", "assign_splits", "content_key", "unit_hash", "val_recordings"]

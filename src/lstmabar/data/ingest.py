@@ -550,7 +550,12 @@ def assign_and_check_splits(clips: list[DryClip], cfg) -> list[DryClip]:
     )
     for name in ("val", "test"):
         if name not in splits:
-            print(f"warning: split {name!r} is empty in this run", file=sys.stderr)
+            why = (
+                "every (performer, technique) group has a single recording"
+                if name == "val"
+                else "no held-out-performer clips"
+            )
+            print(f"warning: split {name!r} is empty in this run ({why})", file=sys.stderr)
     return [replace(c, split=s) for c, s in zip(clips, splits, strict=True)]
 
 
