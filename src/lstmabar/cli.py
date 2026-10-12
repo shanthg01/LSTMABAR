@@ -14,6 +14,7 @@ import torch
 
 import lstmabar
 from lstmabar.config import load_config
+from lstmabar.data.cli import add_data_parser
 from lstmabar.dsp.recovery import RecoveryConfig, run_recovery, write_report
 from lstmabar.runs import create_run_dir, device_name, git_info
 from lstmabar.seed import seed_everything
@@ -185,6 +186,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_fid.add_argument("overrides", nargs="*", help="dotlist overrides, e.g. paths.runs=...")
     p_fid.set_defaults(func=cmd_fidelity)
+
+    add_data_parser(sub)
 
     return parser
 
