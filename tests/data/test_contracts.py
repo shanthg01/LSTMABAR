@@ -26,7 +26,7 @@ from lstmabar.data.schema import (
     to_dict,
     write_jsonl,
 )
-from lstmabar.data.splits import assign_clip_split, heldout_split_map, unit_hash
+from lstmabar.data.splits import assign_clip_split, unit_hash, val_recordings
 from lstmabar.data.vocab import (
     caption_violations,
     holdout_names,
@@ -186,20 +186,26 @@ def test_layout_paths_are_relative_posix(tmp_path):
 
 def test_splits():
     tp = ("a", "b")
-    hmap = heldout_split_map([f"r{i}" for i in range(10)])
-    assert sorted(hmap.values()).count("val") == 5
-    # Order-independent, and small sets always get both splits.
-    assert heldout_split_map(reversed(list(hmap))) == hmap
-    assert set(heldout_split_map(["x", "y"]).values()) == {"val", "test"}
-    assert assign_clip_split("guitar_techs", "a", "r1", tp, "c", hmap) == "train"
-    assert assign_clip_split("own", "me", "r1", tp, "c", hmap) == "test"
-    assert assign_clip_split("guitar_techs", "c", "r7", tp, "c", hmap) == hmap["r7"]
+    recs = [("a", "chords", f"a{i}") for i in range(20)]
+    recs += [("b", "scales", f"b{i}") for i in range(10)] + [("b", "solo", "only")]
+    vset = val_recordings(recs, 0.1)
+    assert len(vset) == 3 and "only" not in vset  # 2 + 1; single-recording groups stay train
+    assert val_recordings(reversed(recs), 0.1) == vset  # order-independent
+    assert val_recordings(recs, 0.0) == set()
+    # Shared content: the same take goes to val for every performer.
+    shared = [(p, "chords", f"{p}_chords_{t}") for p in ("P1", "P2") for t in range(10)]
+    vs = val_recordings(shared, 0.2)
+    assert {r.split("_", 1)[1] for r in vs if r.startswith("P1")} == {
+        r.split("_", 1)[1] for r in vs if r.startswith("P2")
+    }
+    assert assign_clip_split("guitar_techs", "a", "a0", tp, "c", vset) in {"train", "val"}
+    assert {assign_clip_split("guitar_techs", "a", r, tp, "c", vset) for r in vset} == {"val"}
+    assert assign_clip_split("guitar_techs", "c", "anything", tp, "c", vset) == "test"
+    assert assign_clip_split("own", "me", "r1", tp, "c", vset) == "test"
     with pytest.raises(ValueError):
-        assign_clip_split("egfxset", "a", "r1", tp, "c", hmap)
+        assign_clip_split("egfxset", "a", "r1", tp, "c", vset)
     with pytest.raises(ValueError):
-        assign_clip_split("guitar_techs", "zz", "r1", tp, "c", hmap)
-    with pytest.raises(KeyError):
-        assign_clip_split("guitar_techs", "c", "unknown", tp, "c", hmap)
+        assign_clip_split("guitar_techs", "zz", "r1", tp, "c", vset)
     assert 0.0 <= unit_hash("x") < 1.0
 
 
@@ -230,8 +236,8 @@ def test_fixture_dataset(tmp_path):
     clips = make_fixture_dataset(cfg, clips_per_performer=2, seconds=0.5)
     lay = DataLayout.from_config(cfg)
     assert len(clips) == 6 and lay.dry_manifest.exists()
-    assert {c.split for c in clips if c.performer != "fx3"} == {"train"}
-    assert {c.split for c in clips if c.performer == "fx3"} == {"val", "test"}
+    assert {c.split for c in clips if c.performer == "fx3"} == {"test"}
+    assert {c.split for c in clips if c.performer != "fx3"} == {"train", "val"}
     for c in clips:
         x, sr = levels.read_audio(lay.resolve_rendered(c.path))
         assert sr == 44100 and levels.peak_dbfs(x) == pytest.approx(-1.0, abs=0.01)
