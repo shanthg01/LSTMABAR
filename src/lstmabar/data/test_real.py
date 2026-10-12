@@ -88,6 +88,26 @@ class RemoteFile:
     checksum: str  # "md5:<hex>" (Zenodo) or ""
     url: str
 
+    def __post_init__(self) -> None:
+        check_file_key(self.key)
+
+
+_DRIVE_KEY = re.compile(r"^[A-Za-z]:")
+
+
+def check_file_key(key: str) -> None:
+    """Remote file keys become local file names (``_download/<key>``, ``.<key>.done``): they
+    must be a single, non-empty path segment."""
+    if (
+        not key
+        or "/" in key
+        or "\\" in key
+        or key in (".", "..")
+        or ".." in key
+        or _DRIVE_KEY.match(key)
+    ):
+        raise ValueError(f"unsafe remote file key {key!r}")
+
 
 @dataclass(frozen=True)
 class RemoteRecord:
@@ -111,6 +131,14 @@ class Remote(Protocol):
 def _get(url: str, headers: Mapping[str, str] | None = None, timeout: float = 60.0):
     req = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT, **(headers or {})})
     return urllib.request.urlopen(req, timeout=timeout)
+
+
+def verify_bytes(data: bytes, checksum: str, name: str) -> None:
+    if not checksum:
+        return
+    algo, _, want = checksum.partition(":")
+    if hashlib.new(algo, data).hexdigest() != want:
+        raise OSError(f"{name}: {algo} mismatch")
 
 
 def verify_checksum(path: Path, checksum: str) -> None:
@@ -147,7 +175,9 @@ class Zenodo:
         if f.size > SMALL_FILE_MAX:
             raise ValueError(f"{f.key} is {f.size} bytes; fetch() is for small files only")
         with _get(f.url, timeout=self.timeout) as r:
-            return r.read()
+            data = r.read()
+        verify_bytes(data, f.checksum, f.key)
+        return data
 
     def download(self, f: RemoteFile, dest: Path) -> None:
         """Resumable: bytes already in ``<dest>.part`` are kept and the rest is requested."""
@@ -209,7 +239,11 @@ class EgfxPairing:
     clean_needed: set[EgfxNote]
 
 
-def pair_egfxset(clean_names: Iterable[str], unit_names: Mapping[str, Iterable[str]]):
+def pair_egfxset(
+    clean_names: Iterable[str],
+    unit_names: Mapping[str, Iterable[str]],
+    clean_folder: str = "Clean",
+):
     """Pair every effected note with the clean note of the same pickup/string/fret.
 
     Only exact name matches pair: e.g. TubeScreamer has ``Bridge-Middle/1-23.wav`` (no fret 23
@@ -218,7 +252,7 @@ def pair_egfxset(clean_names: Iterable[str], unit_names: Mapping[str, Iterable[s
     clean: set[EgfxNote] = set()
     for n in clean_names:
         p = parse_egfx_name(n)
-        if p is not None:
+        if p is not None and p[0] == clean_folder:
             clean.add(p[1])
     pairs: dict[str, list[EgfxNote]] = {}
     unpaired: dict[str, list[str]] = {}
@@ -432,7 +466,7 @@ def plan_egfxset(cfg, remote: Remote, kb_pots: Mapping[str, Iterable[str]]) -> D
         raise KeyError(f"EGFxSet record {rec.record} has no {missing}")
     entries = {k: remote.entries(rec.files[k]) for k in want}
     names = {k: [e.name for e in v] for k, v in entries.items()}
-    pairing = pair_egfxset(names[clean_key], {u: names[f"{u}.zip"] for u in units})
+    pairing = pair_egfxset(names[clean_key], {u: names[f"{u}.zip"] for u in units}, str(ec.clean))
     meta = parse_egfx_settings(remote.fetch(rec.files[ec.csv]).decode("utf-8-sig"))
     kb_map = dict(ec.kb_map)
     knob_map = {k: dict(v) for k, v in dict(ec.knob_map).items()}
@@ -475,8 +509,9 @@ def plan_egfxset(cfg, remote: Remote, kb_pots: Mapping[str, Iterable[str]]) -> D
                     license=rec.license,
                     notes=(
                         f"{row['model']}; single 5 s note, string {n.string} fret {n.fret}, "
-                        f"{n.pickup} pickup; recordings are level-normalized, so the true "
-                        f"input level is unknown"
+                        f"{n.pickup} pickup; dry = the Clean note with the same name (same "
+                        f"take assumed, not verified); recordings are level-normalized, so the "
+                        f"true input level is unknown"
                     ),
                 )
             )
@@ -581,6 +616,17 @@ def fetch_archive(remote: Remote, plan: ArchivePlan, root: Path, log=print) -> N
         return
     ddir = root / plan.dataset / "_download"
     archive = ddir / plan.file.key
+    marker = root / plan.dataset / plan.marker_name
+    if all((root / rel).exists() for rel in plan.members.values()):
+        # crashed after extraction, before the marker: nothing left to fetch
+        archive.unlink(missing_ok=True)
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.write_text(
+            json.dumps({"archive": plan.file.key, "members": len(plan.members)}) + "\n",
+            encoding="utf-8",
+        )
+        log(f"  {plan.dataset}/{plan.file.key}: all members present, marked done")
+        return
     if not archive.exists():
         free = shutil.disk_usage(root).free
         need = plan.file.size + plan.extracted_bytes + DISK_MARGIN
@@ -595,7 +641,7 @@ def fetch_archive(remote: Remote, plan: ArchivePlan, root: Path, log=print) -> N
             if not dest.exists():
                 wav_to_flac(zf.read(member), dest)
     archive.unlink()
-    (root / plan.dataset / plan.marker_name).write_text(
+    marker.write_text(
         json.dumps({"archive": plan.file.key, "members": len(plan.members)}) + "\n",
         encoding="utf-8",
     )
@@ -730,6 +776,7 @@ __all__ = [
     "RemoteRecord",
     "Zenodo",
     "build_items",
+    "check_file_key",
     "disk_estimate",
     "fetch_archive",
     "knob_rotation",

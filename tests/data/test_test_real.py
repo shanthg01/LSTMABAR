@@ -493,3 +493,81 @@ def test_member_paths_cannot_escape(tmp_path):
     with pytest.raises(ValueError, match=r"\.\."):
         test_real._relpath("egfxset", "RAT/../1-0.wav")
     assert test_real._relpath("podset", "ocd/a_ocd_g0_t0.wav") == "podset/ocd/a_ocd_g0_t0.flac"
+
+
+@pytest.mark.parametrize("key", ["a/b.zip", "a\\b.zip", "..", "x..zip", "C:x.zip", ""])
+def test_unsafe_remote_keys_are_rejected(key):
+    with pytest.raises(ValueError, match="unsafe"):
+        RemoteFile(key, 1, "", "http://x")
+
+
+def test_fetch_verifies_md5(monkeypatch):
+    data = b"a,b\n1,2\n"
+
+    class Resp(io.BytesIO):
+        status = 200
+
+        def __enter__(self):
+            return self
+
+    monkeypatch.setattr(test_real, "_get", lambda url, headers=None, timeout=60.0: Resp(data))
+    good = RemoteFile("m.csv", len(data), "md5:" + hashlib.md5(data).hexdigest(), "http://x")
+    assert test_real.Zenodo().fetch(good) == data
+    with pytest.raises(OSError, match="mismatch"):
+        test_real.Zenodo().fetch(RemoteFile("m.csv", len(data), "md5:" + "0" * 32, "http://x"))
+
+
+def test_clean_pairing_requires_the_clean_folder():
+    clean = ["Clean/Neck/1-0.wav", "Other/Neck/6-0.wav"]
+    pr = pair_egfxset(clean, {"RAT": ["RAT/Neck/1-0.wav", "RAT/Neck/6-0.wav"]}, "Clean")
+    assert pr.pairs["RAT"] == [EgfxNote("Neck", 1, 0)]
+    assert pr.unpaired["RAT"] == ["RAT/Neck/6-0.wav"]
+
+
+def test_crash_after_extract_marks_done_without_download(tmp_path):
+    remote = _fake_remote(tmp_path)
+    cfg = _cfg(tmp_path)
+    test_real.run(cfg, SimpleNamespace(list=False), remote=remote)
+    root = DataLayout.from_config(cfg).test_real
+    (root / "egfxset" / ".RAT.zip.done").unlink()  # crash before the marker was written
+    (root / "egfxset" / "_download").mkdir()
+    (root / "egfxset" / "_download" / "RAT.zip").write_bytes(b"leftover")
+    remote.downloads.clear()
+    test_real.run(cfg, SimpleNamespace(list=False), remote=remote)
+    assert remote.downloads == []
+    assert (root / "egfxset" / ".RAT.zip.done").exists()
+    assert not (root / "egfxset" / "_download" / "RAT.zip").exists()
+
+
+def test_zip64_extra_field():
+    import struct
+
+    name = b"big.wav"
+    extra = struct.pack("<HHQQQ", 0x0001, 24, 5_000_000_000, 4_900_000_000, 4_500_000_000)
+    cdh = struct.pack(
+        "<4sHHHHHHIIIHHHHHII",
+        b"PK\x01\x02",
+        45,  # version made by
+        45,  # version needed
+        0,  # flags
+        8,  # deflate
+        0,  # time
+        0,  # date
+        0x1234,  # crc
+        0xFFFFFFFF,  # compressed size -> zip64
+        0xFFFFFFFF,  # file size -> zip64
+        len(name),
+        len(extra),
+        0,  # comment length
+        0,  # disk
+        0,  # internal attrs
+        0,  # external attrs
+        0xFFFFFFFF,  # local header offset -> zip64
+    )
+    (e,) = remote_zip.parse_central_directory(cdh + name + extra)
+    assert e.name == "big.wav" and e.crc == 0x1234
+    assert (e.file_size, e.compressed_size, e.header_offset) == (
+        5_000_000_000,
+        4_900_000_000,
+        4_500_000_000,
+    )
