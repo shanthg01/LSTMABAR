@@ -19,13 +19,19 @@ ingest:
   # Guitar-TECHS DI is the only training DI (R2); EGFxSet is test-only (task 4.4).
   sources: [guitar_techs]
   pre_onset_ms: 20.0          # clip starts this long before a detected onset
-  min_rms_dbfs: -45.0         # skip near-silent windows (dBFS RMS of the clip)
+  min_rms_dbfs: -55.0         # skip near-silent windows (dBFS RMS of the clip, source level).
+                              # Guitar-TECHS DI noise floor is ~-80 dBFS; P1's quiet takes
+                              # (harmonics: median clip RMS -43 dBFS) lose half their clips at -45.
   dry_peak_dbfs: -1.0         # canonical stored dry level (R3)
   dry_subtype: PCM_16
   max_clips: null             # cap for smoke runs (the CLI's --limit overrides it)
-  # Performer split (decision 11). Filled in by the ingest task from the dataset's naming.
-  train_performers: []
-  heldout_performer: null
+  # Performer split (decision 11), Guitar-TECHS ids from the zip names (P1_*.zip, ...).
+  # P1/P2 recorded identical content (single notes, techniques, chords, scales; ~2.4-2.5 h DI
+  # each); P3 recorded only the 12 musical excerpts (~8 min DI). Held out = the last id, P3:
+  # it keeps both full-content players in train and is the only player with musical excerpts
+  # (12 recordings, so val/test split by recording works). Val/test are small (~65 clips each).
+  train_performers: [P1, P2]
+  heldout_performer: P3
 
 render:
   shard_size: 1000

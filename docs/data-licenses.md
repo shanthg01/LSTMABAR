@@ -40,7 +40,7 @@
 - **Permits:** research, redistribution, derived renders, training and publishing weights, public demo, and commercial use, all with attribution.
 - **Attribution:** Pedroza, Abreu, Corey, Roman, "Guitar-TECHS: An Electric Guitar Dataset Covering Techniques, Musical Excerpts, Chords and Scales Using a Diverse Array of Hardware", ICASSP 2025 / arXiv:2501.03720.
 - **Contents:** about 5 h 12 min from 3 professional players. Covers techniques (single notes, palm mute, vibrato, harmonics, pinch harmonics, bends), chords, scales, and 12 musical excerpts. Signals: **DI** (split directly to the interface), mic'd amp (Orange CR-60 / CR-12, Yamaha B-15, flat EQ), plus egocentric and exocentric stereo mics. MIDI is synchronized.
-- **Format:** WAV at 48 kHz, 32-bit float (paper). 9 zips, 4.1 GB total, open download from Zenodo.
+- **Format:** the paper says 48 kHz / 32-bit float, but the DI files (checked through the zip central directories and WAV headers, 2026-10-12) are **24-bit PCM**, 48 kHz except P1 Bendings/Vibrato (2-channel, 44.1 kHz); otherwise mono for P1 and dual-mono stereo (bit-identical channels on the takes checked) for P2/P3. Ingest drops a channel more than 40 dB below the other and otherwise averages the channels (non-identical channels would be averaged too). 9 zips (one per player × content: P1/P2 chords, scales, singlenotes, techniques; P3 music only), 3.8 GiB total; DI ≈ 2.0 GiB compressed, 104 takes: P1 2.40 h, P2 2.49 h, P3 0.13 h.
 - **Red flags:** none found. The players and amps differ per subset, so split by player.
 
 ### EGFxSet

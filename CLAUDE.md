@@ -18,7 +18,7 @@ The environment is managed by `uv` (Python 3.11 pinned in `.python-version`; CPU
 
 ```bash
 uv sync --extra dev                      # core + tests; add --extra demo (gradio, PyAV), whitebox (numba), analysis (librosa), ...
-uv run pytest                            # all tests except those marked slow
+uv run pytest                            # all tests except those marked slow or network
 uv run pytest tests/test_foundation.py::test_cli_smoke   # single test
 uv run pytest -m slow                    # slow checks only (P1.7 parameter recovery, ~7 min CPU)
 uv run pytest -m network                 # network checks only (Zenodo listings; skipped by default)
