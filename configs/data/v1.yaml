@@ -59,6 +59,11 @@ calibration:                   # R4
   fit_steps: 300               # optimizer steps per grid fit
   restarts: 1                  # extra random starts at the gain = 0 row only
 
+freeze:                        # tasks 4.6-4.7 (`lstmabar data freeze`, `data vocab-audit`)
+  data_card: DATA_CARD.md      # regenerated from data/manifests/<version>/index.json
+  vocab_report: reports/vocab_overlap.md   # one-shot, aggregate only (decision 6)
+  gold_dir: ${paths.data}/gold # read only by vocab-audit, never by caption code
+
 analysis:
   n_harmonics: 10
   max_frames: 64

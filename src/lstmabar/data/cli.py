@@ -22,6 +22,7 @@ STEPS: dict[str, tuple[str, str, str]] = {
     "captions": ("captions", "run", "template + paraphrase captions (4.3)"),
     "test-real": ("test_real", "run", "real-pedal test set (4.4)"),
     "freeze": ("freeze", "run", "split checks, hashes, index, data card (4.6-4.7)"),
+    "vocab-audit": ("vocab_audit", "run", "one-shot held-out vs caption vocab overlap (4.7)"),
 }
 
 
@@ -37,6 +38,11 @@ def add_data_parser(sub) -> None:
     p = sub.add_parser("data", help="P4 data pipeline: " + ", ".join(STEPS))
     p.add_argument("step", choices=list(STEPS))
     p.add_argument("--config", default=DEFAULT_CONFIG)
+    p.add_argument(
+        "--allow-partial",
+        action="store_true",
+        help="freeze: skip unfinished shards (index marked partial; not a release)",
+    )
     p.add_argument("--fixtures", action="store_true", help="run on the synthetic fixture set")
     p.add_argument("--estimate", action="store_true", help="captions: price the run, no spend")
     p.add_argument("--pilot", action="store_true", help="captions: pilot batch only")

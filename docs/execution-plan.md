@@ -336,6 +336,7 @@ Prepared 2026-10-12 for a fresh session. Read this, CLAUDE.md, design §5 (data)
   - (c) caption generator: templates + Batches-API paraphrase + cache — **gold-blind agent**, briefed explicitly;
   - (d) `test_real` ingest (EGFxSet units + their `Clean` notes + a few pOD-set pedals).
 - wave 2: full render of v1, splits, hashing, data card, leakage tests, one-shot vocab overlap report → freeze.
+  - As implemented (4.6–4.7): `lstmabar data freeze` checks splits/items/files/captions (fails loudly, writes nothing on failure; `--allow-partial` marks the index partial), writes `files.sha256` (dry + wet; `test_real` hashes stay in its manifest), `index.json` and the generated `DATA_CARD.md`. `lstmabar data vocab-audit` is a separate one-shot step on the frozen captions → `reports/vocab_overlap.md` (aggregates per gold `source` only).
 - wave 3 (separate session): gold pairing (4.5) + friend instructions.
 
 **P2/P3 follow-ups that matter here:** per-pedal calibration (decision 3b), the 60 dB gain clamp (decision 10), pYIN cost (track f0 once per dry clip), Fuzz Face source-impedance assumption (renders inherit it), MFCC (add to descriptors if P5 needs it).
