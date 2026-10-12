@@ -28,13 +28,14 @@ ingest:
   # Performer split (decision 11), Guitar-TECHS ids from the zip names (P1_*.zip, ...).
   # P1/P2 recorded identical content (single notes, techniques, chords, scales; ~2.4-2.5 h DI
   # each); P3 recorded only the 12 musical excerpts (~8 min DI). Held out = the last id, P3:
-  # it keeps both full-content players in train and is the only player with musical excerpts
-  # (12 recordings, so val/test split by recording works). Val/test are small (~65 clips each).
+  # it keeps both full-content players in train and is the only player with musical excerpts.
+  # P3 is too small to split again, so all of P3 is test; val is an in-domain by-recording
+  # slice of P1/P2 (splits.val_recording_fraction).
   train_performers: [P1, P2]
   heldout_performer: P3
 
 render:
-  shard_size: 1000
+  shard_size: 250
   workers: 4
   renders_per_clip: {train: 6, val: 4, test: 4}
   unseen_renders_per_clip: 2   # extra holdout-pedal renders per test clip (R6, R7)
@@ -66,8 +67,21 @@ freeze:                        # tasks 4.6-4.7 (`lstmabar data freeze`, `data vo
 
 analysis:
   n_harmonics: 10
-  max_frames: 64
+  max_frames: 32               # R8 (reports/render_bench.md): v1 ~6.9 h on 4 workers, the
+                               # largest option within bench.headroom x 12 h (64: ~11.0 h);
+                               # vs 64, odd/even |Δ| median 0.21 dB, archetype L1 median 0.008
   min_voiced_fraction: 0.3     # below this, harmonic descriptors are NaN (decision 5)
+
+bench:                         # R8 throughput gate (`lstmabar data bench`)
+  # R7 plan for the extrapolation, from the ingest facts (P1 2.40 h + P2 2.49 h DI, P3 ~0.13 h):
+  # train = P1/P2 minus a ~10% by-recording val slice, test = all of P3 (wave 2 splits).
+  planned_clips: {train: 3700, val: 450, test: 130}
+  max_clips: 6                 # dry clips timed (the CLI's --limit overrides it)
+  items_per_pedal: 2           # timed renders per KB pedal (+ one per free-board scenario)
+  max_frames_options: [64, 32, 16, 8]   # analysis.max_frames values priced (R8 reduction)
+  budget_hours: 12.0
+  headroom: 0.75               # choose the largest max_frames estimated within 0.75 x budget:
+                               # a loaded CPU measured ~2x slower, and worker scaling is assumed
 
 captions:                      # R1
   model: claude-haiku-5-5
@@ -113,6 +127,6 @@ test_real:                     # task 4.4; audio stays in data.test_real_dir (gi
   tonetwist:
     enabled: false             # internal numbers only; not implemented (raises if enabled)
 
-splits:
+splits:                       # decision 11 as revised in P4 wave 2 (src/lstmabar/data/splits.py)
   seed: 0
-  val_fraction: 0.5            # of held-out-performer recordings; the rest are test
+  val_recording_fraction: 0.1  # per (train performer, technique) group: recordings -> val

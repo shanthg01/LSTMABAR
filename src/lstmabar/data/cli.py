@@ -51,6 +51,11 @@ def add_data_parser(sub) -> None:
     )
     p.add_argument("--limit", type=int, default=None, help="cap the number of clips/items")
     p.add_argument("--workers", type=int, default=None, help="override render.workers")
+    p.add_argument(
+        "--allow-derived-labels",
+        action="store_true",
+        help="render: label white-box items with derived params if a calibration table is missing",
+    )
     p.add_argument("overrides", nargs="*", help="dotlist overrides, e.g. render.workers=2")
     p.set_defaults(func=cmd_data)
 

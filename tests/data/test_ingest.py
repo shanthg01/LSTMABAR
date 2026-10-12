@@ -233,19 +233,19 @@ def _clip(performer, rec, i=0):
 
 def test_assign_splits_over_list(tmp_path):
     cfg = fixture_config(tmp_path)
-    clips = [_clip("fx1", "a", i) for i in range(3)] + [_clip("fx2", "b")]
-    clips += [_clip("fx3", r, i) for r in ("r1", "r2", "r3", "r4") for i in range(2)]
+    clips = [_clip("fx1", r, i) for r in ("a", "b", "c") for i in range(3)] + [_clip("fx2", "b")]
+    clips += [_clip("fx3", r, i) for r in ("r1", "r2") for i in range(2)]
     out = ig.assign_and_check_splits(clips, cfg)
-    by = {c.clip_id: c.split for c in out}
-    assert {by[c.clip_id] for c in out if c.performer in ("fx1", "fx2")} == {"train"}
-    held = [c for c in out if c.performer == "fx3"]
-    assert {c.split for c in held} == {"val", "test"}
-    # A recording never spans val and test.
-    for r in ("r1", "r2", "r3", "r4"):
-        assert len({c.split for c in held if c.recording_id == r}) == 1
+    assert {c.split for c in out if c.performer == "fx3"} == {"test"}
+    fx1 = [c for c in out if c.performer == "fx1"]
+    assert {c.split for c in fx1} == {"train", "val"}
+    # A recording never spans splits.
+    for r in ("a", "b", "c"):
+        assert len({c.split for c in fx1 if c.recording_id == r}) == 1
+    assert [c.split for c in out if c.performer == "fx2"] == ["train"]  # single recording
 
 
-def test_assign_splits_warns_single_heldout_recording(tmp_path, capsys):
+def test_assign_splits_warns_empty_val(tmp_path, capsys):
     cfg = fixture_config(tmp_path)
     ig.assign_and_check_splits([_clip("fx1", "a"), _clip("fx3", "only")], cfg)
     assert "warning" in capsys.readouterr().err
@@ -324,8 +324,8 @@ def test_fixture_ingest_end_to_end(tmp_path, capsys):
     clips = list(read_jsonl(layout.dry_manifest, DryClip))
     assert clips
     assert {c.performer for c in clips} == set(FIXTURE_PERFORMERS)
-    assert {c.split for c in clips if c.performer != FIXTURE_PERFORMERS[2]} == {"train"}
-    assert {c.split for c in clips if c.performer == FIXTURE_PERFORMERS[2]} == {"val", "test"}
+    assert {c.split for c in clips if c.performer != FIXTURE_PERFORMERS[2]} == {"train", "val"}
+    assert {c.split for c in clips if c.performer == FIXTURE_PERFORMERS[2]} == {"test"}
     for c in clips:
         assert Path(layout.resolve_rendered(c.path)).exists()
         assert (layout.sources / c.source_file).exists()

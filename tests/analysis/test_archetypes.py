@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import pytest
 import torch
@@ -12,7 +14,7 @@ from lstmabar.analysis.archetypes import (
 from lstmabar.analysis.descriptors import harmonic_energy_fraction, odd_even_ratio
 from lstmabar.analysis.harmonics import harmonic_amplitudes, hnr
 from lstmabar.dsp.blocks import Drive
-from tests.analysis.signals import SR, oscillator
+from tests.analysis.signals import SR, constant_track, oscillator
 
 
 @pytest.mark.parametrize("f0", [82.41, 220.0, 659.26])
@@ -122,3 +124,12 @@ def test_drive_asymmetry_adds_even_harmonics():
     assert (np.diff(odd_even_ratio(amps)) < 0).all()
     saw_w = [project_archetypes(a).weights["saw"] for a in amps]
     assert saw_w[-1] > saw_w[0]
+
+
+def test_readout_with_precomputed_track(monkeypatch):
+    monkeypatch.setitem(sys.modules, "librosa", None)  # the track makes pYIN unnecessary
+    x = oscillator("square", 196.0, 1.0, 0.4)
+    r = archetype_readout(x, SR, track=constant_track(x, 196.0), max_frames=8)
+    assert r.dominant == "square" and r.weights["square"] > 0.9
+    with pytest.raises(ValueError):
+        archetype_readout(x, SR, track=constant_track(x, 196.0, voiced=False))

@@ -43,6 +43,7 @@ import numpy as np
 from scipy.optimize import nnls
 
 from lstmabar.analysis.harmonics import (
+    F0Track,
     _as_numpy,
     harmonic_amplitudes,
     harmonic_profile,
@@ -128,10 +129,14 @@ def archetype_readout(
     whole_clip: bool = False,
     refine: bool = True,
     hnr_max_hz: float | None = None,
+    track: F0Track | None = None,
+    max_frames: int = 64,
 ) -> ArchetypeReadout:
     """Archetype readout of mono audio ``x`` (``(T,)``).
 
-    - ``f0`` unknown: pYIN profile (needs the ``analysis`` extra), median over voiced frames.
+    - ``f0`` unknown: pYIN profile (needs the ``analysis`` extra), median over voiced frames;
+      a precomputed ``track`` (e.g. the dry clip's, for a time-aligned wet render) skips pYIN.
+      ``max_frames`` bounds the frames fitted (see :func:`harmonic_profile`).
     - ``f0`` known: frame-wise profile at that f0 (no librosa), or with ``whole_clip=True`` one
       fit over the whole (stationary) clip, which is what synthetic sine tests want.
     - ``refine`` (default) refines the f0 (given or tracked) with :func:`refine_f0`; a nominal
@@ -143,7 +148,14 @@ def archetype_readout(
         amps = harmonic_amplitudes(x, sr, f0, n_harmonics)
         return project_archetypes(amps, float(hnr(x, sr, f0, hnr_max_hz)))
     prof = harmonic_profile(
-        x, sr, n_harmonics=n_harmonics, f0=f0, refine=refine, hnr_max_hz=hnr_max_hz
+        x,
+        sr,
+        n_harmonics=n_harmonics,
+        f0=f0,
+        track=track,
+        max_frames=max_frames,
+        refine=refine,
+        hnr_max_hz=hnr_max_hz,
     )
     return project_archetypes(prof.amplitudes, prof.hnr_db)
 
