@@ -543,17 +543,19 @@ def clips_from_file(
 
 
 def assign_and_check_splits(clips: list[DryClip], cfg) -> list[DryClip]:
-    """Assign splits once over the whole list; warn when the held-out performer has a single
-    recording (val or test would then be empty)."""
-    heldout = cfg.ingest.heldout_performer
-    recs = {c.recording_id for c in clips if c.performer == heldout}
-    if heldout is not None and len(recs) < 2:
-        print(
-            f"warning: held-out performer {heldout!r} has {len(recs)} recording(s) in this run; "
-            "val/test cannot both be non-empty",
-            file=sys.stderr,
-        )
-    splits = assign_splits(((c.source, c.performer, c.recording_id) for c in clips), cfg)
+    """Assign splits once over the whole list (the val slice is chosen per performer and
+    technique); warn when val or test would be empty."""
+    splits = assign_splits(
+        ((c.source, c.performer, c.recording_id, c.technique) for c in clips), cfg
+    )
+    for name in ("val", "test"):
+        if name not in splits:
+            why = (
+                "every (performer, technique) group has a single recording"
+                if name == "val"
+                else "no held-out-performer clips"
+            )
+            print(f"warning: split {name!r} is empty in this run ({why})", file=sys.stderr)
     return [replace(c, split=s) for c, s in zip(clips, splits, strict=True)]
 
 

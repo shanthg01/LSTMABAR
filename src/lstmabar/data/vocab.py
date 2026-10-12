@@ -93,12 +93,86 @@ def caption_violations(
     return out
 
 
+BRAND_NAMES: tuple[str, ...] = (
+    "Boss",
+    "Ibanez",
+    "Electro-Harmonix",
+    "EHX",
+    "Dallas Arbiter",
+    "Arbiter",
+    "Klon",
+    "Centaur",
+    "Marshall",
+    "Fender",
+    "Vox",
+    "Mesa",
+    "Boogie",
+    "MXR",
+    "Dunlop",
+    "Fulltone",
+    "Strymon",
+    "Line 6",
+    "Kemper",
+)
+"""Brand/model names a caption must not contain (checked after removing the allowed pedal
+names, so "Boss DS-1" is fine when the DS-1 is named)."""
+
+
+def allowed_names(
+    item_pedal: str | None, named: bool, holdout: str | None, split: str
+) -> list[str]:
+    """Pedal names a caption of an item may use: its pedal's aliases if the caption names it,
+    never the holdout's names outside ``test_unseen_pedal``."""
+    if not named or not item_pedal:
+        return []
+    out = list(PEDAL_ALIASES.get(item_pedal, ()))
+    if holdout and split != "test_unseen_pedal":
+        leak = set(holdout_names(holdout))
+        out = [n for n in out if n not in leak]
+    return out
+
+
+def forbidden_names(
+    item_pedal: str | None, named: bool, holdout: str | None, split: str
+) -> list[str]:
+    """Names a caption of an item must not contain: every KB alias that is not allowed
+    (:func:`allowed_names`), the real-pedal test devices (:data:`OTHER_DEVICE_NAMES`) and the
+    holdout's names outside ``test_unseen_pedal``. Shared by the caption post-filter (4.3) and
+    the leakage tests (4.7)."""
+    allowed = set(allowed_names(item_pedal, named, holdout, split))
+    every = {n for ns in PEDAL_ALIASES.values() for n in ns} | set(OTHER_DEVICE_NAMES)
+    out = {n for n in every if n not in allowed}
+    if holdout and split != "test_unseen_pedal":
+        out |= set(holdout_names(holdout))
+    return sorted(out)
+
+
+def item_caption_violations(
+    text: str, item_pedal: str | None, named: bool, holdout: str | None, split: str
+) -> list[str]:
+    """All caption rules for one item: :func:`caption_violations` with
+    :func:`allowed_names` / :func:`forbidden_names`, plus :data:`BRAND_NAMES`, empty and
+    multi-line text."""
+    allowed = allowed_names(item_pedal, named, holdout, split)
+    out = caption_violations(text, allowed, forbidden_names(item_pedal, named, holdout, split))
+    out += [f"names brand {n!r}" for n in mentions(strip_allowed_names(text, allowed), BRAND_NAMES)]
+    if not text.strip():
+        out.append("empty")
+    if "\n" in text:
+        out.append("multi-line")
+    return out
+
+
 __all__ = [
+    "BRAND_NAMES",
     "NUMBER_WORDS",
     "OTHER_DEVICE_NAMES",
     "PEDAL_ALIASES",
+    "allowed_names",
     "caption_violations",
+    "forbidden_names",
     "holdout_names",
+    "item_caption_violations",
     "mentions",
     "names_for",
     "normalize_text",

@@ -28,8 +28,9 @@ ingest:
   # Performer split (decision 11), Guitar-TECHS ids from the zip names (P1_*.zip, ...).
   # P1/P2 recorded identical content (single notes, techniques, chords, scales; ~2.4-2.5 h DI
   # each); P3 recorded only the 12 musical excerpts (~8 min DI). Held out = the last id, P3:
-  # it keeps both full-content players in train and is the only player with musical excerpts
-  # (12 recordings, so val/test split by recording works). Val/test are small (~65 clips each).
+  # it keeps both full-content players in train and is the only player with musical excerpts.
+  # P3 is too small to split again, so all of P3 is test; val is an in-domain by-recording
+  # slice of P1/P2 (splits.val_recording_fraction).
   train_performers: [P1, P2]
   heldout_performer: P3
 
@@ -121,6 +122,6 @@ test_real:                     # task 4.4; audio stays in data.test_real_dir (gi
   tonetwist:
     enabled: false             # internal numbers only; not implemented (raises if enabled)
 
-splits:
+splits:                       # decision 11 as revised in P4 wave 2 (src/lstmabar/data/splits.py)
   seed: 0
-  val_fraction: 0.5            # of held-out-performer recordings; the rest are test
+  val_recording_fraction: 0.1  # per (train performer, technique) group: recordings -> val

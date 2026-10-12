@@ -193,7 +193,17 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    parser = build_parser()
+    args, extra = parser.parse_known_args(argv)
+    # `lstmabar data <step> --flag a.b=1`: argparse cannot place positional dotlist overrides
+    # after the optionals (subparsers rule out parse_intermixed_args), so collect them here.
+    if extra:
+        if getattr(args, "command", None) == "data" and all(
+            "=" in x and not x.startswith("-") for x in extra
+        ):
+            args.overrides = [*args.overrides, *extra]
+        else:
+            parser.error(f"unrecognized arguments: {' '.join(extra)}")
     return args.func(args)
 
 
