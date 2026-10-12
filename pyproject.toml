@@ -51,7 +51,7 @@ testpaths = ["tests"]
 addopts = "-q -m 'not slow and not network'"
 markers = [
     "slow: long-running checks (parameter recovery); run with `pytest -m slow`",
-    "network: needs internet (Zenodo listings); run with `pytest -m network`",
+    "network: needs internet (Zenodo); run with `pytest -m network`",
 ]
 
 [tool.ruff]
