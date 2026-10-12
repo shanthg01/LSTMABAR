@@ -214,6 +214,27 @@ def test_run_writes_tables_and_report(tmp_path, monkeypatch):
     assert "Fallback cells (nearest grid point): 1 of 4" in md
 
 
+def test_report_only_adds_derived_jumps(tmp_path, monkeypatch):
+    def fake(pid, gains, tones, fcfg, ctx, max_jump=0.25, log=None):
+        t = _table(pedal_id=pid, gain_values=GRID, tone_values=GRID)
+        cells = [[{"best_start": "derived", "starts": {"derived": 1.0}} for _ in GRID]] * 3
+        return t, calibrate.pedal_report(t, cells, 1.5)
+
+    monkeypatch.setattr(calibrate, "calibrate_pedal", fake)
+    cfg = _tmp_cfg(tmp_path)
+    calibrate.run(cfg, argparse.Namespace(quick=False, pedals=["ts808"]))
+    md_before = (tmp_path / "rep" / "calibration.md").read_text(encoding="utf-8")
+    assert calibrate.run(cfg, argparse.Namespace(report_only=True)) == 0
+    rep = json.loads((tmp_path / "rep" / "calibration.json").read_text(encoding="utf-8"))
+    p = rep["pedals"]["ts808"]
+    assert rep["report_rebuilt"] is True
+    assert len(p["derived_tone_jumps"]) == 3 and len(p["derived_tone_jumps"][0]) == 2
+    assert p["max_derived_tone_jump"] > 0.0
+    assert p["fit_error_db"] == [[1.0] * 3] * 3  # stored numbers kept
+    md = (tmp_path / "rep" / "calibration.md").read_text(encoding="utf-8")
+    assert md != md_before and "--report-only" in md
+
+
 @pytest.mark.slow
 def test_run_quick_one_pedal(tmp_path):
     cfg = _tmp_cfg(tmp_path)

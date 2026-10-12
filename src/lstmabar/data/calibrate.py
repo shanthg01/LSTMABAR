@@ -278,15 +278,35 @@ def fidelity_config(cfg, quick: bool = False):
     return FidelityConfig(**kw)
 
 
-def _full_board(params, fk, u) -> FloatBoard:
-    """Derived ``BoardParams`` with the fitted knobs ``fk`` replaced by ``u`` ``(K,)``."""
+def derived_board(pedal_id: str, knobs: Mapping[str, float], ctx) -> FloatBoard:
+    """The derived (unfitted) label at ``knobs``: full normalized layout."""
     from lstmabar.data.schema import board_to_floats
+    from lstmabar.physics.derive import derive, preset_params
 
-    board = board_to_floats(params)
+    return board_to_floats(preset_params(derive(_kb()[pedal_id], knobs, ctx)))
+
+
+def _full_board(derived: FloatBoard, fk, u) -> FloatBoard:
+    """``derived`` with the fitted knobs ``fk`` replaced by ``u`` ``(K,)``; compressor off."""
+    board = {b: dict(v) for b, v in derived.items()}
     for (b, k), v in zip(fk, u.tolist(), strict=True):
         board[b][k] = float(v)
     board["compressor"][ENABLED] = 0.0
     return board
+
+
+def table_derived_boards(table: CalibrationTable, ctx) -> list[list[FloatBoard]]:
+    """Derived labels at every grid setting of ``table`` (level knob at the fitted default)."""
+    out = []
+    for g in table.gain_values:
+        row = []
+        for t in table.tone_values:
+            knobs = {table.gain_knob: g, table.tone_knob: t}
+            if table.level_knob is not None and table.level_default is not None:
+                knobs[table.level_knob] = table.level_default
+            row.append(derived_board(table.pedal_id, knobs, ctx))
+        out.append(row)
+    return out
 
 
 def calibrate_pedal(
@@ -301,7 +321,6 @@ def calibrate_pedal(
     """Fit one pedal's grid. Returns the table and a per-pedal report dict."""
     import torch
 
-    from lstmabar.physics.derive import derive, preset_params
     from lstmabar.physics.fidelity import (
         _amps,
         _board,
@@ -323,6 +342,7 @@ def calibrate_pedal(
     fk = fit_knobs(board)
     ng, nt = len(gain_values), len(tone_values)
     boards: list[list[FloatBoard | None]] = [[None] * nt for _ in range(ng)]
+    dboards: list[list[FloatBoard | None]] = [[None] * nt for _ in range(ng)]
     fit_err = [[math.nan] * nt for _ in range(ng)]
     der_err = [[math.nan] * nt for _ in range(ng)]
     cells: list[list[dict | None]] = [[None] * nt for _ in range(ng)]
@@ -347,7 +367,8 @@ def calibrate_pedal(
             evals = evaluate(board, fk, u_fit, sig, white_amps, white_riff, fcfg)
             best = min(range(len(evals)), key=lambda k: evals[k]["mean_db"])
             prev = u_fit[best].clone()
-            boards[i][j] = _full_board(preset_params(derive(pedal, knobs, ctx)), fk, prev)
+            dboards[i][j] = derived_board(pedal_id, knobs, ctx)
+            boards[i][j] = _full_board(dboards[i][j], fk, prev)
             fit_err[i][j] = float(evals[best]["mean_db"])
             der_err[i][j] = float(d_eval["mean_db"])
             secs = time.perf_counter() - t0
@@ -399,25 +420,61 @@ def calibrate_pedal(
         level_default=level_default,
         derived_error_db=der_err,
     )
-    return table, pedal_report(table, cells, elapsed)
+    return table, pedal_report(table, cells, elapsed, dboards)
 
 
-def pedal_report(table: CalibrationTable, cells, elapsed: float) -> dict:
-    """Grid errors, neighbour jumps and fallback cells of a fitted table."""
+def board_jump_knob(a: FloatBoard, b: FloatBoard) -> str:
+    """``"block.knob"`` with the largest normalized difference (gates excluded)."""
+    pairs = [
+        (abs(a[blk][k] - b[blk][k]), f"{blk}.{k}") for blk in a for k in a[blk] if k != ENABLED
+    ]
+    return max(pairs)[1] if pairs else ""
+
+
+def _axis_jumps(b, ng: int, nt: int) -> tuple[list[list[float]], list[list[float]]]:
+    gain = [[board_jump(b[i][j], b[i + 1][j]) for j in range(nt)] for i in range(ng - 1)]
+    tone = [[board_jump(b[i][j], b[i][j + 1]) for j in range(nt - 1)] for i in range(ng)]
+    return gain, tone
+
+
+def pedal_report(table: CalibrationTable, cells, elapsed: float, derived_boards=None) -> dict:
+    """Grid errors, neighbour jumps and fallback cells of a fitted table. With
+    ``derived_boards`` (grid of derived labels), the derived labels' jumps for comparison."""
     ng, nt = len(table.gain_values), len(table.tone_values)
     b = table.boards
-    gain_jumps = [[board_jump(b[i][j], b[i + 1][j]) for j in range(nt)] for i in range(ng - 1)]
-    tone_jumps = [[board_jump(b[i][j], b[i][j + 1]) for j in range(nt - 1)] for i in range(ng)]
+    gain_jumps, tone_jumps = _axis_jumps(b, ng, nt)
+    derived = {}
+    if derived_boards is not None:
+        dg, dt = _axis_jumps(derived_boards, ng, nt)
+        derived = {
+            "derived_gain_jumps": dg,
+            "derived_tone_jumps": dt,
+            "max_derived_gain_jump": max((v for r in dg for v in r), default=0.0),
+            "max_derived_tone_jump": max((v for r in dt for v in r), default=0.0),
+        }
     cell_rows = []
     for i in range(max(ng - 1, 1)):
         for j in range(max(nt - 1, 1)):
             i1, j1 = min(i + 1, ng - 1), min(j + 1, nt - 1)
             jump = table.cell_jump(i, j, i1, j1)
+            corners = sorted({(i, j), (i, j1), (i1, j), (i1, j1)})
+            worst = max(
+                (
+                    (board_jump(b[p][q], b[r][s]), (p, q), (r, s))
+                    for p, q in corners
+                    for r, s in corners
+                    if (p, q) < (r, s)
+                ),
+                default=(0.0, (i, j), (i, j)),
+            )
             cell_rows.append(
                 {
                     "gain": [table.gain_values[i], table.gain_values[i1]],
                     "tone": [table.tone_values[j], table.tone_values[j1]],
                     "max_jump": jump,
+                    "jump_knob": board_jump_knob(
+                        b[worst[1][0]][worst[1][1]], b[worst[2][0]][worst[2][1]]
+                    ),
                     "fallback": jump > table.max_jump,
                 }
             )
@@ -440,6 +497,7 @@ def pedal_report(table: CalibrationTable, cells, elapsed: float) -> dict:
         "max_tone_jump": max((v for r in tone_jumps for v in r), default=0.0),
         "gain_jumps": gain_jumps,
         "tone_jumps": tone_jumps,
+        **derived,
         "cells": cell_rows,
         "fallback_cells": sum(c["fallback"] for c in cell_rows),
         "grid": cells,
@@ -465,7 +523,13 @@ def format_report(rep: dict) -> str:
         f"Generated by `{rep['command']}`; runtime {rep['seconds']:.0f} s on CPU "
         f"({rep['torch_threads']} torch threads); git {rep['git'].get('sha') or 'n/a'}"
         + (" (dirty)" if rep["git"].get("dirty") else "")
-        + ".",
+        + "."
+        + (
+            " Per-pedal summaries (jumps, fallback cells, derived-label jumps) recomputed "
+            "from the written tables by `lstmabar data calibrate --report-only` (no refit)."
+            if rep.get("report_rebuilt")
+            else ""
+        ),
         "",
         "## Procedure",
         "",
@@ -525,17 +589,26 @@ def format_report(rep: dict) -> str:
                 for j in range(len(p["tone_values"]))
             )
             lines.append(f"| {gv:g} | {cells} |")
+        has_d = "derived_gain_jumps" in p
+        dg = p.get("derived_gain_jumps")
+        dt = p.get("derived_tone_jumps")
+
+        def jcell(v, d):
+            return f"{v:.3f}" + (f" ({d:.3f})" if d is not None else "")
+
         lines += [
             "",
-            "Neighbour jumps (max abs normalized difference) along the gain axis "
-            "(rows = lower gain point of the pair):",
+            "Neighbour jumps (max abs normalized difference over knobs"
+            + ("; the derived labels' jump in parentheses" if has_d else "")
+            + ") along the gain axis (rows = gain pair):",
             "",
             f"| {g} pair \\ {t} | " + " | ".join(f"{v:g}" for v in p["tone_values"]) + " |",
             "|---|" + "---|" * len(p["tone_values"]),
         ]
         for i, row in enumerate(p["gain_jumps"]):
             pair = f"{p['gain_values'][i]:g}–{p['gain_values'][i + 1]:g}"
-            lines.append(f"| {pair} | " + " | ".join(f"{v:.3f}" for v in row) + " |")
+            cells = [jcell(v, dg[i][j] if has_d else None) for j, v in enumerate(row)]
+            lines.append(f"| {pair} | " + " | ".join(cells) + " |")
         if p["tone_jumps"] and p["tone_jumps"][0]:
             lines += [
                 "",
@@ -550,9 +623,8 @@ def format_report(rep: dict) -> str:
                 "|---|" + "---|" * (len(p["tone_values"]) - 1),
             ]
             for i, row in enumerate(p["tone_jumps"]):
-                lines.append(
-                    f"| {p['gain_values'][i]:g} | " + " | ".join(f"{v:.3f}" for v in row) + " |"
-                )
+                cells = [jcell(v, dt[i][j] if has_d else None) for j, v in enumerate(row)]
+                lines.append(f"| {p['gain_values'][i]:g} | " + " | ".join(cells) + " |")
         fb = [cl for cl in p["cells"] if cl["fallback"]]
         lines += [
             "",
@@ -561,7 +633,8 @@ def format_report(rep: dict) -> str:
                 ": "
                 + "; ".join(
                     f"{g} {cl['gain'][0]:g}–{cl['gain'][1]:g} × {t} "
-                    f"{cl['tone'][0]:g}–{cl['tone'][1]:g} (jump {cl['max_jump']:.3f})"
+                    f"{cl['tone'][0]:g}–{cl['tone'][1]:g} (jump {cl['max_jump']:.3f}, "
+                    f"`{cl.get('jump_knob', '?')}`)"
                     for cl in fb
                 )
                 if fb
@@ -612,6 +685,9 @@ def run(cfg, args) -> int:
     from lstmabar.physics.derive import DeriveContext
     from lstmabar.runs import git_info
 
+    if getattr(args, "report_only", False):
+        rebuild_report(cfg)
+        return 0
     quick = bool(getattr(args, "quick", False))
     pedals = getattr(args, "pedals", None) or list(cfg.render.whitebox_pedals)
     unknown = [p for p in pedals if p not in GAIN_KNOB]
@@ -650,12 +726,38 @@ def run(cfg, args) -> int:
         "seconds": time.perf_counter() - t0,
         "pedals": out,
     }
+    write_report(rep, report_dir)
+    return 0
+
+
+def write_report(rep: dict, report_dir: str | Path) -> None:
+    report_dir = Path(report_dir)
     report_dir.mkdir(parents=True, exist_ok=True)
     (report_dir / f"{REPORT_NAME}.json").write_text(
         json.dumps(rep, indent=1) + "\n", encoding="utf-8"
     )
     (report_dir / f"{REPORT_NAME}.md").write_text(format_report(rep), encoding="utf-8")
-    return 0
+
+
+def rebuild_report(cfg) -> dict:
+    """Recompute the per-pedal summaries of ``reports/calibration.json`` from the committed
+    tables (keeping the stored per-grid fit details and timings) and rewrite the report.
+    No fitting; used to add report fields without a re-run."""
+    from lstmabar.data.layout import DataLayout
+    from lstmabar.physics.derive import DeriveContext
+
+    report_dir = Path(str(cfg.calibration.get("report_dir", "reports")))
+    rep = json.loads((report_dir / f"{REPORT_NAME}.json").read_text(encoding="utf-8"))
+    layout = DataLayout.from_config(cfg)
+    ctx = DeriveContext.from_config(cfg)
+    for pid, old in rep["pedals"].items():
+        table = CalibrationTable.load(layout.calibration_table(pid))
+        rep["pedals"][pid] = pedal_report(
+            table, old["grid"], old["seconds"], table_derived_boards(table, ctx)
+        )
+    rep["report_rebuilt"] = True
+    write_report(rep, report_dir)
+    return rep
 
 
 __all__ = [
