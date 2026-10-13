@@ -28,6 +28,7 @@ STEPS: dict[str, tuple[str, str, str]] = {
     "freeze": ("freeze", "run", "split checks, hashes, index, data card (4.6-4.7)"),
     "vocab-audit": ("vocab_audit", "run", "one-shot held-out vs caption vocab overlap (4.7)"),
     "gold-targets": ("gold", "targets_step", "validate/draft gold target regions (4.5)"),
+    "gold-examples": ("gold", "examples_step", "render example tones for friends (4.5)"),
     "gold-pair": ("gold", "run", "render gold targets + distractors on test clips (4.5)"),
     "gold-import": ("gold_import", "run", "append friend-written gold instructions (4.5)"),
 }

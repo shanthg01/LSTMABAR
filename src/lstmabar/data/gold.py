@@ -1124,6 +1124,91 @@ def targets_step(cfg, args) -> int:
     return 1 if problems else 0
 
 
+# ============================================================================ friend examples
+
+
+def example_regions(cfg, targets: Targets) -> list[tuple[str, Region]]:
+    """``gold.examples`` as ``[(example_id, region)]``. The holdout pedal is refused: its
+    name and sound stay out of anything shown to people writing test instructions."""
+    holdout = str(cfg.render.holdout_pedal)
+    out = []
+    for ex in cfg.gold.examples:
+        d = OmegaConf.to_container(ex, resolve=True)
+        eid = str(d.pop("id"))
+        if not re.fullmatch(r"ex\d\d", eid):
+            raise GoldError(f"gold.examples: id {eid!r} must match exNN")
+        region = region_from_dict(d, f"gold.examples[{eid}]")
+        if region.kind == "pedal" and region.pedal == holdout:
+            raise GoldError(f"gold.examples[{eid}]: the holdout pedal {holdout!r} is not allowed")
+        expand(region, targets, where=f"gold.examples[{eid}]")
+        out.append((eid, region))
+    ids = [e for e, _ in out]
+    if len(set(ids)) != len(ids):
+        raise GoldError("gold.examples: duplicate ids")
+    return out
+
+
+def examples_step(cfg, args) -> int:
+    """``lstmabar data gold-examples``: render the example tones friends describe (protocol
+    mode A, docs/gold-collection.md) on test clips at the inference level, as 16-bit WAV
+    pairs ``<id>_dry.wav`` / ``<id>_wet.wav`` (both peak-normalized) plus ``examples.json``
+    (regions and sampled settings: owner only, never shared)."""
+    import soundfile as sf
+
+    from lstmabar.data import levels
+
+    targets = load_targets(Path(str(cfg.gold.targets_file)))
+    regions = example_regions(cfg, targets)
+    clips = test_clips(cfg)
+    ctx = render.RenderContext(cfg, render.Options(allow_derived_labels=True, pitch=False))
+    layout = DataLayout.from_config(cfg)
+    out_dir = layout.rendered / "gold_examples"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    peak = float(cfg.audio.inference_peak_dbfs)
+    seed = int(cfg.gold.seed)
+    meta = []
+    for eid, region in regions:
+        clip = pick_clips(f"example:{eid}", clips, 1, seed)[0]
+        conc = expand(region, targets)
+        knobs, board = sample(conc, np.random.default_rng(render.item_seed(seed, eid, 0)))
+        dry, _ = levels.read_audio(layout.resolve_rendered(clip.path))
+        x = levels.apply_input_level(dry, peak)
+        if conc.kind == "pedal":
+            pedal = ctx.kb[conc.pedal]
+            if conc.pedal in tuple(str(p) for p in cfg.render.whitebox_pedals):
+                wet = ctx.render_whitebox(pedal, knobs, x)
+            else:
+                wet = ctx.render_board(to_floats(derive(pedal, knobs, ctx.derive_ctx)), x)
+        else:
+            wet = ctx.render_board(board, x)
+        for name, y in (("dry", x), ("wet", np.asarray(wet, dtype=np.float64))):
+            y, _ = levels.normalize_peak(y, float(cfg.render.wet_peak_dbfs))
+            sf.write(str(out_dir / f"{eid}_{name}.wav"), y, ctx.sr, subtype="PCM_16")
+        meta.append(
+            {
+                "id": eid,
+                "clip_id": clip.clip_id,
+                "region": region.to_yaml(),
+                "pedal_knobs": knobs,
+                "board": board,
+                "input_peak_dbfs": peak,
+            }
+        )
+        print(f"{eid}: {_describe(region)} on {clip.clip_id}")
+    (out_dir / "examples.json").write_text(
+        json.dumps(_clean(meta), indent=1) + "\n", encoding="utf-8", newline="\n"
+    )
+    print(f"wrote {len(meta)} example pairs; share only the WAV files")
+    return 0
+
+
+def to_floats(preset) -> FloatBoard:
+    from lstmabar.data.schema import board_to_floats
+    from lstmabar.physics.derive import preset_params
+
+    return board_to_floats(preset_params(preset))
+
+
 # ============================================================================ rendering
 
 
@@ -1377,6 +1462,8 @@ __all__ = [
     "check_rows",
     "check_separation",
     "draft_distractors",
+    "example_regions",
+    "examples_step",
     "draft_row",
     "draft_target",
     "dump_targets",

@@ -361,3 +361,53 @@ def test_committed_gold_manifest_matches_its_index(targets, cfg):
 def test_targets_file_parses_as_plain_yaml():
     doc = yaml.safe_load(TARGETS.read_text(encoding="utf-8"))
     assert doc["status"] in ("draft", "reviewed")
+
+
+# ------------------------------------------------------------------ friend examples
+
+
+def test_example_regions_are_valid_and_never_the_holdout(cfg, targets):
+    regions = G.example_regions(cfg, targets)
+    assert regions and all(r.pedal != cfg.render.holdout_pedal for _, r in regions)
+    bad = OmegaConf.merge(
+        cfg,
+        {"gold": {"examples": [{"id": "ex01", "kind": "pedal", "pedal": "rat", "gain": "low"}]}},
+    )
+    with pytest.raises(G.GoldError, match="holdout"):
+        G.example_regions(bad, targets)
+    bad = OmegaConf.merge(
+        cfg, {"gold": {"examples": [{"id": "e1", "kind": "free", "gain": "none"}]}}
+    )
+    with pytest.raises(G.GoldError, match="exNN"):
+        G.example_regions(bad, targets)
+
+
+def test_gold_examples_on_fixtures(tmp_path, cfg):
+    from lstmabar.data.fixtures import fixture_config, make_fixture_dataset
+
+    fcfg = fixture_config(tmp_path)
+    make_fixture_dataset(fcfg, clips_per_performer=1, seconds=0.5)
+    ecfg = OmegaConf.merge(
+        fcfg,
+        {"gold": OmegaConf.to_container(cfg.gold, resolve=True)},
+        {
+            "gold": {
+                "dry_manifest": str(tmp_path / "manifests" / "v1" / "dry_clips.jsonl"),
+                "examples": [
+                    {"id": "ex01", "kind": "free", "gain": "none", "brightness": "bright"},
+                    {"id": "ex02", "kind": "pedal", "pedal": "big_muff", "gain": "high"},
+                ],
+            },
+            "paths": {"pedals": str(REPO / "pedals")},
+        },
+    )
+    assert G.examples_step(ecfg, Namespace()) == 0
+    out = tmp_path / "rendered" / "gold_examples"
+    assert sorted(p.name for p in out.glob("*.wav")) == [
+        "ex01_dry.wav",
+        "ex01_wet.wav",
+        "ex02_dry.wav",
+        "ex02_wet.wav",
+    ]
+    meta = json.loads((out / "examples.json").read_text(encoding="utf-8"))
+    assert [m["id"] for m in meta] == ["ex01", "ex02"]

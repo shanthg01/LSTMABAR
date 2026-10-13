@@ -36,3 +36,22 @@ gold:
     brightness_knob: 0.1                # tone-knob rotation (same KB pedal)
     mids: 3.0                           # dB of the EQ mid peak
     compression: 1.0                    # compressor ratio (off = 1)
+
+  # --- gold-examples: example tones friends describe (docs/gold-collection.md, mode A) ---
+  # Regions use the targets-file schema; rendered on test clips to
+  # data/rendered/gold_examples/exNN_{dry,wet}.wav. Never the holdout pedal (rat).
+  examples:
+    - {id: ex01, kind: free, gain: none, brightness: bright, mids: neutral, compression: none}
+    - {id: ex02, kind: free, gain: none, brightness: dark, mids: neutral, compression: light}
+    - {id: ex03, kind: free, gain: none, brightness: neutral, mids: neutral, compression: heavy}
+    - {id: ex04, kind: free, family: boost, gain: low, brightness: slightly_bright, mids: pushed, compression: none}
+    - {id: ex05, kind: free, family: overdrive, clipping: soft, gain: low, brightness: slightly_dark, mids: neutral, compression: none}
+    - {id: ex06, kind: pedal, pedal: ts808, gain: medium, brightness: neutral}
+    - {id: ex07, kind: free, family: overdrive, clipping: asymmetric, gain: medium, brightness: slightly_bright, mids: neutral, compression: light}
+    - {id: ex08, kind: pedal, pedal: ds1, gain: high, brightness: slightly_bright}
+    - {id: ex09, kind: free, family: distortion, clipping: hard, gain: high, brightness: bright, mids: scooped, compression: none}
+    - {id: ex10, kind: free, family: distortion, clipping: hard, gain: medium, brightness: neutral, mids: pushed, compression: none}
+    - {id: ex11, kind: pedal, pedal: big_muff, gain: high, brightness: slightly_dark}
+    - {id: ex12, kind: pedal, pedal: fuzz_face_ge, gain: high, brightness: neutral}
+    - {id: ex13, kind: free, family: fuzz, clipping: asymmetric, gain: extreme, brightness: dark, mids: neutral, compression: none}
+    - {id: ex14, kind: free, family: fuzz, clipping: hard, gain: extreme, brightness: slightly_bright, mids: scooped, compression: heavy}
