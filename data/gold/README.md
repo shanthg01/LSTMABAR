@@ -16,7 +16,9 @@ All LLM-written items (`llm_draft`, `llm_persona`, `simulated_human`) were produ
 
 ## Schema
 
-Each item: `id`, `source`, `author` (human and persona files), `instruction`, `target`, `notes`.
+Each item: `id`, `source`, `author` (human and persona files), `instruction`, `target`, `notes`,
+and optionally `example_id` (`source: human` items written for a shared example clip, mode A
+in [docs/gold-collection.md](../../docs/gold-collection.md): `ex01`, `ex02`, ...).
 `target` fields and allowed values:
 
 - `in_scope`: bool. False if the request mainly needs modulation, delay, reverb, octave, pitch, wah or amp simulation. Mixed requests count as in scope when the drive part is the main ask.
@@ -36,6 +38,19 @@ Each item: `id`, `source`, `author` (human and persona files), `instruction`, `t
 - Stacked drives: the last drive in the chain sets `clipping` (and its EQ character), e.g. "Muff into a RAT" → hard.
   As of 2026-10-09 all gold files, including `instructions_llm_draft.yaml`, follow these
   conventions.
+
+## Real (`source: human`) items
+
+- Added only by `lstmabar data gold-import --input <responses.csv>` (protocol and CSV
+  columns: [docs/gold-collection.md](../../docs/gold-collection.md)). The import is
+  append-only: it appends after the last id (h151, ...) and verifies that every existing
+  item, including all `simulated_human` items, is byte-for-byte unchanged.
+- `author` is an anonymised pseudonym `friend-NN`. Real names are never committed; the
+  respondent → pseudonym mapping stays local in the gitignored cache
+  (`data/cache/gold/authors.json`, keyed by a hash of the name).
+- **Unlabelled targets:** imported items have every `target` field `null` until the owner
+  labels them by hand with the conventions above. Downstream steps skip items whose target
+  is unlabelled. `notes` holds the respondent's optional context (guitar / amp / song).
 
 ## Rules
 
