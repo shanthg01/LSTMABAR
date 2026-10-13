@@ -1,0 +1,57 @@
+# Gold set tooling for dataset v1 (P4 task 4.5): friend-instruction import, and target/
+# distractor regions rendered on the held-out test DI clips for the P5 2AFC metric.
+# Usage: lstmabar data gold-<step> [--config configs/data/gold_v1.yaml] [dotlist overrides]
+# (gold-* steps default to this file). Protocol: docs/gold-collection.md.
+defaults:
+  - v1.yaml
+
+name: data_gold_v1
+
+gold:
+  gold_dir: ${paths.data}/gold                  # held-out instruction files (instructions_*.yaml)
+
+  # --- gold-import: friend-written instructions (`lstmabar data gold-import --input x.csv`) ---
+  human_file: ${gold.gold_dir}/instructions_human.yaml   # append-only target for source: human
+  authors_file: ${data.cache_dir}/gold/authors.json      # sha256(respondent) -> friend-NN;
+                                                         # local only (data/cache is gitignored)
+  max_instruction_chars: 1000
+  # --- end gold-import ---
+
+  # --- gold-targets / gold-pair: target regions and their renders ---
+  version: gold_v1                      # audio: data/rendered/gold_v1/ (gitignored);
+                                        # manifest + index: data/manifests/gold_v1.{jsonl,index.json}
+  targets_file: ${gold.gold_dir}/targets/targets_v1.yaml    # owner-reviewed regions
+  dry_manifest: ${data.manifests_dir}/v1/dry_clips.jsonl    # read only; test split clips
+  expect_test_clips: 140                # Guitar-TECHS P3 (performer-disjoint, R11)
+  seed: 0
+  clips_per_item: 3                     # test clips per gold item (hash-ranked per item)
+  distractors_per_item: 2               # rendered distractors (the first N of each row)
+  shard_size: 120
+  workers: 2                            # 16 GB machine: the v1 render ran at 2 workers
+  gain_split_db: 32.0                   # distractor rule: target drive gain >= this -> clean
+                                        # distractor, else high-gain drive
+  min_gap:                              # target vs distractor separation on the axis
+    gain: 6.0                           # dB of Drive gain (pedals: derived on a knob grid)
+    brightness: 3.0                     # dB of the EQ high shelf (free board)
+    brightness_knob: 0.1                # tone-knob rotation (same KB pedal)
+    mids: 3.0                           # dB of the EQ mid peak
+    compression: 1.0                    # compressor ratio (off = 1)
+
+  # --- gold-examples: example tones friends describe (docs/gold-collection.md, mode A) ---
+  # Regions use the targets-file schema; rendered on test clips to
+  # data/rendered/gold_examples/exNN_{dry,wet}.wav. Never the holdout pedal (rat).
+  examples:
+    - {id: ex01, kind: free, gain: none, brightness: bright, mids: neutral, compression: none}
+    - {id: ex02, kind: free, gain: none, brightness: dark, mids: neutral, compression: light}
+    - {id: ex03, kind: free, gain: none, brightness: neutral, mids: neutral, compression: heavy}
+    - {id: ex04, kind: free, family: boost, gain: low, brightness: slightly_bright, mids: pushed, compression: none}
+    - {id: ex05, kind: free, family: overdrive, clipping: soft, gain: low, brightness: slightly_dark, mids: neutral, compression: none}
+    - {id: ex06, kind: pedal, pedal: ts808, gain: medium, brightness: neutral}
+    - {id: ex07, kind: free, family: overdrive, clipping: asymmetric, gain: medium, brightness: slightly_bright, mids: neutral, compression: light}
+    - {id: ex08, kind: pedal, pedal: ds1, gain: high, brightness: slightly_bright}
+    - {id: ex09, kind: free, family: distortion, clipping: hard, gain: high, brightness: bright, mids: scooped, compression: none}
+    - {id: ex10, kind: free, family: distortion, clipping: hard, gain: medium, brightness: neutral, mids: pushed, compression: none}
+    - {id: ex11, kind: pedal, pedal: big_muff, gain: high, brightness: slightly_dark}
+    - {id: ex12, kind: pedal, pedal: fuzz_face_ge, gain: high, brightness: neutral}
+    - {id: ex13, kind: free, family: fuzz, clipping: asymmetric, gain: extreme, brightness: dark, mids: neutral, compression: none}
+    - {id: ex14, kind: free, family: fuzz, clipping: hard, gain: extreme, brightness: slightly_bright, mids: scooped, compression: heavy}

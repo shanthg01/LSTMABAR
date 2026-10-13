@@ -5,7 +5,7 @@ Companion to [design.md](design.md). This is a solo side project, assumed at ~8�
 **Current status (2026-10-13):**
 - **P0 and P1 are done; M1 is reached** (PRs #1–#17).
 - **P2 and P3 are done; M2 is reached** (PRs #19–#27; owner browser check of the M2 demo passed 2026-10-12). P2's gate passes for DS-1 and, via a documented deviation, for TS808 (see [P2 status](#p2-status)).
-- **P4 is done except task 4.5 (gold pairing, deferred to a separate session): dataset v1 is frozen** (PRs #29–#37 and the freeze PR; see [P4 status](#p4-status)).
+- **P4 is done: dataset v1 is frozen** (PRs #29–#37 and the freeze PR) **and the gold set is paired with target tones** (task 4.5; see [P4 status](#p4-status)).
 - **Next: P5** (evaluation harness and baselines → M3). P4 follow-ups are listed under the P4 status.
 
 Each phase ends with an **exit gate**: don't start dependent work until it passes. Each task is tagged with where it runs:
@@ -232,7 +232,7 @@ P2/P3 follow-ups (non-blocking; fold into P4 or later):
 | 4.2 | Renderer: dry × (pedal preset \| free board) × sampled knobs → wet. White-box for TS808 and DS-1, grey-box for the rest (decision 3). Store pedal id, pedal knobs, board params + gates, engine, descriptors, archetype readout. Multiprocess, resumable shards | L (C if slow) | `data/render.py` |
 | 4.3 | Caption generator: templates from params/descriptors/KB vocab + LLM paraphrase (Claude API), no numeric leakage. **Never read `data/gold/` while writing or tuning it** (decision 6) | L | `data/captions.py` |
 | 4.4 | Real-pedal test set: EGFxSet (TS Mini, RAT2, BD-2 + clean), a few pOD-set pedals, ToneTwist analog subset internal only (decision 8) | L | audio in `data/test_real/` (gitignored), manifest in `data/manifests/` |
-| 4.5 | Pair each gold instruction with a target tone, in a **separate session after the caption code is frozen** (decision 7); add friend-written instructions | L | `test_gold` |
+| 4.5 | Pair each gold instruction with a target tone, in a **separate session after the caption code is frozen** (decision 7); add friend-written instructions | L | `data/gold/targets/targets_v1.yaml`, `data/manifests/gold_v1.jsonl`, `data/gold.py`, `data/gold_import.py`, [gold-collection.md](gold-collection.md) |
 | 4.6 | Splits disjoint by performer/recording + `test_unseen_pedal` (decision 11); content hashes; data card | L | `data/splits.py`, `DATA_CARD.md` |
 | 4.7 | Leakage tests: no shared recordings across splits, no param numbers in captions, no gold path in caption code; one-shot gold-vs-template vocab overlap report at freeze | L | `tests/data/`, `reports/vocab_overlap.md` |
 
@@ -240,7 +240,7 @@ P2/P3 follow-ups (non-blocking; fold into P4 or later):
 
 ### P4 status
 
-**Status (2026-10-13): P4 exit gate passed** (task 4.5, gold pairing, is deferred to a separate session). Dataset v1 is frozen: 26,812 pairs from 4,589 Guitar-TECHS DI clips (train 24,528 / val 1,444 / test 560 / `test_unseen_pedal` 280 items), 50,130 captions, 31,401 hashed audio files, dataset SHA-256 `c4987b4a…` ([DATA_CARD.md](../DATA_CARD.md), `data/manifests/v1/`). `lstmabar data freeze` re-checks split disjointness (test performer-disjoint, R11), holdout isolation, file hashes and every caption against the shared vocab rules; the leakage tests pass in CI. `test_real`: 2,789 items (EGFxSet 2,069; pOD-set 720, internal only). Disk: 7.1 GB rendered + 5.7 GB `test_real` + 3.8 GB sources (~17 GB; cache 48 MB), inside the ~30 GB budget. Caption paraphrase spend: $0.31 over 3 batches incl. the pilot (cap $2.50). The one-shot vocab audit is in [reports/vocab_overlap.md](../reports/vocab_overlap.md) (aggregate only; no real `human` gold items yet).
+**Status (2026-10-13): P4 exit gate passed; task 4.5 (gold pairing) done** (see *Gold pairing (4.5)* below). Dataset v1 is frozen: 26,812 pairs from 4,589 Guitar-TECHS DI clips (train 24,528 / val 1,444 / test 560 / `test_unseen_pedal` 280 items), 50,130 captions, 31,401 hashed audio files, dataset SHA-256 `c4987b4a…` ([DATA_CARD.md](../DATA_CARD.md), `data/manifests/v1/`). `lstmabar data freeze` re-checks split disjointness (test performer-disjoint, R11), holdout isolation, file hashes and every caption against the shared vocab rules; the leakage tests pass in CI. `test_real`: 2,789 items (EGFxSet 2,069; pOD-set 720, internal only). Disk: 7.1 GB rendered + 5.7 GB `test_real` + 3.8 GB sources (~17 GB; cache 48 MB), inside the ~30 GB budget. Caption paraphrase spend: $0.31 over 3 batches incl. the pilot (cap $2.50). The one-shot vocab audit is in [reports/vocab_overlap.md](../reports/vocab_overlap.md) (aggregate only; no real `human` gold items yet).
 
 What the numbers say (all from the data card / reports):
 - **Splits (R11):** val is a by-recording P1/P2 slice (not performer-disjoint); test is all of P3 (140 clips, out of domain in content).
@@ -248,10 +248,23 @@ What the numbers say (all from the data card / reports):
 - **Analysis:** `analysis.max_frames` 32 (R8); vs 64, odd/even |Δ| median 0.21 dB, max 1.66 dB ([reports/render_bench.md](../reports/render_bench.md)).
 - **Captions:** template vocabulary is narrow (227 word types; paraphrases 1,010); 3,494 items (13 %) have only a template caption (paraphrase identical to the template or rejected). Paraphrases stay close to the templates. Gold content-type coverage by all captions is ~30–36 % per LLM-written source.
 
+Gold pairing (4.5), done in a separate session that read `data/gold/` and touched no caption code (decision 7):
+- **Targets:** [data/gold/targets/targets_v1.yaml](../data/gold/targets/targets_v1.yaml), owner-reviewed 2026-10-13. One row per gold item: a target region (a KB pedal with gain/tone knob ranges when the item names a KB pedal, else a free-board region from shared level tables: drive gain/voicing, EQ brightness and mids, compression), 1–4 distractor regions that contradict it on one axis (gain, brightness, mids, compression), confidence, ambiguity flags (`relative`, `vague`, `conflicting`), `unseen_pedal` and a rationale. `lstmabar data gold-targets` validates rows against the gold files and checks that every distractor's range on its axis is disjoint from the target's (gain via `derive` for pedals).
+- **Renders:** `lstmabar data gold-pair` renders, per item, 3 test clips (Guitar-TECHS P3, hash-ranked per item) × (1 target + the first 2 distractors) at the R3 inference level (−15 dBFS), with the v1 renderer (white-box TS808/DS-1 with calibrated labels, grey-box otherwise): 3,615 renders, 979 MB under `data/rendered/gold_v1/` (gitignored); manifest + index with hashes in `data/manifests/gold_v1.{jsonl,index.json}`. Dataset v1 is untouched (the index records its sha256 `c4987b4a…`). Audio check: brightness distractors move the spectral centroid the intended way in 664/666 pairs, gain distractors move the crest factor the expected way in 1,256/1,266.
+- **Counts per source** (reported separately, never pooled):
+
+  | source | items paired | ambiguous (relative / vague / conflicting) | unseen pedal (rat) | out of scope | KB-pedal targets |
+  |---|---:|---|---:|---:|---:|
+  | `human` | 0 | – | – | – | – |
+  | `simulated_human` | 150 | 30 (27 / 3 / 0) | 8 | 22 | 25 |
+  | `llm_persona` | 150 | 25 (16 / 9 / 0) | 1 | 13 | 11 |
+  | `llm_draft` | 150 | 23 (13 / 7 / 3) | 5 | 16 | 28 |
+- **Friend instructions:** protocol and CSV/Form spec in [gold-collection.md](gold-collection.md); `lstmabar data gold-examples` renders 14 example tones (never the holdout pedal); `lstmabar data gold-import --input x.csv` appends `source: human` items with `friend-NN` pseudonyms (append-only, mapping kept local). Imported items stay unlabelled (target fields null) until the owner labels them; then `gold-targets --draft-missing` drafts their rows and `gold-pair` renders them (bump `gold.version`).
+
 Follow-ups (P5/P6 or a dataset v1.1, which must be labelled "tuned after gold audit" if templates change):
 - Down-weight / dedupe clamped grey-box items in P6 (decision 10), or revisit option (b) (raise `drive.gain_db` max).
 - DS-1 calibration: denser tone grid, or derived labels in the tone 0–0.5 cells.
-- Real `human` gold items (friends) before P5 reports a headline number; gold pairing (4.5) in a separate session.
+- Real `human` gold items (friends, via `gold-import`) before P5 reports a headline number; P5 reports ambiguous, out-of-scope and unseen-pedal gold items separately.
 - Render throughput: the full render ran out of RAM at 7 and at 3 workers on this 16 GB machine with other apps open; it finished at 2 workers. Consider `maxtasksperchild` / per-shard memory caps.
 - A dataset v1.1 goes in its own `data/manifests/v1.1/`, never overwriting v1.
 - Unify the two remote-zip helpers (`ingest` streaming fetcher vs `remote_zip`).
