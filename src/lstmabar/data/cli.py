@@ -23,6 +23,8 @@ STEPS: dict[str, tuple[str, str, str]] = {
     "test-real": ("test_real", "run", "real-pedal test set (4.4)"),
     "freeze": ("freeze", "run", "split checks, hashes, index, data card (4.6-4.7)"),
     "vocab-audit": ("vocab_audit", "run", "one-shot held-out vs caption vocab overlap (4.7)"),
+    "gold-targets": ("gold", "targets_step", "validate/draft gold target regions (4.5)"),
+    "gold-pair": ("gold", "run", "render gold targets + distractors on test clips (4.5)"),
 }
 
 
@@ -67,6 +69,16 @@ def add_data_parser(sub) -> None:
         "--allow-derived-labels",
         action="store_true",
         help="render: label white-box items with derived params if a calibration table is missing",
+    )
+    p.add_argument(
+        "--draft-missing",
+        action="store_true",
+        help="gold-targets: append draft rows for labelled gold items without one",
+    )
+    p.add_argument(
+        "--allow-draft",
+        action="store_true",
+        help="gold-pair: render from an unreviewed (status: draft) targets file (smoke runs)",
     )
     p.add_argument("overrides", nargs="*", help="dotlist overrides, e.g. render.workers=2")
     p.set_defaults(func=cmd_data)

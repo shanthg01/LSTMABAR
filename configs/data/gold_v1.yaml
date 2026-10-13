@@ -1,0 +1,28 @@
+# Gold pairing (P4 task 4.5): target/distractor regions for the gold instructions, rendered
+# on the held-out test DI clips for the P5 2AFC metric. Builds on the frozen dataset v1 config.
+# Usage: lstmabar data gold-targets | gold-pair [--config configs/data/gold_v1.yaml]
+defaults:
+  - v1.yaml
+
+name: gold_v1
+
+gold:
+  version: gold_v1                      # audio: data/rendered/gold_v1/ (gitignored);
+                                        # manifest + index: data/manifests/gold_v1.{jsonl,index.json}
+  gold_dir: ${paths.data}/gold
+  targets_file: ${paths.data}/gold/targets/targets_v1.yaml   # owner-reviewed regions
+  dry_manifest: ${paths.data}/manifests/v1/dry_clips.jsonl  # read only; test split clips
+  expect_test_clips: 140                # Guitar-TECHS P3 (performer-disjoint, R11)
+  seed: 0
+  clips_per_item: 3                     # test clips per gold item (hash-ranked per item)
+  distractors_per_item: 2               # rendered distractors (the first N of each row)
+  shard_size: 120
+  workers: 2                            # 16 GB machine: the v1 render ran at 2 workers
+  gain_split_db: 32.0                   # distractor rule: target drive gain >= this -> clean
+                                        # distractor, else high-gain drive
+  min_gap:                              # target vs distractor separation on the axis
+    gain: 6.0                           # dB of Drive gain (pedals: derived on a knob grid)
+    brightness: 3.0                     # dB of the EQ high shelf (free board)
+    brightness_knob: 0.1                # tone-knob rotation (same KB pedal)
+    mids: 3.0                           # dB of the EQ mid peak
+    compression: 1.0                    # compressor ratio (off = 1)
