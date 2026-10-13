@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 LSTMABAR v2: text-driven guitar tone transformation grounded in pedal circuit physics. Guitar audio + instruction → parameters for a differentiable, physically grounded pedalboard → rendered audio + explanation. Solo side project; the main deliverable is a Gradio demo.
 
-**Status:** P0 and P1 are done (M1 demo works). **Next: P2** (pedal knowledge base + white-box circuit sims), with P3 (harmonic analysis) in parallel. Start from the "P2 kickoff brief" in [docs/execution-plan.md](docs/execution-plan.md).
+**Status:** P0–P4 are done (M2 demo works; dataset v1 frozen, see [DATA_CARD.md](DATA_CARD.md)). **Next: P5** (evaluation harness and baselines → M3). See the P4 status and follow-ups in [docs/execution-plan.md](docs/execution-plan.md).
 
 Read [docs/design.md](docs/design.md) (architecture, data, evaluation; §4.3 describes the implemented DSP; §10 is the decisions log) and [docs/execution-plan.md](docs/execution-plan.md) (phases, exit gates, status) before substantial work.
 

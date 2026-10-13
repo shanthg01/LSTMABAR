@@ -2,10 +2,11 @@
 
 Companion to [design.md](design.md). This is a solo side project, assumed at ~8–12 h/week, with a demo as the main deliverable. Durations are relative sizing, not commitments.
 
-**Current status (2026-10-12):**
+**Current status (2026-10-13):**
 - **P0 and P1 are done; M1 is reached** (PRs #1–#17).
 - **P2 and P3 are done; M2 is reached** (PRs #19–#27; owner browser check of the M2 demo passed 2026-10-12). P2's gate passes for DS-1 and, via a documented deviation, for TS808 (see [P2 status](#p2-status)).
-- **Next: P4** (data pipeline). Start from the [P4 kickoff brief](#p4-kickoff-brief); P2/P3 follow-ups are listed under the P2 status.
+- **P4 is done except task 4.5 (gold pairing, deferred to a separate session): dataset v1 is frozen** (PRs #29–#37 and the freeze PR; see [P4 status](#p4-status)).
+- **Next: P5** (evaluation harness and baselines → M3). P4 follow-ups are listed under the P4 status.
 
 Each phase ends with an **exit gate**: don't start dependent work until it passes. Each task is tagged with where it runs:
 - **[L]** local CPU
@@ -237,6 +238,24 @@ P2/P3 follow-ups (non-blocking; fold into P4 or later):
 
 **Exit gate:** dataset v1 frozen + hashed; leakage tests pass; ~20–50k synthetic pairs (start at ~20k, decision 9), within the disk budget; data card written.
 
+### P4 status
+
+**Status (2026-10-13): P4 exit gate passed** (task 4.5, gold pairing, is deferred to a separate session). Dataset v1 is frozen: 26,812 pairs from 4,589 Guitar-TECHS DI clips (train 24,528 / val 1,444 / test 560 / `test_unseen_pedal` 280 items), 50,130 captions, 31,401 hashed audio files, dataset SHA-256 `c4987b4a…` ([DATA_CARD.md](../DATA_CARD.md), `data/manifests/v1/`). `lstmabar data freeze` re-checks split disjointness (test performer-disjoint, R11), holdout isolation, file hashes and every caption against the shared vocab rules; the leakage tests pass in CI. `test_real`: 2,789 items (EGFxSet 2,069; pOD-set 720, internal only). Disk: 7.1 GB rendered + 5.7 GB `test_real` + 3.8 GB sources (~17 GB; cache 48 MB), inside the ~30 GB budget. Caption paraphrase spend: $0.31 over 3 batches incl. the pilot (cap $2.50). The one-shot vocab audit is in [reports/vocab_overlap.md](../reports/vocab_overlap.md) (aggregate only; no real `human` gold items yet).
+
+What the numbers say (all from the data card / reports):
+- **Splits (R11):** val is a by-recording P1/P2 slice (not performer-disjoint); test is all of P3 (140 clips, out of domain in content).
+- **Labels:** 8,934 items (33 %) have a *derived* label at the 60 dB Drive clamp (Big Muff 2,846, DS-1 2,254, Fuzz Face Si 1,672, Ge 1,160, TS808 891, rat 111). White-box labels use the calibration tables; 3,711 white-box items use the nearest-grid fallback (DS-1 2,311, TS808 1,400), and 1,826 calibrated labels hit the level-offset clamp (TS808 1,562, ~43 % of TS808 items; DS-1 264). Off-grid, calibrated TS808 labels halve the derived error (5.21 → 2.49 dB); DS-1 calibrated labels are level with derived (1.16 vs 1.18 dB) and worse at tone ≈ 0.25 ([reports/calibration.md](../reports/calibration.md)).
+- **Analysis:** `analysis.max_frames` 32 (R8); vs 64, odd/even |Δ| median 0.21 dB, max 1.66 dB ([reports/render_bench.md](../reports/render_bench.md)).
+- **Captions:** template vocabulary is narrow (227 word types; paraphrases 1,010); 3,494 items (13 %) have only a template caption (paraphrase identical to the template or rejected). Paraphrases stay close to the templates. Gold content-type coverage by all captions is ~30–36 % per LLM-written source.
+
+Follow-ups (P5/P6 or a dataset v1.1, which must be labelled "tuned after gold audit" if templates change):
+- Down-weight / dedupe clamped grey-box items in P6 (decision 10), or revisit option (b) (raise `drive.gain_db` max).
+- DS-1 calibration: denser tone grid, or derived labels in the tone 0–0.5 cells.
+- Real `human` gold items (friends) before P5 reports a headline number; gold pairing (4.5) in a separate session.
+- Render throughput: the full render ran out of RAM at 7 and at 3 workers on this 16 GB machine with other apps open; it finished at 2 workers. Consider `maxtasksperchild` / per-shard memory caps.
+- A dataset v1.1 goes in its own `data/manifests/v1.1/`, never overwriting v1.
+- Unify the two remote-zip helpers (`ingest` streaming fetcher vs `remote_zip`).
+
 ### P4 kickoff brief
 
 Prepared 2026-10-12 for a fresh session. Read this, CLAUDE.md, design §5 (data) and [data-licenses.md](data-licenses.md) first; confirm the decisions below with the owner before writing code. Same workflow as P2: `v2/...` branches, one PR per wave item, independent review agent per PR, fix blocking findings and re-review, merge on PASS + green CI.
@@ -317,7 +336,7 @@ Prepared 2026-10-12 for a fresh session. Read this, CLAUDE.md, design §5 (data)
   - 30 % free board: bypass 5 %, EQ only 25 %, compressor only 15 %, compressor + EQ 15 %, generic drive (EQ and compressor each on with p = 0.5) 40 %.
 - **R6. Holdout `rat`; clamp option (a).**
   - `rat` is never rendered for train or val. It is rendered only on test DI, as `test_unseen_pedal`. Captions never name it outside that split.
-  - Items record `clamped` from `derive`'s `" clamped to "` notes only (other notes mention the clamp too, e.g. Big Muff's). For white-box items it describes the derived label; the calibrated label is in range by construction. The data card reports clamped counts.
+  - Items record `clamped` from `derive`'s `" clamped to "` notes only (other notes mention the clamp too, e.g. Big Muff's). For white-box items it describes the derived label; the calibrated label is in range except for the R4 level-offset clamp, recorded in `label_clamp_notes` (1,826 items in v1). The data card reports clamped counts.
   - Clamped grey-box settings are kept but flagged, so P6 can down-weight or dedupe them.
 - **R7. Counts** (val/test clip counts revised by R11).
   - The two train players give at most ~4k non-overlapping 3 s clips (fewer after skipping silence).
