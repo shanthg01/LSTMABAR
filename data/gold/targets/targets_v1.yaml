@@ -12,6 +12,12 @@
 #   it on one `axis` and keeps everything else (rules in gold.py: gain -> clean or high-gain
 #   drive, brightness -> the opposite extreme, mids -> scooped<->pushed, compression -> off).
 #   EQ/compression-only requests list their own axes first. P5 renders the first two.
+#   A gain distractor also changes the drive voicing (hard-clipped distortion, or the free
+#   board instead of a KB pedal), so it is gain + voicing; light compression vs off is the
+#   weakest contrast.
+# - Smoke runs: `gold-pair --allow-draft --limit N gold.version=gold_smoke`. Partial runs
+#   write <version>.partial.* files; a full run at a version that had a --limit run needs
+#   that version's rendered wet dir deleted first.
 # - `ambiguous: true` + `ambiguity` flags rows whose region is a guess:
 #     relative    = refers to an earlier setting ("less than before", "still too bright");
 #                   the region is the gold label's absolute guess

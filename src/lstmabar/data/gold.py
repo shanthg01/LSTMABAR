@@ -35,8 +35,11 @@ draws one setting uniformly in normalized-knob space.
 extreme (pedals: tone knob, only if the pedal has one); ``mids`` -> scooped <-> pushed (free
 only); ``compression`` -> off (free only; heavy, or light when compression is the main ask).
 EQ/compression-only requests list their own axes first, every other item starts with
-``gain``. :func:`separation` checks that each distractor's range on its axis is disjoint from
-the target's (gain via ``derive`` on a knob grid for pedals).
+``gain``. A gain distractor also changes the drive voicing (hard-clipped distortion, or the
+free board instead of a KB pedal's voicing), so "one axis" means gain plus voicing there;
+light compression vs off (ratio >= 2 vs 1) is the weakest contrast. :func:`separation`
+checks that each distractor's range on its axis is disjoint from the target's (gain via
+``derive`` on a knob grid for pedals).
 
 **Rendering** (``lstmabar data gold-pair``): per gold item ``gold.clips_per_item`` test clips
 (ranked by a hash of the gold id, so items use different clips), at the inference input level
@@ -1015,7 +1018,7 @@ def dump_targets(
     is kept verbatim with its comments, except for the ``status:`` line; without it the text
     starts with ``header`` and generated ``version``/``status``/``tables``/``pedals``."""
     if prefix is not None:
-        body = re.sub(r"(?m)^status: \w+.*$", f"status: {targets.status}", prefix.rstrip())
+        body = re.sub(r"(?m)^status: \w+", f"status: {targets.status}", prefix.rstrip())
         lines = [body, "items:"]
     else:
         pedals = {
@@ -1257,11 +1260,13 @@ def gold_cfg(cfg):
     return OmegaConf.merge(cfg, {"data": {"version": version}})
 
 
-def manifest_paths(cfg) -> tuple[Path, Path]:
-    """``(manifest, index)`` files in ``data.manifests_dir`` (not in a version dir)."""
+def manifest_paths(cfg, partial: bool = False) -> tuple[Path, Path]:
+    """``(manifest, index)`` files in ``data.manifests_dir`` (not in a version dir). Partial
+    runs (``--limit``, a draft targets file, labelled items without a row) write
+    ``<version>.partial.*`` so they never replace a complete manifest."""
     layout = DataLayout.from_config(cfg)
-    version = str(cfg.gold.version)
-    return layout.manifests / f"{version}.jsonl", layout.manifests / f"{version}.index.json"
+    stem = str(cfg.gold.version) + (".partial" if partial else "")
+    return layout.manifests / f"{stem}.jsonl", layout.manifests / f"{stem}.index.json"
 
 
 def _render_jobs(cfg, opts, shards, by_clip, workers: int) -> None:
@@ -1325,9 +1330,22 @@ def run(cfg, args) -> int:
     problems = check_rows(targets, gold, kb, ctx, cfg)
     if problems:
         raise GoldError("targets file failed validation:\n" + "\n".join(problems[:20]))
+    if getattr(args, "fixtures", False) and _is_repo_manifests(cfg):
+        raise ValueError(
+            "--fixtures is for tests with a fixture config; gold-pair renders the real test clips"
+        )
     limit = getattr(args, "limit", None)
     used = replace(targets, items=targets.items[:limit] if limit else targets.items)
-    partial = len(used.items) < len(targets.items) or targets.status != "reviewed"
+    have = targets.by_id()
+    without_row = sorted(g for g, it in gold.items() if labelled(it) and g not in have)
+    if without_row:
+        print(
+            f"warning: {len(without_row)} labelled gold items have no row "
+            "(`lstmabar data gold-targets --draft-missing`); the manifest is partial"
+        )
+    partial = (
+        len(used.items) < len(targets.items) or targets.status != "reviewed" or bool(without_row)
+    )
 
     clips = test_clips(cfg)
     expect = cfg.gold.get("expect_test_clips")
@@ -1369,8 +1387,13 @@ def run(cfg, args) -> int:
                 render=to_dict(items[g.spec.item_id]),
             )
         )
-    write_outputs(cfg, records, targets, tpath, gold_hashes, partial)
+    write_outputs(cfg, records, targets, tpath, gold_hashes, partial, len(without_row))
     return 0
+
+
+def _is_repo_manifests(cfg) -> bool:
+    repo = Path(__file__).resolve().parents[3] / "data" / "manifests"
+    return DataLayout.from_config(cfg).manifests.resolve() == repo.resolve()
 
 
 def _sha256_text(text: str) -> str:
@@ -1397,9 +1420,17 @@ def render_counts(records: Sequence[GoldRender]) -> dict[str, dict[str, int]]:
     return {s: dict(sorted(counts[s].items())) for s in SOURCES if s in counts}
 
 
-def write_outputs(cfg, records, targets: Targets, tpath: Path, gold_hashes, partial: bool):
-    """Write the committed manifest (one :class:`GoldRender` per line) and its index."""
-    manifest, index_path = manifest_paths(cfg)
+def write_outputs(
+    cfg,
+    records,
+    targets: Targets,
+    tpath: Path,
+    gold_hashes,
+    partial: bool,
+    labelled_without_row: int = 0,
+):
+    """Write the manifest (one :class:`GoldRender` per line) and its index."""
+    manifest, index_path = manifest_paths(cfg, partial)
     text = "".join(
         json.dumps(_clean(r.to_dict()), sort_keys=True, ensure_ascii=False) + "\n" for r in records
     )
@@ -1414,6 +1445,7 @@ def write_outputs(cfg, records, targets: Targets, tpath: Path, gold_hashes, part
     index = {
         "version": str(cfg.gold.version),
         "partial": partial,
+        "labelled_without_row": labelled_without_row,
         "targets_file": tpath.name,
         "targets_sha256": hashlib.sha256(tpath.read_bytes()).hexdigest(),
         "targets_status": targets.status,

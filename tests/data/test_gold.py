@@ -74,6 +74,8 @@ def test_targets_file_validates(targets, gold, kb, ctx, cfg):
 
 
 def test_every_labelled_gold_item_has_one_row(targets, gold):
+    # Intentional tripwire: after labelling imported friend items this fails until
+    # `lstmabar data gold-targets --draft-missing` has drafted (and the owner reviewed) rows.
     rows = targets.by_id()
     labelled = {g for g, it in gold.items() if G.labelled(it)}
     assert labelled == set(rows)
@@ -84,8 +86,9 @@ def test_rows_copy_source_and_never_relabel(targets, gold):
     for row in targets.items:
         assert row.source == gold[row.id]["source"]
         assert row.in_scope == gold[row.id]["target"]["in_scope"]
-    # every current item is LLM-written; only real friend items may be `human`
-    assert all(r.source != "human" for r in targets.items if gold[r.id]["source"] != "human")
+    # `human` rows only for items the import wrote as human (friend items, h151+)
+    human = {r.id for r in targets.items if r.source == "human"}
+    assert all(gold[g]["source"] == "human" and int(g[1:]) > 150 for g in human)
 
 
 def test_unseen_pedal_flag_matches_regions(targets, cfg):
@@ -271,7 +274,8 @@ def _hash_tree(root: Path) -> dict[str, str]:
     }
 
 
-def test_gold_pair_end_to_end_on_fixtures(tmp_path, cfg, targets):
+def test_gold_pair_end_to_end_on_fixtures(tmp_path, cfg, targets, gold):
+    gold_items = [g for g, it in gold.items() if G.labelled(it)]
     from lstmabar.data.fixtures import fixture_config, make_fixture_dataset
 
     before = _hash_tree(V1_MANIFESTS)
@@ -303,7 +307,9 @@ def test_gold_pair_end_to_end_on_fixtures(tmp_path, cfg, targets):
     )
     args = Namespace(fixtures=True, limit=None, workers=1, allow_draft=False)
     assert G.run(gcfg, args) == 0
-    manifest, index = G.manifest_paths(gcfg)
+    # the tiny targets file lacks rows for the other labelled gold items: partial outputs
+    manifest, index = G.manifest_paths(gcfg, partial=True)
+    assert not G.manifest_paths(gcfg)[0].exists()
     recs = G.read_manifest(manifest)
     assert len(recs) == sum(1 + min(2, len(r.distractors)) for r in pick)
     assert {r.clip_id for r in recs} <= {c.clip_id for c in test}
@@ -315,7 +321,8 @@ def test_gold_pair_end_to_end_on_fixtures(tmp_path, cfg, targets):
         assert (tmp_path / "rendered" / r.render["wet_path"]).exists()
     idx = json.loads(index.read_text(encoding="utf-8"))
     assert idx["manifest_sha256"] == hashlib.sha256(manifest.read_bytes()).hexdigest()
-    assert idx["renders"] == len(recs) and idx["partial"] is False
+    assert idx["renders"] == len(recs) and idx["partial"] is True
+    assert idx["labelled_without_row"] == len(gold_items) - len(pick)
     # the fixture's own v1 manifests and the repo's frozen v1 manifests are untouched
     assert sorted(p.name for p in (tmp_path / "manifests" / "v1").iterdir()) == ["dry_clips.jsonl"]
     assert _hash_tree(V1_MANIFESTS) == before
@@ -327,11 +334,29 @@ def test_gold_pair_end_to_end_on_fixtures(tmp_path, cfg, targets):
 
 def test_draft_targets_file_is_refused(tmp_path, cfg, targets):
     tfile = tmp_path / "t.yaml"
-    tfile.write_text(G.dump_targets("# t", targets, targets.items[:1]), "utf-8")
+    draft = replace(targets, status="draft")
+    tfile.write_text(G.dump_targets("# t", draft, targets.items[:1]), "utf-8")
     c = OmegaConf.merge(cfg, {"gold": {"targets_file": str(tfile)}})
-    if targets.status == "draft":
-        with pytest.raises(RuntimeError, match="draft"):
-            G.run(c, Namespace(allow_draft=False, limit=None, workers=1))
+    with pytest.raises(RuntimeError, match="draft"):
+        G.run(c, Namespace(allow_draft=False, limit=None, workers=1))
+
+
+def test_fixtures_flag_refused_on_the_real_manifests(cfg):
+    with pytest.raises(ValueError, match="fixtures"):
+        G.run(cfg, Namespace(allow_draft=False, limit=None, workers=1, fixtures=True))
+
+
+def test_partial_runs_never_replace_the_manifest(cfg):
+    full, _ = G.manifest_paths(cfg)
+    part, part_index = G.manifest_paths(cfg, partial=True)
+    assert part != full and part.name == "gold_v1.partial.jsonl"
+    assert part_index.name == "gold_v1.partial.index.json"
+
+
+def test_status_rewrite_keeps_the_comment(targets):
+    prefix = "version: 1\nstatus: reviewed   # owner approved\n"
+    out = G.dump_targets("", replace(targets, status="draft"), [], prefix=prefix)
+    assert "status: draft   # owner approved" in out
 
 
 # ------------------------------------------------------------------ committed artefacts

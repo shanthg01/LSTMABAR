@@ -116,6 +116,9 @@ def test_valid_rows_pass():
         ({"instruction": "call me on +44 7700 900123"}, "phone number"),
         ({"instruction": "text 555-123-4567 for details"}, "phone number"),
         ({"instruction": "call 555-1234"}, "phone number"),
+        ({"instruction": "call (555) 123 4567"}, "phone number"),
+        ({"instruction": "ig: @johnny_riffs has clips"}, "social handle"),
+        ({"instruction": "ref at youtu.be/abc"}, "URL"),
         ({"context": "my site is example.com"}, "in context (URL)"),
         ({"instruction": "warm tone, thanks, Alice"}, "respondent's name"),
         ({"instruction": "warm tone -- alice example"}, "respondent's name"),
@@ -383,12 +386,6 @@ def test_real_human_file_has_only_simulated_items():
     # Real items may only be appended after h150 and only by the import (source: human).
     assert {it["source"] for it in items} <= {"simulated_human", "human"}
     assert all(it["source"] == "simulated_human" for it in items[:150])
-
-
-def test_real_human_file_currently_has_no_human_items():
-    items = yaml.safe_load(REAL_HUMAN.read_text(encoding="utf-8"))
-    assert not [it for it in items if it["source"] == "human"]
-    assert all(it["source"] == "simulated_human" for it in items)
 
 
 def test_cli_step_registered_with_gold_config_default():

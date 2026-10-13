@@ -70,12 +70,13 @@ _AUTHOR_ID = re.compile(rf"{AUTHOR_PREFIX}(\d+)")
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 _URL = re.compile(
     r"(?:https?://|ftp://|www\.)\S+"
-    r"|\b[\w-]+(?:\.[\w-]+)*\.(?:com|net|org|io|ly|gl|app|dev|co\.uk)\b(?:/\S*)?",
+    r"|\b[\w-]+(?:\.[\w-]+)*\.(?:com|net|org|io|ly|gl|app|dev|be|me|tv|fm|co\.uk)\b(?:/\S*)?",
     re.IGNORECASE,
 )
 # Digit runs joined by single separators; judged by digit count in _looks_like_phone.
-_PHONE_CANDIDATE = re.compile(r"\+?\(?\d(?:[\d]|[ .\-()](?=[\d(]))*\d")
-_LOCAL_PHONE = re.compile(r"\d{3}[.\-]\d{4}")
+_PHONE_CANDIDATE = re.compile(r"\+?\(?\d(?:[\d]|[ .\-()]{1,2}(?=[\d(]))*\d")
+_LOCAL_PHONE = re.compile(r"\d{3}[ .\-]\d{4}")
+_HANDLE = re.compile(r"(?<![\w.])@[A-Za-z_][\w.]{2,}")
 
 
 @dataclass(frozen=True)
@@ -136,13 +137,16 @@ def _looks_like_phone(text: str) -> bool:
 
 
 def pii_reason(text: str) -> str | None:
-    """Why ``text`` looks like it holds contact details (email, URL, phone), else None."""
+    """Why ``text`` looks like it holds contact details (email, URL, phone, @handle), else
+    None. A heuristic: the owner still reads imported text before committing it."""
     if _EMAIL.search(text):
         return "email address"
     if _URL.search(text):
         return "URL"
     if _looks_like_phone(text):
         return "phone number"
+    if _HANDLE.search(text):
+        return "social handle"
     return None
 
 

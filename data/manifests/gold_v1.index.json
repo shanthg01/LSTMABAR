@@ -42,6 +42,7 @@
   "instructions_llm_draft.yaml": "d358650691f390a054ed24cc8a55906f068b9826db85fb8f73a68bd36244b4cc",
   "instructions_llm_persona.yaml": "384b287f8f011ac98dee992c676f0d0529eedf548a2905f730e8ab68fa37e17c"
  },
+ "labelled_without_row": 0,
  "manifest_sha256": "d8f55918b940335dce1cce5556af56629b515151c2f7e54a82fb4912dc89d6b3",
  "partial": false,
  "renders": 3615,
@@ -52,7 +53,7 @@
   "seed": 0
  },
  "targets_file": "targets_v1.yaml",
- "targets_sha256": "5658243953f14d4458cb15ac09c7eec8c910a27abacdc7c09d42a74e202b59cf",
+ "targets_sha256": "4346ddae869b68f28a4a59c409b1f03a2862141869987677d54344ddd1da37c0",
  "targets_status": "reviewed",
  "version": "gold_v1"
 }

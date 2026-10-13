@@ -81,6 +81,6 @@ For the two yes/no questions a form option whose text starts with "Yes" also cou
 3. The owner labels each new item's `target` fields by hand, following the conventions in
    [data/gold/README.md](../data/gold/README.md). Downstream steps skip items whose target is
    still unlabelled.
-4. Target regions are then drafted with `lstmabar data gold-targets`.
+4. Target regions are then drafted with `lstmabar data gold-targets --draft-missing`; the owner reviews the new rows and sets `status: reviewed`, and `lstmabar data gold-pair gold.version=gold_v2` renders them into a new version. The PII checks are heuristics: read the imported text before committing it.
 
 Config: `configs/data/gold_v1.yaml` (`gold.*`; the `gold-*` steps use it by default).
