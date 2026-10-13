@@ -379,6 +379,7 @@ Prepared 2026-10-12 for a fresh session. Read this, CLAUDE.md, design §5 (data)
 5. Preference learning from demo A/B clicks: Bradley-Terry reward model → KL-regularized fine-tune.
 6. Relative edits ("less fizz").
 7. Host the demo on Hugging Face Spaces.
+8. Real-time hardware (post-v2, unscheduled): a Daisy-based pedal with an iPad app replacing the pedalboard. Costed in [realtime-hardware.md](realtime-hardware.md).
 
 ---
 
