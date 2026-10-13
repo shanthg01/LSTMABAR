@@ -1,0 +1,17 @@
+# Gold (held-out) instruction tooling for dataset v1 (P4 task 4.5).
+# Usage: lstmabar data gold-<step> [--config configs/data/gold_v1.yaml] [dotlist overrides]
+# (gold-* steps default to this file). Protocol: docs/gold-collection.md.
+defaults:
+  - v1.yaml
+
+name: data_gold_v1
+
+gold:
+  gold_dir: ${paths.data}/gold                  # held-out instruction files (instructions_*.yaml)
+
+  # --- gold-import: friend-written instructions (`lstmabar data gold-import --input x.csv`) ---
+  human_file: ${gold.gold_dir}/instructions_human.yaml   # append-only target for source: human
+  authors_file: ${data.cache_dir}/gold/authors.json      # sha256(respondent) -> friend-NN;
+                                                         # local only (data/cache is gitignored)
+  max_instruction_chars: 1000
+  # --- end gold-import ---
