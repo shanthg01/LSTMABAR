@@ -34,7 +34,7 @@ v1 is preserved as tag `v1-w266`. v2 is a redesign, not a patch.
 
 **Later (v2.x):** modulation (chorus, phaser, flanger), delay/reverb, relative edits ("a bit less fizz"), preference-based fine-tuning, and the quantum bottleneck add-on experiment.
 
-**Out of scope:** full-mix music (MusicCaps), source separation, real-time plugins.
+**Out of scope:** full-mix music (MusicCaps), source separation, real-time plugins. A post-v2 real-time hardware option is sketched in [realtime-hardware.md](realtime-hardware.md).
 
 **Why narrow to guitar:** pedals act on a single instrument, and DI guitar data with known processing exists or can be synthesized. That gives ground-truth labels, which removes v1's core flaw.
 
