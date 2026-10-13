@@ -24,7 +24,7 @@ The `dsp/` pedalboard is clip-based and non-causal by design (it is a differenti
 | Not present | — | Noise gate (needed at high gain), denormal flushing, output trim for amp input level |
 | White-box TS808 (`whitebox/`) | Newton solve per sample, 4–8× oversampled | Too heavy at 8× on a microcontroller. Use precomputed lookup tables for the clipper (a standard technique), or ship grey-box only. |
 
-**Phase mismatch.** The causal ports reproduce the magnitude response but not the phase of the zero-phase training renders. Validate them with magnitude-domain null tests against PyTorch renders, using the multi-resolution STFT loss already in `dsp/losses.py`. If the predictor is retrained later, consider rendering its data through the causal path.
+**Phase mismatch.** The FFT-sampled biquads already carry the causal IIR phase, so a per-sample port should match them in phase too. The mismatch comes only from the zero-phase oversampler and the compressor's frame-centre look-ahead: there the causal ports reproduce magnitude but not phase. Validate them with magnitude-domain null tests against PyTorch renders, using the multi-resolution STFT loss already in `dsp/losses.py`. If the predictor is retrained later, consider rendering its data through the causal path.
 
 ## What to build
 
@@ -33,9 +33,9 @@ The `dsp/` pedalboard is clip-based and non-causal by design (it is a differenti
 | 1 | Portable C++ DSP core | Dependency-free C++ port of `Compressor`, `Drive`, `EQ3` and `Gain`, with the `ParamSpec` tapers. Golden tests against PyTorch renders. | Medium (mostly translation) | 2–4 weeks |
 | 2 | Desktop test host | Wrap the core in a JUCE plugin or a minimal host and play through a USB interface. Checks feel and latency before any hardware. | Easy–medium | ~1 week |
 | 3 | Pedal firmware | Core on the target board, footswitch bypass and presets, physical knobs, presets in flash | Medium | ~2 weeks |
-| 4 | Control link | Compact, versioned preset struct (~25 floats plus block enables) over BLE | Medium | 1–2 weeks |
+| 4 | Control link | Compact, versioned preset struct (16 knob floats plus 3 block enables for the default board; 17 floats with `Gain`) over BLE | Medium | 1–2 weeks |
 | 5 | iPad app (SwiftUI) | Text box, sliders generated from the pedalboard `layout` (same rule as the demo: no hard-coded knob names), presets, explanation text, BLE | Medium (new stack) | 3–4 weeks |
-| 6 | Text → params | Interim: LLM + pedal KB → knobs, i.e. the M3 LLM zero-shot baseline. Later: the trained predictor (P6), served from a small server or exported to CoreML. If the model needs the player's audio, capture ~5 s on the box and send it to the app (~0.5 MB, fine over BLE), or use the iPad mic. | Interim easy; the full model is the research project | — |
+| 6 | Text → params | Interim: an LLM + pedal-KB variant of the P5 LLM zero-shot baseline. Later: the trained predictor (P6), served from a small server or exported to CoreML. If the model needs the player's audio, capture ~5 s on the box and send it to the app (~0.5 MB, fine over BLE), or use the iPad mic. | Interim easy; the full model is the research project | — |
 | 7 | Analog front end | Hi-Z input buffer, output level suited to an amp input, grounding, 9 V power | Easy with a kit carrier PCB; hard from scratch | — |
 
 Total: roughly 3–4 months of evenings to a gig-usable box, assuming the interim LLM text control.
@@ -54,7 +54,7 @@ Total: roughly 3–4 months of evenings to a gig-usable box, assuming the interi
 | LLM API for text → params | cents/month |
 | Soldering iron and multimeter, if not already owned | $50–80 |
 
-**Hardware total: about $90–160.** For comparison, commercial programmable modelers cost $500+.
+**Hardware total: about $80–160** (excluding tools and the developer account). For comparison, commercial programmable modelers cost $500+.
 
 ### Alternatives
 
@@ -69,13 +69,13 @@ Total: roughly 3–4 months of evenings to a gig-usable box, assuming the interi
 1. **Noise.** The most common failure in DIY digital pedals. Start from a proven carrier PCB rather than a custom analog design.
 2. **Coverage.** The pedalboard models only compressor, drive and EQ. A full board replacement also needs modulation, delay and reverb (P7 item 2). Off-the-shelf DaisySP blocks would cover these, without physics grounding.
 3. **Into a real amp.** Drive voicings were validated on DI renders. An amp's front end changes how they respond, so expect to re-tune presets by ear.
-4. **Text quality depends on the model.** Until P6 lands, text control is the LLM + KB baseline: good for preset-style requests ("TS808, a bit more bite"). The physics-grounded mapping arrives with the trained predictor.
+4. **Text quality depends on the model.** Until P6 lands, text control is the interim LLM + KB mapping: good for preset-style requests ("TS808, a bit more bite"). The physics-grounded mapping arrives with the trained predictor.
 
 ## Suggested order
 
 1. C++ core and desktop host. Gate: the C++ output matches the PyTorch renders in magnitude (loss threshold set when the port starts).
 2. Daisy pedal with physical knobs and KB presets (TS808, DS-1). Usable at this point.
 3. ESP32 bridge and iPad app with sliders and presets.
-4. Text control: the LLM + KB baseline first, then the trained predictor.
+4. Text control: the interim LLM + KB mapping first, then the trained predictor.
 
 Each step leaves a working device, so the project can stop at any step.
