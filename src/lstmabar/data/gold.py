@@ -1015,7 +1015,7 @@ def dump_targets(
     is kept verbatim with its comments, except for the ``status:`` line; without it the text
     starts with ``header`` and generated ``version``/``status``/``tables``/``pedals``."""
     if prefix is not None:
-        body = re.sub(r"(?m)^status: \w+$", f"status: {targets.status}", prefix.rstrip())
+        body = re.sub(r"(?m)^status: \w+.*$", f"status: {targets.status}", prefix.rstrip())
         lines = [body, "items:"]
     else:
         pedals = {

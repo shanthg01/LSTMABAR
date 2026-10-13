@@ -12,6 +12,12 @@ Used only to evaluate instruction-to-effect mapping.
 | `instructions_llm_persona.yaml` | `p###` | `llm_persona` | An LLM role-playing 8 distinct guitarist personas (`author: persona-N`, personas listed in the file header) | Supplementary test set |
 | `instructions_llm_draft.yaml` | `g###` | `llm_draft` | An LLM, single voice | Supplementary test set |
 
+`targets/targets_v1.yaml` (not an instruction file; kept in a subdirectory so `*.yaml` globs
+here see only instructions) maps each labelled item to a target board-param region and
+contradicting distractor regions, owner-reviewed (task 4.5, `lstmabar data gold-targets`).
+`lstmabar data gold-pair` renders them on the `test` DI clips; the manifest is
+`data/manifests/gold_v1.jsonl` (+ `.index.json`), audio under `data/rendered/gold_v1/`.
+
 All LLM-written items (`llm_draft`, `llm_persona`, `simulated_human`) were produced by isolated agents that did not read the project's docs, code, caption templates or other gold files. LLM-written items must never be relabeled as `human`. Report results per file, because LLM-written test text may share phrasing habits with LLM-paraphrased training captions.
 
 ## Schema

@@ -25,7 +25,7 @@
 #   sources, unseen flags, and that each distractor's range on its axis is disjoint from the
 #   target's). Set `status: reviewed` when done; gold-pair refuses a draft file.
 version: 1
-status: draft
+status: reviewed   # owner approved 2026-10-13
 tables:
   gain_db:            # Drive.gain_db (dB into the clipper, 0 dBFS = 1 V). KB derived ranges for
                       # reference: TS808 26-46, Fuzz Face 25-60, RAT 5-60, DS-1 40-60, Muff 38-60

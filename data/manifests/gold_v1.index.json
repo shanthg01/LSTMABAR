@@ -1,0 +1,58 @@
+{
+ "counts": {
+  "llm_draft": {
+   "ambiguous": 23,
+   "distractor_renders": 780,
+   "engine_greybox": 1197,
+   "engine_whitebox": 33,
+   "items": 150,
+   "out_of_scope": 16,
+   "renders": 1230,
+   "target_renders": 450,
+   "unseen_pedal": 5
+  },
+  "llm_persona": {
+   "ambiguous": 25,
+   "distractor_renders": 750,
+   "engine_greybox": 1176,
+   "engine_whitebox": 24,
+   "items": 150,
+   "out_of_scope": 13,
+   "renders": 1200,
+   "target_renders": 450,
+   "unseen_pedal": 1
+  },
+  "simulated_human": {
+   "ambiguous": 30,
+   "distractor_renders": 735,
+   "engine_greybox": 1152,
+   "engine_whitebox": 33,
+   "items": 150,
+   "out_of_scope": 22,
+   "renders": 1185,
+   "target_renders": 450,
+   "unseen_pedal": 8
+  }
+ },
+ "dataset_sha256": "c4987b4ab834d3f7b4da87fcfc72d42fd995ad634f1939c7dfb7635291c93cfa",
+ "dry_manifest_sha256": "4c66dc8380f504874a9b8f5ece3db6b34cac146a098a6dcd061cb86c720cbfad",
+ "files_sha256": "b81fbcf08839060325afe45cf7067b8cab0e3478a3d3d615968440b156f217da",
+ "gold_files_sha256": {
+  "instructions_human.yaml": "49099b3760b652c0c3369b704ad9328a77c4338b4a6415fbd737de95033196c2",
+  "instructions_llm_draft.yaml": "d358650691f390a054ed24cc8a55906f068b9826db85fb8f73a68bd36244b4cc",
+  "instructions_llm_persona.yaml": "384b287f8f011ac98dee992c676f0d0529eedf548a2905f730e8ab68fa37e17c"
+ },
+ "manifest_sha256": "d8f55918b940335dce1cce5556af56629b515151c2f7e54a82fb4912dc89d6b3",
+ "partial": false,
+ "renders": 3615,
+ "settings": {
+  "clips_per_item": 3,
+  "distractors_per_item": 2,
+  "input_peak_dbfs": -15.0,
+  "seed": 0
+ },
+ "targets_file": "targets_v1.yaml",
+ "targets_sha256": "5658243953f14d4458cb15ac09c7eec8c910a27abacdc7c09d42a74e202b59cf",
+ "targets_status": "reviewed",
+ "version": "gold_v1"
+}
