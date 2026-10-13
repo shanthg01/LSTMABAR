@@ -144,6 +144,7 @@ def test_ordinary_tone_language_is_not_pii():
         "boost +2-3dB at 80Hz, cut 3.5k, 7-string in drop A, 1965-1972 Fuzz Face vibe",
         "Big Muff into a RAT, gain at 2 o'clock, like a '59 Les Paul through a Plexi",
         "J-pop cutting tone, Tele bridge, a bit of Dyna Comp. e.g. Nile Rodgers",
+        "like a Marshall JCM800 2203 cranked",
     ):
         assert gi.pii_reason(text) is None, text
         assert _reason(instruction=text) is None, text

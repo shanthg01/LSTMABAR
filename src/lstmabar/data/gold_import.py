@@ -75,7 +75,7 @@ _URL = re.compile(
 )
 # Digit runs joined by single separators; judged by digit count in _looks_like_phone.
 _PHONE_CANDIDATE = re.compile(r"\+?\(?\d(?:[\d]|[ .\-()]{1,2}(?=[\d(]))*\d")
-_LOCAL_PHONE = re.compile(r"\d{3}[ .\-]\d{4}")
+_LOCAL_PHONE = re.compile(r"\d{3}[.\-]\d{4}")  # no space: "JCM800 2203" is an amp
 _HANDLE = re.compile(r"(?<![\w.])@[A-Za-z_][\w.]{2,}")
 
 
