@@ -12,6 +12,10 @@ from lstmabar.config import load_config
 from lstmabar.seed import seed_everything
 
 DEFAULT_CONFIG = "configs/data/v1.yaml"
+GOLD_CONFIG = "configs/data/gold_v1.yaml"
+
+# Default ``--config`` per step-name prefix (first match wins); other steps use DEFAULT_CONFIG.
+STEP_CONFIG_DEFAULTS: dict[str, str] = {"gold-": GOLD_CONFIG}
 
 STEPS: dict[str, tuple[str, str, str]] = {
     # step: (module, function, help)
@@ -25,12 +29,22 @@ STEPS: dict[str, tuple[str, str, str]] = {
     "vocab-audit": ("vocab_audit", "run", "one-shot held-out vs caption vocab overlap (4.7)"),
     "gold-targets": ("gold", "targets_step", "validate/draft gold target regions (4.5)"),
     "gold-pair": ("gold", "run", "render gold targets + distractors on test clips (4.5)"),
+    "gold-import": ("gold_import", "run", "append friend-written gold instructions (4.5)"),
 }
+
+
+def default_config_for(step: str) -> str:
+    """The config a step uses when ``--config`` is not given."""
+    for prefix, path in STEP_CONFIG_DEFAULTS.items():
+        if step.startswith(prefix):
+            return path
+    return DEFAULT_CONFIG
 
 
 def cmd_data(args: argparse.Namespace) -> int:
     module, func, _ = STEPS[args.step]
-    cfg = load_config(args.config, args.overrides)
+    config = args.config if args.config is not None else default_config_for(args.step)
+    cfg = load_config(config, args.overrides)
     seed_everything(int(cfg.seed))
     fn = getattr(importlib.import_module(f"lstmabar.data.{module}"), func)
     return int(fn(cfg, args) or 0)
@@ -39,7 +53,11 @@ def cmd_data(args: argparse.Namespace) -> int:
 def add_data_parser(sub) -> None:
     p = sub.add_parser("data", help="P4 data pipeline: " + ", ".join(STEPS))
     p.add_argument("step", choices=list(STEPS))
-    p.add_argument("--config", default=DEFAULT_CONFIG)
+    p.add_argument(
+        "--config",
+        default=None,
+        help=f"default: {GOLD_CONFIG} for gold-* steps, else {DEFAULT_CONFIG}",
+    )
     p.add_argument(
         "--allow-partial",
         action="store_true",
@@ -80,8 +98,20 @@ def add_data_parser(sub) -> None:
         action="store_true",
         help="gold-pair: render from an unreviewed (status: draft) targets file (smoke runs)",
     )
+    p.add_argument("--input", default=None, help="gold-import: friends' CSV (Form export)")
+    p.add_argument(
+        "--dry-run", action="store_true", help="gold-import: print the plan; write nothing"
+    )
     p.add_argument("overrides", nargs="*", help="dotlist overrides, e.g. render.workers=2")
     p.set_defaults(func=cmd_data)
 
 
-__all__ = ["STEPS", "add_data_parser", "cmd_data"]
+__all__ = [
+    "DEFAULT_CONFIG",
+    "GOLD_CONFIG",
+    "STEPS",
+    "STEP_CONFIG_DEFAULTS",
+    "add_data_parser",
+    "cmd_data",
+    "default_config_for",
+]

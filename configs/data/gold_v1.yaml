@@ -1,17 +1,27 @@
-# Gold pairing (P4 task 4.5): target/distractor regions for the gold instructions, rendered
-# on the held-out test DI clips for the P5 2AFC metric. Builds on the frozen dataset v1 config.
-# Usage: lstmabar data gold-targets | gold-pair [--config configs/data/gold_v1.yaml]
+# Gold set tooling for dataset v1 (P4 task 4.5): friend-instruction import, and target/
+# distractor regions rendered on the held-out test DI clips for the P5 2AFC metric.
+# Usage: lstmabar data gold-<step> [--config configs/data/gold_v1.yaml] [dotlist overrides]
+# (gold-* steps default to this file). Protocol: docs/gold-collection.md.
 defaults:
   - v1.yaml
 
-name: gold_v1
+name: data_gold_v1
 
 gold:
+  gold_dir: ${paths.data}/gold                  # held-out instruction files (instructions_*.yaml)
+
+  # --- gold-import: friend-written instructions (`lstmabar data gold-import --input x.csv`) ---
+  human_file: ${gold.gold_dir}/instructions_human.yaml   # append-only target for source: human
+  authors_file: ${data.cache_dir}/gold/authors.json      # sha256(respondent) -> friend-NN;
+                                                         # local only (data/cache is gitignored)
+  max_instruction_chars: 1000
+  # --- end gold-import ---
+
+  # --- gold-targets / gold-pair: target regions and their renders ---
   version: gold_v1                      # audio: data/rendered/gold_v1/ (gitignored);
                                         # manifest + index: data/manifests/gold_v1.{jsonl,index.json}
-  gold_dir: ${paths.data}/gold
-  targets_file: ${paths.data}/gold/targets/targets_v1.yaml   # owner-reviewed regions
-  dry_manifest: ${paths.data}/manifests/v1/dry_clips.jsonl  # read only; test split clips
+  targets_file: ${gold.gold_dir}/targets/targets_v1.yaml    # owner-reviewed regions
+  dry_manifest: ${data.manifests_dir}/v1/dry_clips.jsonl    # read only; test split clips
   expect_test_clips: 140                # Guitar-TECHS P3 (performer-disjoint, R11)
   seed: 0
   clips_per_item: 3                     # test clips per gold item (hash-ranked per item)
