@@ -6,7 +6,7 @@ Companion to [design.md](design.md). This is a solo side project, assumed at ~8�
 - **P0 and P1 are done; M1 is reached** (PRs #1–#17).
 - **P2 and P3 are done; M2 is reached** (PRs #19–#27; owner browser check of the M2 demo passed 2026-10-12). P2's gate passes for DS-1 and, via a documented deviation, for TS808 (see [P2 status](#p2-status)).
 - **P4 is done: dataset v1 is frozen** (PRs #29–#37 and the freeze PR) **and the gold set is paired with target tones** (task 4.5; see [P4 status](#p4-status)).
-- **Next: P5** (evaluation harness and baselines → M3): start from the [P5 kickoff brief](#p5-kickoff-brief); P6 has [prep notes](#p6-prep-notes). Neither waits for real `human` gold items (friends, in progress; fallback in D9). P4 follow-ups are listed under the P4 status.
+- **P5 code merged; next:** finish the embedding cache (`lstmabar eval embed`, Colab recommended), run `lstmabar eval run` for the M3 baseline report, then P6 training (see the [P5 code status](#p5-kickoff-brief) and [P6 prep notes](#p6-prep-notes)). Neither waits for real `human` gold items (friends, in progress; fallback in D9). P4 follow-ups are listed under the P4 status.
 
 Each phase ends with an **exit gate**: don't start dependent work until it passes. Each task is tagged with where it runs:
 - **[L]** local CPU
@@ -18,7 +18,7 @@ Each phase ends with an **exit gate**: don't start dependent work until it passe
 |---|---|---|
 | **M1 — Playable pedalboard** | end of P1 (~wk 4) | Gradio page with manual knobs on the differentiable Drive/EQ/Comp chain |
 | **M2 — Physics-grounded presets** | end of P2 (~wk 7) | Pick "TS808 / RAT / Fuzz Face…" + knob positions; hear grey-box vs white-box; see the archetype shift |
-| **M3 — Demo v0 (text, no model)** | end of P5 (~wk 13) | Type an instruction → best baseline (kNN retrieval / LLM zero-shot) sets knobs |
+| **M3 — Demo v0 (text, no model)** | end of P5 (~wk 13) | Type an instruction → best demo-eligible baseline on val (kNN retrieval / mean params; the LLM baseline is excluded from the demo) sets knobs |
 | **M4 — Demo v1 (model)** | end of P6 (~wk 17) | The trained model drives the knobs, with nearest-pedal explanation and comparison vs baseline |
 | **M5 — Write-up + extensions** | wk 18+ | Blog/README write-up; P7 add-ons, including the quantum experiment |
 
@@ -445,7 +445,7 @@ Prepared 2026-10-14 for a fresh session. Read this, CLAUDE.md, design §6–7, [
 - 5.5 encoders + embedding cache (#47). The real build is running locally but very slowly on the overloaded machine (CLAP text ~3 rows/s); only part of `larger_clap_general/train_text` exists so far. The rest (and especially audio) needs Colab or an idle machine.
 - 5.6 M3 demo (#49): instruction box → `demo.text_method` (default `mean` until the val selection names the best baseline; `llm_zero_shot` is excluded so a public demo cannot spend) sets the generated sliders; demo inputs are normalized to −15 dBFS (R3); `configs/demo.yaml`.
 - D8 val gold-proxy (#52): 1,444 val items → 2,228 distractors (gain 1,317, brightness 678, mids 140, compression 93; 39 dropped by separation), `data/manifests/valproxy_v1.{jsonl,index.json}` (audio gitignored; run `lstmabar eval proxy` on a fresh checkout). Selection weights `{mrstft: 0.33, param_l1: 4.0, afc: 1.5}`, chosen so each term spans about 1 between an oracle and trivial boards (a scratch check with `runner.score_val` on 80 val units, recorded in the `eval.proxy` comment of `configs/eval/p5.yaml`; not a reported result). The proxy 2AFC uses each item's first caption.
-- D11 `test_real` (#50): [reports/sim_real.md](../reports/sim_real.md). MR-STFT to the real pedal after loudness matching, best input level −6 dBFS (top of the sweep; best-of-sweep is optimistic): TS808 white-box 0.97 [0.95, 1.00] vs grey-box 1.34, default knobs 1.86, dry 2.17; RAT (holdout) grey-box 1.53 vs default knobs 2.00, dry 5.19. Real drive pedals compress much harder than the renders.
+- D11 `test_real` (#50): [reports/sim_real.md](../reports/sim_real.md). MR-STFT to the real pedal after loudness matching, best-of-sweep, mostly −6 dBFS (the top of the sweep; best-of-sweep is optimistic): TS808 white-box 0.97 [0.95, 1.00] vs grey-box 1.34, default knobs 1.86, dry 2.17; RAT (holdout) grey-box 1.53 vs default knobs 2.00, dry 5.19. The EGFxSet BluesDriver and RAT (recorded at max gain) compress much harder than the synthetic renders (crest shift −15.6 / −16.6 dB vs −5.5 / −6.1 dB); the TubeScreamer matches.
 - P6 6.1–6.2 code (#45): predictor on cached embeddings, `lstmabar train stage1`, `p6_model` method; no real training yet (waits on the embedding cache).
 
 **Next:** finish the embedding cache (Colab recommended), then `lstmabar eval run` for the M3 report; then P6 stage 1 with 5 seeds, ablations and the M4 demo.
