@@ -316,6 +316,41 @@ def test_resume_collects_batch_left_in_flight(keyed):
     assert b.ledger.pending() == []
 
 
+def test_resume_after_prompt_change_keeps_old_key(keyed):
+    client = FakeClient()
+    m = llm.LlmZeroShot(keyed, client_factory=lambda: client, sleep=lambda s: None)
+    b = llm.ZeroShotBatcher(m.lc, m.layout, client, m.cache, m.board, sleep=lambda s: None)
+    b.submit(["a"])  # in flight under prompt z1
+    keyed.eval.baselines.llm.prompt_version = "z2"
+    m2 = llm.LlmZeroShot(keyed, client_factory=lambda: client, sleep=lambda s: None)
+    m2.predict([_q("a")])
+    assert len(client.batches.created) == 2  # the z1 reply is not a z2 hit: resubmitted
+    assert client.batches.created[1][0]["custom_id"].startswith("a0-")
+    keyed.eval.baselines.llm.prompt_version = "z1"
+    assert "a" in llm.LlmZeroShot(keyed).cache  # the resumed reply is cached under z1
+
+
+def test_allow_spend_must_be_boolean_true(cfg, monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-not-real")
+    cfg.eval.baselines.llm.allow_spend = "false"
+    m = llm.LlmZeroShot(cfg, client_factory=lambda: pytest.fail("no spend"))
+    with pytest.raises(llm.LlmCacheMiss, match="allow_spend"):
+        m.predict([_q("a")])
+    assert m.info()["n_samples"] == 1
+
+
+def test_lock_message_names_this_baseline(keyed, tmp_path):
+    lock = tmp_path / "cache" / "llm" / "zero_shot" / "ledger.lock"
+    lock.parent.mkdir(parents=True)
+    lock.write_text("held", "utf-8")
+    m = llm.LlmZeroShot(keyed, client_factory=FakeClient, sleep=lambda s: None)
+    from lstmabar.data.captions import LedgerLocked
+
+    with pytest.raises(LedgerLocked, match="LLM zero-shot run") as e:
+        m.predict([_q("a")])
+    assert "captions" not in str(e.value)
+
+
 def test_estimate_dedupes_and_prices(cfg):
     est = llm.estimate(["x", "y", "x", "a longer instruction"], cfg)
     assert est["unique_instructions"] == 3 and est["requests"] == 3

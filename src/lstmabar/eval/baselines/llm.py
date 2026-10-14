@@ -50,7 +50,6 @@ import torch
 from lstmabar.data.captions import (
     BudgetExceeded,
     LedgerLock,
-    LedgerLocked,
     SpendLedger,
     SubmitUncertain,
     _definitely_rejected,
@@ -284,11 +283,16 @@ class ReplyCache:
 # ============================================================================ estimate
 
 
+APPROX_SAFETY = 1.5
+"""Margin on the character-based input-token count (used when ``count_tokens`` is unavailable
+or fails), so the cap check errs on the high side."""
+
+
 def _approx_tokens(params: Mapping[str, Any]) -> int:
-    """Rough input-token count without the API (~3.5 characters per token)."""
+    """Conservative input-token count without the API (~3.5 characters per token, x 1.5)."""
     chars = len(params["system"]) + len(json.dumps(params["messages"]))
     chars += len(json.dumps(params["output_config"]))
-    return math.ceil(chars / 3.5) + 20
+    return math.ceil(APPROX_SAFETY * (chars / 3.5 + 20))
 
 
 def expected_output_tokens(board: Pedalboard | None = None) -> int:
@@ -563,6 +567,21 @@ class ZeroShotBatcher:
         _log(f"submitted batch {batch.id}: {len(texts)} requests, est ${est:.4f}")
         return ref
 
+    def _cache_for(self, st: Mapping[str, Any]) -> ReplyCache:
+        """The reply cache for a ledger entry's own (model, prompt version, prompt hash)."""
+        own = (
+            str(st.get("model", self.cache.model)),
+            str(st.get("prompt_version", self.cache.prompt_version)),
+            str(st.get("prompt_hash", self.cache.phash)),
+        )
+        if own == (self.cache.model, self.cache.prompt_version, self.cache.phash):
+            return self.cache
+        _log(
+            f"ledger ref {st.get('ref')} was submitted with {own[0]} / prompt {own[1]} "
+            f"({own[2]}); its replies are cached under that key, not the current prompt's"
+        )
+        return ReplyCache(self.cache.path, *own)
+
     def wait_and_collect(self, ref: str) -> _Outcome:
         st = self.ledger.state()[ref]
         info = json.loads(self._batch_file(ref).read_text("utf-8"))
@@ -574,8 +593,10 @@ class ZeroShotBatcher:
             self.sleep(float(self.lc.poll_seconds))
         out = collect(self.client, batch_id, info["mapping"])
         cost = usd(out.input_tokens, out.output_tokens, self.lc.price_per_mtok)
-        # cache first: a crash after this re-collects the batch but never pays twice
-        self.cache.put_many(out.replies)
+        # cache first: a crash after this re-collects the batch but never pays twice.
+        # Replies go under the key of the prompt they were *submitted* with (a batch resumed
+        # after a model / prompt change must not become a hit for the new prompt).
+        self._cache_for(st).put_many(out.replies)
         if out.failed:
             _log(f"{len(out.failed)} requests failed with non-retryable errors (not cached)")
         self.ledger.append(
@@ -608,14 +629,8 @@ class ZeroShotBatcher:
             self.wait_and_collect(r["ref"])
 
     def run(self, texts: Sequence[str]) -> None:
-        try:
-            with LedgerLock(self.ledger.path):
-                self._run(texts)
-        except LedgerLocked as e:
-            raise LedgerLocked(
-                f"{self.ledger.path.with_suffix('.lock').name} exists: another LLM zero-shot "
-                "run is active (or one crashed; delete the lock file once no run is active)"
-            ) from e
+        with LedgerLock(self.ledger.path, label="LLM zero-shot"):
+            self._run(texts)
 
     def _run(self, texts: Sequence[str]) -> None:
         self.resume_pending()
@@ -669,7 +684,7 @@ class LlmZeroShot(Method):
     def _spend_allowed(self) -> bool:
         return (
             not self.estimate_only
-            and bool(self.lc.get("allow_spend", False))
+            and self.lc.get("allow_spend", False) is True  # a string "false" must not count
             and bool(os.environ.get("ANTHROPIC_API_KEY"))
         )
 
@@ -729,6 +744,7 @@ class LlmZeroShot(Method):
             "prompt_hash": self.phash,
             "api": "message batches",
             "n_queries": self.n_predicted,
+            "n_samples": 1,  # one cached reply per unique instruction
             "parse_failures": self.stats.parse_failures,
             "blocks_defaulted": self.stats.blocks_defaulted,
             "knobs_defaulted": self.stats.knobs_defaulted,
