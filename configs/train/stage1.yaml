@@ -1,5 +1,6 @@
-# P6 stage 1 (task 6.2): L_param on cached embeddings (CPU). Wave 0 stub; P6 wave fills it in.
-# Usage: lstmabar train stage1 [--config configs/train/stage1.yaml] [dotlist overrides]
+# P6 stage 1 (task 6.2): L_param on cached embeddings (CPU).
+# Usage: lstmabar train stage1 [--config configs/train/stage1.yaml] [--limit N] [--fixtures]
+#        [dotlist overrides, e.g. seed=1 model.inputs=text paths.data=...]
 defaults:
   - ../eval/p5.yaml
 
@@ -8,4 +9,32 @@ seed: 0
 
 model:
   text_model: clap-htsat-unfused     # embed_cache model id (P5 D5; the other CLAP / bge: ablations)
-  audio_model: clap-htsat-unfused
+  audio_model: clap-htsat-unfused    # CLAP checkpoints only (bge has no audio tower)
+  inputs: both                       # both | text | audio (6.5 ablations)
+  shuffle_audio: false               # 6.5: permute train audio embeddings across items each epoch
+  mapping: physics                   # physics | unconstrained (see models/predictor.py docstring)
+  adapter_dim: 256                   # 2-layer adapter per modality
+  hidden_dim: 512                    # fusion MLP
+  dropout: 0.1
+
+train:
+  epochs: 60
+  batch_size: 256
+  lr: 1.0e-3
+  min_lr_frac: 0.02                  # cosine floor (fraction of lr)
+  warmup_frac: 0.03                  # of epochs x steps_per_epoch (the real step count)
+  weight_decay: 0.01
+  grad_clip: 1.0
+  num_threads: 2                     # torch CPU threads (null: torch default)
+  patience: 8                        # early stopping on val (param_weight*L1 + gate_weight*BCE)
+  min_delta: 1.0e-4
+  clamped_weight: 0.5                # clamped grey-box items (P4 decision 10 / R6); white-box: 1
+  loss:
+    param_weight: 1.0                # masked L1 on knobs (normalized; linear-physical if
+    gate_weight: 1.0                 #   model.mapping=unconstrained) + gate BCE
+
+eval:
+  model:                             # lstmabar.models.method.ModelMethod (registry: p6_model)
+    checkpoint: null                 # path to a stage-1 checkpoint.pt ("{seed}" is formatted)
+    encode_missing: true             # encode queries missing from the cache (demo) on the fly
+    batch_size: 1024
