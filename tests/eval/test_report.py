@@ -145,13 +145,13 @@ def test_resume_not_run_and_report(fx, tmp_path, monkeypatch):
     assert by["noop"]["status"] == by["mean"]["status"] == "ok"
     for name, frag in (
         ("knn_clap", "embedding cache missing"),
-        ("text2fx", "not implemented"),
+        ("text2fx", "limit (text2fx:"),  # fixture splits exceed max_items
         ("llm_zero_shot", "LlmCacheMiss"),
     ):
         assert by[name]["status"] == "not run"
         assert all(v.startswith("not run: ") and frag in v for v in by[name]["splits"].values())
     md = (tmp_path / "rep" / "p5_baselines.md").read_text(encoding="utf-8")
-    assert "not run: not implemented" in md and "LlmCacheMiss" in md
+    assert "not run: limit" in md and "LlmCacheMiss" in md
     _assert_no_abs(md, root, tmp_path)
     _assert_no_abs(json.dumps(rep), root, tmp_path)
 

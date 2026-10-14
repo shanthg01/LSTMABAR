@@ -25,8 +25,9 @@ fingerprint hash, and a file with a different hash is re-scored. Methods with
 
 Methods that cannot run are recorded per split as ``"not run: <reason>"``: only a method that
 is not implemented (its module / class missing, ``NotImplementedError``), a missing
-embedding-cache table (checked by path before the method runs) or an LLM cache miss without
-spend. Every other error propagates (fix, then resume).
+embedding-cache table (checked by path before the method runs), an LLM cache miss without
+spend or a Text2FX cost limit (``text2fx.LimitExceeded``: more optimizations than
+``eval.baselines.text2fx.max_items``). Every other error propagates (fix, then resume).
 
 A ``--limit`` / fixture run writes ``<report_name>_smoke.{md,json}``, so it never overwrites the
 real report, and a run with no finished scores writes no report at all.
@@ -102,6 +103,12 @@ def _cannot_run_types() -> tuple[type[BaseException], ...]:
         types.append(LlmCacheMiss)
     except ImportError:  # pragma: no cover
         pass
+    try:
+        from lstmabar.eval.baselines.text2fx import LimitExceeded
+
+        types.append(LimitExceeded)
+    except ImportError:  # pragma: no cover
+        pass
     return tuple(types)
 
 
@@ -111,6 +118,8 @@ def _reason(e: BaseException) -> str:
         return scrub(f"not implemented ({msg})")
     if isinstance(e, EmbeddingCacheMissing):
         return scrub(f"embedding cache missing ({e})")
+    if type(e).__name__ == "LimitExceeded":
+        return scrub(f"limit ({e})")
     return scrub(f"{type(e).__name__}: {e}")
 
 
