@@ -58,10 +58,18 @@ class TextMethodError(Exception):
     """A user-facing failure of the text path; the message never contains a path."""
 
 
-# Windows drive paths, UNC paths and absolute POSIX paths with at least two components.
+FILE_ERROR = "a required file could not be read (details in the server log)"
+
 _PATH_RE = re.compile(
-    r"(?:[A-Za-z]:[\\/]|\\\\)[^\s'\"`]*"  # C:\... , C:/... , \\server\...
-    r"|(?<![\w.~-])/(?:[^\s/'\"`]+/)+[^\s'\"`]*"  # /home/x/y
+    # Windows drive and UNC paths may contain spaces: scrub up to the closing quote, or to
+    # the end of the line when unquoted.
+    r"(?:[A-Za-z]:[\\/]|\\\\)[^'\"`\n]*"
+    # any token with a backslash (relative Windows paths)
+    r"|[^\s'\"`]*\\[^\s'\"`]*"
+    # absolute or relative POSIX-style paths: two or more separators, or one separator
+    # and a file extension (keeps one-slash model ids such as laion/clap-htsat-unfused)
+    r"|[^\s'\"`/]*(?:/[^\s'\"`/]+){2,}/?"
+    r"|[^\s'\"`/]*/[^\s'\"`/]+\.[A-Za-z0-9]{1,5}\b"
 )
 
 
@@ -71,6 +79,10 @@ def scrub_paths(text: str) -> str:
 
 
 def _reason(e: BaseException) -> str:
+    # OS-raised file errors (``filename`` set) carry paths in many shapes: say nothing
+    # specific. Our own FileNotFoundErrors ("run `lstmabar eval embed` first") are kept.
+    if isinstance(e, OSError) and (e.filename is not None or type(e) is not FileNotFoundError):
+        return FILE_ERROR
     msg = scrub_paths(str(e)).strip() or type(e).__name__
     if len(msg) > MAX_REASON_CHARS:
         msg = msg[: MAX_REASON_CHARS - 1] + "…"
@@ -199,7 +211,9 @@ class TextKnobSetter:
         self._load_encoder = load_text_encoder
         self._method: Method | None = None
         self._encoders: dict[str, Any] = {}
-        self._lock = threading.Lock()
+        self._error: TextMethodError | None = None  # a failed build, re-raised (no refits)
+        self._lock = threading.Lock()  # building / fitting
+        self._predict_lock = threading.Lock()  # lazy encoder / checkpoint loads in predict
 
     @property
     def peak_dbfs(self) -> float:
@@ -210,32 +224,42 @@ class TextKnobSetter:
         return TextMethodError(f"{prefix} unavailable ({self.method_name}): {reason}")
 
     def method(self) -> Method:
-        """The built and fitted method (built on first use, then cached)."""
+        """The built and fitted method (built on first use, then cached; a failed build is
+        cached too and re-raised, so clicks do not refit; restart the demo to retry)."""
         with self._lock:
             if self._method is not None:
                 return self._method
-            name = self.method_name
-            if name not in DEMO_METHODS:
-                raise TextMethodError(
-                    f"text method unavailable: {name!r} is not offered in the demo "
-                    f"(demo.text_method: one of {', '.join(DEMO_METHODS)})"
-                )
-            if self.cfg is None:
-                raise self.unavailable("no demo config was loaded")
+            if self._error is not None:
+                raise self._error
             try:
-                m = self._build(name, self.cfg, seed=int(_select(self.cfg, "seed", 0)))
-                hparams = _select(self.cfg, "demo.text_hparams", None)
-                if hparams:
-                    if isinstance(hparams, DictConfig):
-                        hparams = OmegaConf.to_container(hparams, resolve=True)
-                    m.set_hparams(dict(hparams))
-                if type(m).fit is not Method.fit:  # the method learns from train
-                    m.fit(self._load_train(self.cfg))
-            except Exception as e:
-                log.exception("could not build the demo text method %s", name)
-                raise self.unavailable(_reason(e)) from e
-            self._method = m
-            return m
+                self._method = self._build_method()
+            except TextMethodError as e:
+                self._error = e
+                raise
+            return self._method
+
+    def _build_method(self) -> Method:
+        name = self.method_name
+        if name not in DEMO_METHODS:
+            raise TextMethodError(
+                f"text method unavailable: {name!r} is not offered in the demo "
+                f"(demo.text_method: one of {', '.join(DEMO_METHODS)})"
+            )
+        if self.cfg is None:
+            raise self.unavailable("no demo config was loaded")
+        try:
+            m = self._build(name, self.cfg, seed=int(_select(self.cfg, "seed", 0)))
+            hparams = _select(self.cfg, "demo.text_hparams", None)
+            if hparams:
+                if isinstance(hparams, DictConfig):
+                    hparams = OmegaConf.to_container(hparams, resolve=True)
+                m.set_hparams(dict(hparams))
+            if type(m).fit is not Method.fit:  # the method learns from train
+                m.fit(self._load_train(self.cfg))
+        except Exception as e:
+            log.exception("could not build the demo text method %s", name)
+            raise self.unavailable(_reason(e)) from e
+        return m
 
     def warm_up(self) -> threading.Thread:
         """Build and fit the method in a background thread (fitting ``mean`` reads every train
@@ -283,6 +307,22 @@ class TextKnobSetter:
                 f"The instruction is too long (max {MAX_INSTRUCTION_CHARS} characters)."
             )
         m = self.method()
+        with self._predict_lock:  # encoders / the P6 checkpoint load lazily on first use
+            board = self._predict_board(m, text, load_clip, sample_rate)
+        try:
+            info = dict(m.info())
+        except Exception:  # metadata must never break the knobs
+            log.exception("info() of %s failed", self.method_name)
+            info = {"name": self.method_name}
+        return TextPrediction(method=self.method_name, board=board, info=info)
+
+    def _predict_board(
+        self,
+        m: Method,
+        text: str,
+        load_clip: Callable[[], np.ndarray] | None,
+        sample_rate: int,
+    ) -> FloatBoard:
         try:
             if isinstance(m, KnnMethod):
                 boards = m.predict_vectors(self._encode_text(m.model, text))
@@ -295,7 +335,7 @@ class TextKnobSetter:
                         raise TextMethodError(str(e)) from e
                 query = demo_query(text, clip, sample_rate, self.peak_dbfs)
                 boards = m.predict([query])
-            board = complete_board(boards[0])
+            return complete_board(boards[0])
         except TextMethodError:
             raise
         except NotImplementedError as e:
@@ -303,12 +343,6 @@ class TextKnobSetter:
         except Exception as e:
             log.exception("demo text method %s failed", self.method_name)
             raise self.unavailable(_reason(e)) from e
-        try:
-            info = dict(m.info())
-        except Exception:  # metadata must never break the knobs
-            log.exception("info() of %s failed", self.method_name)
-            info = {"name": self.method_name}
-        return TextPrediction(method=self.method_name, board=board, info=info)
 
 
 # ============================================================================ attribution

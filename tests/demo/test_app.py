@@ -356,7 +356,7 @@ def test_render_with_archetype_panel(kb, monkeypatch, numba_ok):
 # --- M3: text -> knobs ----------------------------------------------------------------------------
 
 
-def _text_app(fail=None, kb=None):
+def _text_app(fail=None, kb=None, uses_audio=False):
     from omegaconf import OmegaConf
 
     from lstmabar.demo.text import TextKnobSetter
@@ -364,6 +364,10 @@ def _text_app(fail=None, kb=None):
 
     class Fixed(Method):
         name = "fake"
+
+        def __init__(self):
+            super().__init__(None)
+            self.uses_audio = uses_audio
 
         def predict(self, queries):
             if fail is not None:
@@ -434,6 +438,14 @@ def test_text_switches_an_active_pedal_to_the_manual_board(kb):
     app = _text_app(kb=kb)
     pedal, *_ = _fn(app, "on_text")("darker", None, "single_notes", *_text_controls())
     assert pedal == MANUAL
+
+
+def test_text_action_is_private_and_shows_decode_errors():
+    app = _text_app(uses_audio=True)
+    assert _deps(app, "on_text")[0].api_visibility == "private"
+    bad = (44100, np.zeros(0, np.int16))
+    out = _fn(app, "on_text")("x", bad, "single_notes", *_text_controls())
+    assert "empty" in out[-2] and "unavailable" not in out[-2]
 
 
 def test_default_app_reads_the_demo_config():

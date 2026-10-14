@@ -350,3 +350,53 @@ def test_warm_up_builds_once_in_the_background():
     bad.warm_up().join(timeout=10)  # logged, not raised
     with pytest.raises(TextMethodError, match="no demo config"):
         bad.predict("x")
+
+
+def test_failed_build_is_cached_and_not_refit():
+    calls = []
+
+    def boom(c):
+        calls.append(1)
+        raise ValueError("no train items")
+
+    s = TextKnobSetter(CFG, "mean", build=lambda n, c, seed=0: FakeMethod(), load_train=boom)
+    for _ in range(3):
+        with pytest.raises(TextMethodError, match="no train items"):
+            s.predict("x")
+    assert calls == [1]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        r"cannot open C:\Program Files\me dir\x.npz",
+        "cannot open 'C:/Program Files/me/x.npz' now",
+        r"cannot open data\me\x.npz",
+        "cannot open data/cache/me/x.npz",
+        "cannot open cache/me.npz",
+    ],
+)
+def test_scrub_paths_relative_and_spaces(text):
+    out = scrub_paths(text)
+    assert "me" not in out.replace("cannot", "") and "<path>" in out
+
+
+def test_os_errors_get_a_generic_reason():
+    def boom(c):
+        raise PermissionError(13, "Permission denied", "rel dir/with space/x.npz")
+
+    s = TextKnobSetter(CFG, "mean", build=lambda n, c, seed=0: FakeMethod(), load_train=boom)
+    with pytest.raises(TextMethodError) as e:
+        s.predict("x")
+    assert "could not be read" in str(e.value) and "space" not in str(e.value)
+
+
+def test_decode_errors_show_the_decode_message():
+    s, _ = _setter(FakeMethod(uses_audio=True))
+
+    def bad_clip():
+        raise ValueError("The uploaded clip is empty.")
+
+    with pytest.raises(TextMethodError) as e:
+        s.predict("x", bad_clip)
+    assert str(e.value) == "The uploaded clip is empty."

@@ -354,7 +354,10 @@ def build_app(
         slider_vals = list(controls[n_blocks:])
         try:
             pred = text_setter.predict(
-                text, lambda: load_clip(audio_value, riff_kind), sample_rate=sr
+                text,
+                # raises ValueError (the decode message), which the setter shows as is
+                lambda: prepare_inference_input(audio_value, riff_kind, sr, MAX_SECONDS, peak_dbfs),
+                sample_rate=sr,
             )
         except TextMethodError as e:
             keep = [gr.update()] * (1 + n_blocks + n_sliders)
@@ -563,6 +566,7 @@ def build_app(
             on_text,
             inputs=[instruction, audio_in, riff, *checkboxes, *sliders],
             outputs=[pedal_dd, *checkboxes, *sliders, text_md, text_state],
+            **private,  # a UI helper (returns control updates); Render is the public API
         )
         reset_btn.click(on_reset, inputs=pedal_dd, outputs=board_outputs, **private)
         random_btn.click(on_randomize, inputs=pedal_dd, outputs=board_outputs, **private)
