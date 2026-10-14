@@ -22,9 +22,13 @@ import torch
 from torch import Tensor
 
 from lstmabar.audio import load_audio, loudness_match, synth_riff, to_mono_float
+from lstmabar.data.levels import inference_normalize
 from lstmabar.dsp.base import ParamSpec
 
 BoardParams = dict[str, dict[str, Tensor]]
+
+ENABLED = "enabled"  # the gate key of a normalized board (``dsp.pedalboard.ENABLED``)
+INFERENCE_PEAK_DBFS = -15.0  # ``audio.inference_peak_dbfs`` default (P4 R3)
 
 MAX_PEAK = 0.99
 LINEAR_SLIDER_STEPS = 200
@@ -229,6 +233,51 @@ def prepare_input(
     if data.size == 0:
         raise ValueError("The uploaded clip is empty.")
     return to_mono_float(data, int(sr), sample_rate, max_seconds=max_seconds)
+
+
+def prepare_inference_input(
+    audio_value: str | Path | tuple[int, np.ndarray] | None,
+    riff_kind: str,
+    sample_rate: int,
+    max_seconds: float,
+    peak_dbfs: float = INFERENCE_PEAK_DBFS,
+    riff_seconds: float = 4.0,
+) -> np.ndarray:
+    """:func:`prepare_input`, then the inference level rule (R3): the clip is peak-normalized
+    to ``peak_dbfs`` (``audio.inference_peak_dbfs``, the middle of the training input range),
+    so the pedalboard and the text methods see inputs at the level they were trained on. An
+    all-zero clip stays silent. Raises like :func:`prepare_input`."""
+    clip = prepare_input(audio_value, riff_kind, sample_rate, max_seconds, riff_seconds)
+    clip = np.nan_to_num(np.asarray(clip, dtype=np.float64), nan=0.0, posinf=0.0, neginf=0.0)
+    return inference_normalize(clip, float(peak_dbfs)).astype(np.float32)
+
+
+# --- Normalized board -> UI controls -------------------------------------------------------------
+
+
+def normalized_to_controls(
+    board: Any, values: dict[str, dict[str, float]]
+) -> tuple[list[bool | None], list[float | None]]:
+    """A normalized board (``{block: {knob: [0, 1], "enabled": gate}}``, what text methods
+    predict) -> ``(enabled, sliders)`` in UI order: one entry per ``board.block_names`` and
+    per :func:`iter_specs`. Gates are thresholded at 0.5; knobs are denormalized through
+    their ``ParamSpec`` and converted to slider values. Blocks or knobs missing from
+    ``values`` (the UI board has knobs the method does not predict) give ``None``: keep the
+    current control."""
+    enabled: list[bool | None] = []
+    for name in board.block_names:
+        gate = values.get(name, {}).get(ENABLED)
+        enabled.append(None if gate is None else float(gate) >= 0.5)
+    sliders: list[float | None] = []
+    for name, spec in iter_specs(board):
+        v = values.get(name, {}).get(spec.name)
+        if v is None:
+            sliders.append(None)
+            continue
+        u = min(max(float(v), 0.0), 1.0)
+        phys = float(spec.denormalize(torch.tensor(u, dtype=torch.float64)))
+        sliders.append(slider_from_physical(spec, phys))
+    return enabled, sliders
 
 
 def to_int16(x: np.ndarray) -> np.ndarray:
