@@ -55,6 +55,8 @@ eval:
   proxy:                                  # D8: synthetic val 2AFC
     version: valproxy_v1                  # audio: data/rendered/valproxy_v1/ (gitignored)
     distractors_per_item: 2
+    selection_weights: {mrstft: 1.0, param_l1: 1.0, afc: 1.0}   # proxy.selection_score; wave 1
+                                                                # (f) may rescale with a reason
 
   sim_real:                               # D11
     input_peak_sweep_dbfs: [-24.0, -18.0, -12.0, -6.0]

@@ -25,6 +25,7 @@ from lstmabar.models.embed_cache import (
     cache_path,
     l2_normalize,
     load_table,
+    lookup_queries,
     text_sha256,
 )
 from lstmabar.train.cli import STEPS as TRAIN_STEPS
@@ -84,6 +85,39 @@ def test_gold_items_grouped_by_clip(fx):
     assert D.load_render_audio(cfg, g.clips[0].target).shape == x.shape
     assert "headline" in g.subsets()
     assert items[2].subsets() == ["all", "ambiguous"]
+
+
+def test_proxy_style_gold_item_uses_val_cache_keys(fx, tmp_path):
+    """A val proxy unit (GoldItem, split val) resolves against val tables keyed like
+    SynthItem.queries()."""
+    import dataclasses
+
+    cfg, _ = fx
+    val = D.load_split(cfg, "val")[0]
+    g = dataclasses.replace(
+        D.load_gold_items(cfg)[0],
+        gold_id=val.item_id,
+        split="val",
+        text_key=val.captions[0].caption_id,
+        audio_key=val.item_id,
+        clips=D.load_gold_items(cfg)[0].clips[:1],
+    )
+    q = g.queries()[0]
+    assert (q.split, q.unit_id, q.text_key, q.audio_key) == (
+        "val",
+        val.item_id,
+        val.captions[0].caption_id,
+        val.item_id,
+    )
+    keys = [c.caption_id for c in val.captions]
+    EmbeddingTable(keys, np.eye(len(keys), 3), ["x"] * len(keys), "bge-base-en-v1.5", "text").save(
+        cache_path(tmp_path, "bge-base-en-v1.5", "val", "text")
+    )
+    EmbeddingTable([val.item_id], np.eye(1, 3), ["x"], "bge-base-en-v1.5", "audio").save(
+        cache_path(tmp_path, "bge-base-en-v1.5", "val", "audio")
+    )
+    assert lookup_queries(tmp_path, "bge-base-en-v1.5", "text", [q]).shape == (1, 3)
+    assert lookup_queries(tmp_path, "bge-base-en-v1.5", "audio", [q]).shape == (1, 3)
 
 
 def test_test_real_loader(fx):

@@ -228,6 +228,8 @@ class GoldItem:
     input_peak_dbfs: float = -15.0
     sample_rate: int = 44100
     split: str = "gold"  # "val" for val gold-proxy items (eval.proxy.load_proxy_items)
+    text_key: str | None = None  # embedding-cache overrides (proxy items: caption_id)
+    audio_key: str | None = None  # (proxy items: item_id); None = the gold keys
 
     def subsets(self) -> list[str]:
         """The :data:`GOLD_SUBSETS` this item belongs to (always includes ``"all"``)."""
@@ -250,8 +252,8 @@ class GoldItem:
                 unit_id=self.gold_id,
                 split=self.split,
                 text=self.instruction,
-                text_key=self.gold_id,
-                audio_key=gold_audio_key(c.clip_id, self.input_peak_dbfs),
+                text_key=self.text_key or self.gold_id,
+                audio_key=self.audio_key or gold_audio_key(c.clip_id, self.input_peak_dbfs),
                 clip_id=c.clip_id,
                 input_peak_dbfs=self.input_peak_dbfs,
                 sample_rate=self.sample_rate,

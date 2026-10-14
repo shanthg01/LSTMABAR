@@ -39,13 +39,18 @@ def load_proxy_items(cfg, limit: int | None = None):
     """Val proxy units as ``eval.data.GoldItem`` s (``split="val"``, ``source=PROXY_SOURCE``,
     instruction = the item's first caption by ``caption_id``, ``input_peak_dbfs`` = the item's
     level, one clip whose target is the item's own wet as a ``GoldRender`` and whose
-    distractors are the proxy renders), so ``runner.score_gold`` scores them unchanged."""
+    distractors are the proxy renders), so ``runner.score_gold`` scores them unchanged.
+
+    Keys: ``gold_id`` = the val ``item_id`` (so ``score_val`` merges per unit with the
+    synthetic scores), ``text_key`` = that first ``caption_id`` and ``audio_key`` = the
+    ``item_id`` (the val embedding-cache keys of ``SynthItem.queries``)."""
     raise NotImplementedError
 
 
 def selection_score(result, cfg) -> float:
     """Scalar D8 selection objective of a ``runner.score_val`` result (lower is better):
-    mean MR-STFT to the target wet + mean masked param L1 + (1 - mean proxy 2AFC)."""
+    ``w_mrstft * mean MR-STFT to the target wet + w_param * mean masked param L1
+    + w_afc * (1 - mean proxy 2AFC)`` with weights from ``eval.proxy.selection_weights``."""
     raise NotImplementedError
 
 
