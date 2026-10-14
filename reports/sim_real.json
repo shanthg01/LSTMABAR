@@ -1,0 +1,7286 @@
+{
+ "protocol": {
+  "sample_rate": 44100,
+  "input_peak_sweep_dbfs": [
+   -24.0,
+   -18.0,
+   -12.0,
+   -6.0
+  ],
+  "max_items_per_group": 100,
+  "limit": null,
+  "mrstft_fft_sizes": [
+   512,
+   1024,
+   2048
+  ],
+  "min_voiced_fraction": 0.3,
+  "pyin": true,
+  "pod_segment_s": [
+   60.0,
+   10.0
+  ],
+  "bootstrap": {
+   "n_resamples": 10000,
+   "alpha": 0.05,
+   "seed": 0
+  },
+  "runtime_s": 7417.3
+ },
+ "groups": {
+  "egfxset:BluesDriver": {
+   "n_total": 690,
+   "n_evaluated": 100,
+   "internal_only": false
+  },
+  "egfxset:RAT": {
+   "n_total": 690,
+   "n_evaluated": 100,
+   "internal_only": false
+  },
+  "egfxset:TubeScreamer": {
+   "n_total": 689,
+   "n_evaluated": 100,
+   "internal_only": false
+  },
+  "podset:bluesdriver": {
+   "n_total": 144,
+   "n_evaluated": 36,
+   "internal_only": true
+  },
+  "podset:kingoftone": {
+   "n_total": 144,
+   "n_evaluated": 36,
+   "internal_only": true
+  },
+  "podset:ktr": {
+   "n_total": 144,
+   "n_evaluated": 36,
+   "internal_only": true
+  },
+  "podset:ocd": {
+   "n_total": 144,
+   "n_evaluated": 36,
+   "internal_only": true
+  },
+  "podset:tubedreamer": {
+   "n_total": 144,
+   "n_evaluated": 36,
+   "internal_only": true
+  }
+ },
+ "kb": {
+  "egfxset:RAT": {
+   "kb_pedal": "rat",
+   "unseen_pedal": true,
+   "n_items": 100,
+   "n_harmonic": 100,
+   "settings": {
+    "distortion": 1.0,
+    "filter": 0.5,
+    "volume": 1.0
+   },
+   "internal_only": false,
+   "cells": [
+    {
+     "engine": "dry",
+     "level": "-",
+     "mrstft": {
+      "mean": 5.185411,
+      "lo": 5.122062,
+      "hi": 5.250269,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 1.120295,
+      "lo": 1.017079,
+      "hi": 1.222923,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 14.246339,
+      "lo": 12.145084,
+      "hi": 16.408841,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 5.542404,
+      "lo": 4.799061,
+      "hi": 6.336537,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.46,
+      "lo": 0.36,
+      "hi": 0.56,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 0.55,
+      "lo": 0.45,
+      "hi": 0.65,
+      "n": 100
+     }
+    },
+    {
+     "engine": "greybox",
+     "level": "-24",
+     "mrstft": {
+      "mean": 2.358364,
+      "lo": 2.317588,
+      "hi": 2.40086,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.189142,
+      "lo": 0.159648,
+      "hi": 0.221272,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 7.352219,
+      "lo": 6.040669,
+      "hi": 8.721537,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 3.885882,
+      "lo": 3.381644,
+      "hi": 4.410929,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.98,
+      "lo": 0.95,
+      "hi": 1.0,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "greybox",
+     "level": "-18",
+     "mrstft": {
+      "mean": 1.948286,
+      "lo": 1.918006,
+      "hi": 1.979579,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.172305,
+      "lo": 0.144325,
+      "hi": 0.201859,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 7.851061,
+      "lo": 6.477826,
+      "hi": 9.311824,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 3.542729,
+      "lo": 3.092237,
+      "hi": 4.028388,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.98,
+      "lo": 0.95,
+      "hi": 1.0,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "greybox",
+     "level": "-12",
+     "mrstft": {
+      "mean": 1.666638,
+      "lo": 1.645088,
+      "hi": 1.687373,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.257842,
+      "lo": 0.235064,
+      "hi": 0.281135,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 7.910106,
+      "lo": 6.442269,
+      "hi": 9.479608,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 2.657547,
+      "lo": 2.269885,
+      "hi": 3.077771,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.98,
+      "lo": 0.95,
+      "hi": 1.0,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "greybox",
+     "level": "-6",
+     "mrstft": {
+      "mean": 1.52874,
+      "lo": 1.505549,
+      "hi": 1.552396,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.345706,
+      "lo": 0.330521,
+      "hi": 0.361282,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 7.98883,
+      "lo": 6.469715,
+      "hi": 9.593853,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 2.046649,
+      "lo": 1.743266,
+      "hi": 2.374334,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.98,
+      "lo": 0.95,
+      "hi": 1.0,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "greybox",
+     "level": "best",
+     "mrstft": {
+      "mean": 1.526456,
+      "lo": 1.504156,
+      "hi": 1.548938,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.342395,
+      "lo": 0.326791,
+      "hi": 0.358579,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 7.976013,
+      "lo": 6.455522,
+      "hi": 9.584205,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 2.068699,
+      "lo": 1.763971,
+      "hi": 2.396553,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.98,
+      "lo": 0.95,
+      "hi": 1.0,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "greybox_default",
+     "level": "-24",
+     "mrstft": {
+      "mean": 3.519448,
+      "lo": 3.465926,
+      "hi": 3.574102,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.576347,
+      "lo": 0.507763,
+      "hi": 0.645971,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 9.869544,
+      "lo": 8.376425,
+      "hi": 11.431931,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 4.775108,
+      "lo": 4.208968,
+      "hi": 5.357694,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.98,
+      "lo": 0.95,
+      "hi": 1.0,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "greybox_default",
+     "level": "-18",
+     "mrstft": {
+      "mean": 2.932745,
+      "lo": 2.88392,
+      "hi": 2.982339,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.332785,
+      "lo": 0.282344,
+      "hi": 0.385227,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 8.0314,
+      "lo": 6.787454,
+      "hi": 9.385675,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 4.168003,
+      "lo": 3.651009,
+      "hi": 4.709669,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.98,
+      "lo": 0.95,
+      "hi": 1.0,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "greybox_default",
+     "level": "-12",
+     "mrstft": {
+      "mean": 2.413277,
+      "lo": 2.371716,
+      "hi": 2.456754,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.206357,
+      "lo": 0.174435,
+      "hi": 0.241306,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 7.356227,
+      "lo": 6.08798,
+      "hi": 8.70811,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 3.862335,
+      "lo": 3.359146,
+      "hi": 4.390278,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.98,
+      "lo": 0.95,
+      "hi": 1.0,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "greybox_default",
+     "level": "-6",
+     "mrstft": {
+      "mean": 1.996903,
+      "lo": 1.965497,
+      "hi": 2.02919,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.209942,
+      "lo": 0.178591,
+      "hi": 0.243045,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 7.690171,
+      "lo": 6.330839,
+      "hi": 9.13343,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 3.607316,
+      "lo": 3.142052,
+      "hi": 4.102293,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.98,
+      "lo": 0.95,
+      "hi": 1.0,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "greybox_default",
+     "level": "best",
+     "mrstft": {
+      "mean": 1.996903,
+      "lo": 1.965497,
+      "hi": 2.02919,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.209942,
+      "lo": 0.178591,
+      "hi": 0.243045,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 7.690171,
+      "lo": 6.330839,
+      "hi": 9.13343,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 3.607316,
+      "lo": 3.142052,
+      "hi": 4.102293,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.98,
+      "lo": 0.95,
+      "hi": 1.0,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    }
+   ],
+   "best_level_counts": {
+    "greybox": {
+     "-12": 7,
+     "-6": 93
+    },
+    "greybox_default": {
+     "-6": 100
+    }
+   }
+  },
+  "egfxset:TubeScreamer": {
+   "kb_pedal": "ts808",
+   "unseen_pedal": false,
+   "n_items": 100,
+   "n_harmonic": 100,
+   "settings": {
+    "drive": 1.0,
+    "tone": 0.5,
+    "level": 0.5
+   },
+   "internal_only": false,
+   "cells": [
+    {
+     "engine": "dry",
+     "level": "-",
+     "mrstft": {
+      "mean": 2.166327,
+      "lo": 2.109742,
+      "hi": 2.225447,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.487599,
+      "lo": 0.427596,
+      "hi": 0.548205,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 13.979827,
+      "lo": 11.566353,
+      "hi": 16.617765,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 3.711052,
+      "lo": 2.674316,
+      "hi": 5.178209,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.54,
+      "lo": 0.44,
+      "hi": 0.64,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 0.52,
+      "lo": 0.42,
+      "hi": 0.62,
+      "n": 100
+     }
+    },
+    {
+     "engine": "whitebox",
+     "level": "-24",
+     "mrstft": {
+      "mean": 1.83297,
+      "lo": 1.800693,
+      "hi": 1.86694,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.397987,
+      "lo": 0.364915,
+      "hi": 0.432045,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 10.569122,
+      "lo": 8.793042,
+      "hi": 12.565241,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 3.402846,
+      "lo": 2.426292,
+      "hi": 4.893776,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.8,
+      "lo": 0.72,
+      "hi": 0.88,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "whitebox",
+     "level": "-18",
+     "mrstft": {
+      "mean": 1.567727,
+      "lo": 1.540531,
+      "hi": 1.596842,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.282074,
+      "lo": 0.256993,
+      "hi": 0.307872,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 7.243323,
+      "lo": 5.867307,
+      "hi": 8.970701,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 3.0363,
+      "lo": 2.16105,
+      "hi": 4.457223,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.89,
+      "lo": 0.83,
+      "hi": 0.95,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "whitebox",
+     "level": "-12",
+     "mrstft": {
+      "mean": 1.276925,
+      "lo": 1.254382,
+      "hi": 1.302964,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.18139,
+      "lo": 0.164338,
+      "hi": 0.198909,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 4.234922,
+      "lo": 3.244395,
+      "hi": 5.674849,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 2.675591,
+      "lo": 1.854273,
+      "hi": 4.082062,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.95,
+      "lo": 0.9,
+      "hi": 0.99,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "whitebox",
+     "level": "-6",
+     "mrstft": {
+      "mean": 0.970825,
+      "lo": 0.950648,
+      "hi": 0.997918,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.103845,
+      "lo": 0.094407,
+      "hi": 0.113662,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 2.202995,
+      "lo": 1.471451,
+      "hi": 3.387838,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 2.205671,
+      "lo": 1.464314,
+      "hi": 3.518256,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.97,
+      "lo": 0.93,
+      "hi": 1.0,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "whitebox",
+     "level": "best",
+     "mrstft": {
+      "mean": 0.970825,
+      "lo": 0.950648,
+      "hi": 0.997918,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.103845,
+      "lo": 0.094407,
+      "hi": 0.113662,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 2.202995,
+      "lo": 1.471451,
+      "hi": 3.387838,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 2.205671,
+      "lo": 1.464314,
+      "hi": 3.518256,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.97,
+      "lo": 0.93,
+      "hi": 1.0,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "greybox",
+     "level": "-24",
+     "mrstft": {
+      "mean": 2.170959,
+      "lo": 2.135617,
+      "hi": 2.206646,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.615827,
+      "lo": 0.575651,
+      "hi": 0.654473,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 12.683205,
+      "lo": 10.659611,
+      "hi": 14.852277,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 5.100583,
+      "lo": 4.154547,
+      "hi": 6.519261,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.49,
+      "lo": 0.39,
+      "hi": 0.59,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "greybox",
+     "level": "-18",
+     "mrstft": {
+      "mean": 1.915313,
+      "lo": 1.885998,
+      "hi": 1.94485,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.442881,
+      "lo": 0.410504,
+      "hi": 0.473802,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 9.187934,
+      "lo": 7.643468,
+      "hi": 10.956482,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 4.829656,
+      "lo": 3.926806,
+      "hi": 6.211762,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.74,
+      "lo": 0.65,
+      "hi": 0.82,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "greybox",
+     "level": "-12",
+     "mrstft": {
+      "mean": 1.624416,
+      "lo": 1.601143,
+      "hi": 1.648309,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.280124,
+      "lo": 0.258017,
+      "hi": 0.302355,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 5.258661,
+      "lo": 4.179305,
+      "hi": 6.726571,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 4.422651,
+      "lo": 3.552557,
+      "hi": 5.793461,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.88,
+      "lo": 0.81,
+      "hi": 0.94,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "greybox",
+     "level": "-6",
+     "mrstft": {
+      "mean": 1.335198,
+      "lo": 1.314666,
+      "hi": 1.358659,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.142835,
+      "lo": 0.125675,
+      "hi": 0.160492,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 3.156823,
+      "lo": 2.460976,
+      "hi": 4.112238,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 4.101253,
+      "lo": 3.2622,
+      "hi": 5.407136,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.93,
+      "lo": 0.88,
+      "hi": 0.98,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "greybox",
+     "level": "best",
+     "mrstft": {
+      "mean": 1.335198,
+      "lo": 1.314666,
+      "hi": 1.358659,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.142835,
+      "lo": 0.125675,
+      "hi": 0.160492,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 3.156823,
+      "lo": 2.460976,
+      "hi": 4.112238,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 4.101253,
+      "lo": 3.2622,
+      "hi": 5.407136,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.93,
+      "lo": 0.88,
+      "hi": 0.98,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "greybox_default",
+     "level": "-24",
+     "mrstft": {
+      "mean": 2.471446,
+      "lo": 2.427237,
+      "hi": 2.516921,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.860602,
+      "lo": 0.811825,
+      "hi": 0.909146,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 14.88172,
+      "lo": 12.366348,
+      "hi": 17.605647,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 5.196712,
+      "lo": 4.173038,
+      "hi": 6.675227,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.13,
+      "lo": 0.07,
+      "hi": 0.2,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "greybox_default",
+     "level": "-18",
+     "mrstft": {
+      "mean": 2.315758,
+      "lo": 2.276648,
+      "hi": 2.356547,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.752314,
+      "lo": 0.704227,
+      "hi": 0.79956,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 14.635461,
+      "lo": 12.216942,
+      "hi": 17.243629,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 5.146817,
+      "lo": 4.149159,
+      "hi": 6.612168,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.17,
+      "lo": 0.1,
+      "hi": 0.24,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "greybox_default",
+     "level": "-12",
+     "mrstft": {
+      "mean": 2.116433,
+      "lo": 2.081829,
+      "hi": 2.152311,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.582861,
+      "lo": 0.538567,
+      "hi": 0.625955,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 13.268253,
+      "lo": 11.135579,
+      "hi": 15.584253,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 5.124936,
+      "lo": 4.157313,
+      "hi": 6.566145,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.51,
+      "lo": 0.41,
+      "hi": 0.61,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "greybox_default",
+     "level": "-6",
+     "mrstft": {
+      "mean": 1.861597,
+      "lo": 1.832416,
+      "hi": 1.891544,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.382868,
+      "lo": 0.347433,
+      "hi": 0.417657,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 10.443796,
+      "lo": 8.731284,
+      "hi": 12.366471,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 4.885821,
+      "lo": 3.948631,
+      "hi": 6.301544,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.86,
+      "lo": 0.79,
+      "hi": 0.92,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    },
+    {
+     "engine": "greybox_default",
+     "level": "best",
+     "mrstft": {
+      "mean": 1.861597,
+      "lo": 1.832416,
+      "hi": 1.891544,
+      "n": 100
+     },
+     "centroid_oct": {
+      "mean": 0.382868,
+      "lo": 0.347433,
+      "hi": 0.417657,
+      "n": 100
+     },
+     "odd_even_db": {
+      "mean": 10.443796,
+      "lo": 8.731284,
+      "hi": 12.366471,
+      "n": 100
+     },
+     "hnr_db": {
+      "mean": 4.885821,
+      "lo": 3.948631,
+      "hi": 6.301544,
+      "n": 100
+     },
+     "agree_centroid_oct": {
+      "mean": 0.86,
+      "lo": 0.79,
+      "hi": 0.92,
+      "n": 100
+     },
+     "agree_crest_db": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 100
+     }
+    }
+   ],
+   "best_level_counts": {
+    "whitebox": {
+     "-6": 100
+    },
+    "greybox": {
+     "-6": 100
+    },
+    "greybox_default": {
+     "-6": 100
+    }
+   }
+  }
+ },
+ "family_shifts": {
+  "egfxset:BluesDriver": {
+   "family": "overdrive",
+   "n_items": 100,
+   "n_harmonic": 100,
+   "internal_only": false,
+   "terms": {
+    "centroid_oct": {
+     "real": {
+      "mean": 1.731699,
+      "lo": 1.62997,
+      "hi": 1.831613,
+      "n": 100,
+      "median": 1.746808
+     },
+     "synthetic_family": {
+      "mean": 0.201994,
+      "lo": 0.191886,
+      "hi": 0.212056,
+      "n": 3388,
+      "median": 0.19273
+     }
+    },
+    "odd_even_db": {
+     "real": {
+      "mean": 15.086042,
+      "lo": 12.01001,
+      "hi": 18.236041,
+      "n": 100,
+      "median": 11.575369
+     },
+     "synthetic_family": {
+      "mean": 3.99139,
+      "lo": 3.702246,
+      "hi": 4.277026,
+      "n": 3369,
+      "median": 1.724231
+     }
+    },
+    "hnr_db": {
+     "real": {
+      "mean": -6.329069,
+      "lo": -7.11034,
+      "hi": -5.558344,
+      "n": 100,
+      "median": -5.996987
+     },
+     "synthetic_family": {
+      "mean": 0.490117,
+      "lo": 0.364133,
+      "hi": 0.614237,
+      "n": 3369,
+      "median": 0.18161
+     }
+    },
+    "crest_db": {
+     "real": {
+      "mean": -15.632535,
+      "lo": -16.240553,
+      "hi": -15.014373,
+      "n": 100,
+      "median": -15.824354
+     },
+     "synthetic_family": {
+      "mean": -5.527148,
+      "lo": -5.622052,
+      "hi": -5.432563,
+      "n": 3388,
+      "median": -5.465027
+     }
+    }
+   },
+   "synthetic_pedals": [
+    "ts808"
+   ]
+  },
+  "egfxset:RAT": {
+   "family": "distortion",
+   "n_items": 100,
+   "n_harmonic": 100,
+   "internal_only": false,
+   "terms": {
+    "centroid_oct": {
+     "real": {
+      "mean": 1.118431,
+      "lo": 1.013873,
+      "hi": 1.219848,
+      "n": 100,
+      "median": 1.166697
+     },
+     "synthetic_family": {
+      "mean": 2.047172,
+      "lo": 2.020898,
+      "hi": 2.073609,
+      "n": 3394,
+      "median": 2.132787
+     }
+    },
+    "odd_even_db": {
+     "real": {
+      "mean": 13.373358,
+      "lo": 11.053645,
+      "hi": 15.712961,
+      "n": 100,
+      "median": 14.596049
+     },
+     "synthetic_family": {
+      "mean": 7.161231,
+      "lo": 6.756854,
+      "hi": 7.58468,
+      "n": 3360,
+      "median": 2.878932
+     }
+    },
+    "hnr_db": {
+     "real": {
+      "mean": -5.475686,
+      "lo": -6.300686,
+      "hi": -4.691525,
+      "n": 100,
+      "median": -5.261331
+     },
+     "synthetic_family": {
+      "mean": -3.864319,
+      "lo": -4.064637,
+      "hi": -3.669477,
+      "n": 3360,
+      "median": -2.542012
+     }
+    },
+    "crest_db": {
+     "real": {
+      "mean": -16.594693,
+      "lo": -17.206317,
+      "hi": -16.016606,
+      "n": 100,
+      "median": -16.334816
+     },
+     "synthetic_family": {
+      "mean": -6.102566,
+      "lo": -6.280356,
+      "hi": -5.924814,
+      "n": 3394,
+      "median": -5.999156
+     }
+    }
+   },
+   "synthetic_pedals": [
+    "ds1"
+   ]
+  },
+  "egfxset:TubeScreamer": {
+   "family": "overdrive",
+   "n_items": 100,
+   "n_harmonic": 100,
+   "internal_only": false,
+   "terms": {
+    "centroid_oct": {
+     "real": {
+      "mean": 0.460858,
+      "lo": 0.393366,
+      "hi": 0.527385,
+      "n": 100,
+      "median": 0.510284
+     },
+     "synthetic_family": {
+      "mean": 0.201994,
+      "lo": 0.191886,
+      "hi": 0.212056,
+      "n": 3388,
+      "median": 0.19273
+     }
+    },
+    "odd_even_db": {
+     "real": {
+      "mean": 12.660215,
+      "lo": 9.901,
+      "hi": 15.511826,
+      "n": 100,
+      "median": 9.811312
+     },
+     "synthetic_family": {
+      "mean": 3.99139,
+      "lo": 3.702246,
+      "hi": 4.277026,
+      "n": 3369,
+      "median": 1.724231
+     }
+    },
+    "hnr_db": {
+     "real": {
+      "mean": -2.975674,
+      "lo": -4.48656,
+      "hi": -1.841926,
+      "n": 100,
+      "median": -1.649007
+     },
+     "synthetic_family": {
+      "mean": 0.490117,
+      "lo": 0.364133,
+      "hi": 0.614237,
+      "n": 3369,
+      "median": 0.18161
+     }
+    },
+    "crest_db": {
+     "real": {
+      "mean": -5.71425,
+      "lo": -6.132088,
+      "hi": -5.308742,
+      "n": 100,
+      "median": -5.318446
+     },
+     "synthetic_family": {
+      "mean": -5.527148,
+      "lo": -5.622052,
+      "hi": -5.432563,
+      "n": 3388,
+      "median": -5.465027
+     }
+    }
+   },
+   "synthetic_pedals": [
+    "ts808"
+   ]
+  },
+  "podset:bluesdriver": {
+   "family": "overdrive",
+   "n_items": 36,
+   "n_harmonic": 36,
+   "internal_only": true,
+   "terms": {
+    "centroid_oct": {
+     "real": {
+      "mean": -0.114078,
+      "lo": -0.260576,
+      "hi": 0.026749,
+      "n": 36,
+      "median": 0.027185
+     },
+     "synthetic_family": {
+      "mean": 0.201994,
+      "lo": 0.191886,
+      "hi": 0.212056,
+      "n": 3388,
+      "median": 0.19273
+     }
+    },
+    "odd_even_db": {
+     "real": {
+      "mean": -0.093514,
+      "lo": -0.386248,
+      "hi": 0.216559,
+      "n": 36,
+      "median": -0.378396
+     },
+     "synthetic_family": {
+      "mean": 3.99139,
+      "lo": 3.702246,
+      "hi": 4.277026,
+      "n": 3369,
+      "median": 1.724231
+     }
+    },
+    "hnr_db": {
+     "real": {
+      "mean": -0.482932,
+      "lo": -0.716259,
+      "hi": -0.246199,
+      "n": 36,
+      "median": -0.189556
+     },
+     "synthetic_family": {
+      "mean": 0.490117,
+      "lo": 0.364133,
+      "hi": 0.614237,
+      "n": 3369,
+      "median": 0.18161
+     }
+    },
+    "crest_db": {
+     "real": {
+      "mean": -2.309036,
+      "lo": -3.422253,
+      "hi": -1.153612,
+      "n": 36,
+      "median": -1.865528
+     },
+     "synthetic_family": {
+      "mean": -5.527148,
+      "lo": -5.622052,
+      "hi": -5.432563,
+      "n": 3388,
+      "median": -5.465027
+     }
+    }
+   },
+   "synthetic_pedals": [
+    "ts808"
+   ]
+  },
+  "podset:kingoftone": {
+   "family": "overdrive",
+   "n_items": 36,
+   "n_harmonic": 36,
+   "internal_only": true,
+   "terms": {
+    "centroid_oct": {
+     "real": {
+      "mean": -1.082638,
+      "lo": -1.225577,
+      "hi": -0.939726,
+      "n": 36,
+      "median": -1.090057
+     },
+     "synthetic_family": {
+      "mean": 0.201994,
+      "lo": 0.191886,
+      "hi": 0.212056,
+      "n": 3388,
+      "median": 0.19273
+     }
+    },
+    "odd_even_db": {
+     "real": {
+      "mean": -1.064711,
+      "lo": -1.424765,
+      "hi": -0.741551,
+      "n": 36,
+      "median": -0.913203
+     },
+     "synthetic_family": {
+      "mean": 3.99139,
+      "lo": 3.702246,
+      "hi": 4.277026,
+      "n": 3369,
+      "median": 1.724231
+     }
+    },
+    "hnr_db": {
+     "real": {
+      "mean": 0.939829,
+      "lo": 0.571877,
+      "hi": 1.307832,
+      "n": 36,
+      "median": 1.027911
+     },
+     "synthetic_family": {
+      "mean": 0.490117,
+      "lo": 0.364133,
+      "hi": 0.614237,
+      "n": 3369,
+      "median": 0.18161
+     }
+    },
+    "crest_db": {
+     "real": {
+      "mean": -1.724578,
+      "lo": -2.061034,
+      "hi": -1.377544,
+      "n": 36,
+      "median": -1.830054
+     },
+     "synthetic_family": {
+      "mean": -5.527148,
+      "lo": -5.622052,
+      "hi": -5.432563,
+      "n": 3388,
+      "median": -5.465027
+     }
+    }
+   },
+   "synthetic_pedals": [
+    "ts808"
+   ]
+  },
+  "podset:ktr": {
+   "family": "overdrive",
+   "n_items": 36,
+   "n_harmonic": 36,
+   "internal_only": true,
+   "terms": {
+    "centroid_oct": {
+     "real": {
+      "mean": -0.800497,
+      "lo": -0.946258,
+      "hi": -0.645394,
+      "n": 36,
+      "median": -0.811771
+     },
+     "synthetic_family": {
+      "mean": 0.201994,
+      "lo": 0.191886,
+      "hi": 0.212056,
+      "n": 3388,
+      "median": 0.19273
+     }
+    },
+    "odd_even_db": {
+     "real": {
+      "mean": -0.338636,
+      "lo": -0.538001,
+      "hi": -0.142536,
+      "n": 36,
+      "median": -0.428664
+     },
+     "synthetic_family": {
+      "mean": 3.99139,
+      "lo": 3.702246,
+      "hi": 4.277026,
+      "n": 3369,
+      "median": 1.724231
+     }
+    },
+    "hnr_db": {
+     "real": {
+      "mean": 0.667842,
+      "lo": 0.274904,
+      "hi": 1.062371,
+      "n": 36,
+      "median": 0.806201
+     },
+     "synthetic_family": {
+      "mean": 0.490117,
+      "lo": 0.364133,
+      "hi": 0.614237,
+      "n": 3369,
+      "median": 0.18161
+     }
+    },
+    "crest_db": {
+     "real": {
+      "mean": -2.255163,
+      "lo": -3.127511,
+      "hi": -1.330841,
+      "n": 36,
+      "median": -2.256283
+     },
+     "synthetic_family": {
+      "mean": -5.527148,
+      "lo": -5.622052,
+      "hi": -5.432563,
+      "n": 3388,
+      "median": -5.465027
+     }
+    }
+   },
+   "synthetic_pedals": [
+    "ts808"
+   ]
+  },
+  "podset:ocd": {
+   "family": "overdrive",
+   "n_items": 36,
+   "n_harmonic": 36,
+   "internal_only": true,
+   "terms": {
+    "centroid_oct": {
+     "real": {
+      "mean": -1.168673,
+      "lo": -1.320497,
+      "hi": -1.0237,
+      "n": 36,
+      "median": -1.173486
+     },
+     "synthetic_family": {
+      "mean": 0.201994,
+      "lo": 0.191886,
+      "hi": 0.212056,
+      "n": 3388,
+      "median": 0.19273
+     }
+    },
+    "odd_even_db": {
+     "real": {
+      "mean": -0.509878,
+      "lo": -0.664304,
+      "hi": -0.354457,
+      "n": 36,
+      "median": -0.506791
+     },
+     "synthetic_family": {
+      "mean": 3.99139,
+      "lo": 3.702246,
+      "hi": 4.277026,
+      "n": 3369,
+      "median": 1.724231
+     }
+    },
+    "hnr_db": {
+     "real": {
+      "mean": 2.065635,
+      "lo": 1.764686,
+      "hi": 2.369941,
+      "n": 36,
+      "median": 1.992295
+     },
+     "synthetic_family": {
+      "mean": 0.490117,
+      "lo": 0.364133,
+      "hi": 0.614237,
+      "n": 3369,
+      "median": 0.18161
+     }
+    },
+    "crest_db": {
+     "real": {
+      "mean": -3.983741,
+      "lo": -4.921056,
+      "hi": -3.078305,
+      "n": 36,
+      "median": -2.934254
+     },
+     "synthetic_family": {
+      "mean": -5.527148,
+      "lo": -5.622052,
+      "hi": -5.432563,
+      "n": 3388,
+      "median": -5.465027
+     }
+    }
+   },
+   "synthetic_pedals": [
+    "ts808"
+   ]
+  },
+  "podset:tubedreamer": {
+   "family": "overdrive",
+   "n_items": 36,
+   "n_harmonic": 36,
+   "internal_only": true,
+   "terms": {
+    "centroid_oct": {
+     "real": {
+      "mean": -0.624021,
+      "lo": -0.681565,
+      "hi": -0.563156,
+      "n": 36,
+      "median": -0.652288
+     },
+     "synthetic_family": {
+      "mean": 0.201994,
+      "lo": 0.191886,
+      "hi": 0.212056,
+      "n": 3388,
+      "median": 0.19273
+     }
+    },
+    "odd_even_db": {
+     "real": {
+      "mean": -1.23042,
+      "lo": -1.355328,
+      "hi": -1.110954,
+      "n": 36,
+      "median": -1.154371
+     },
+     "synthetic_family": {
+      "mean": 3.99139,
+      "lo": 3.702246,
+      "hi": 4.277026,
+      "n": 3369,
+      "median": 1.724231
+     }
+    },
+    "hnr_db": {
+     "real": {
+      "mean": 0.393584,
+      "lo": 0.189026,
+      "hi": 0.587174,
+      "n": 36,
+      "median": 0.445648
+     },
+     "synthetic_family": {
+      "mean": 0.490117,
+      "lo": 0.364133,
+      "hi": 0.614237,
+      "n": 3369,
+      "median": 0.18161
+     }
+    },
+    "crest_db": {
+     "real": {
+      "mean": -1.812577,
+      "lo": -2.331485,
+      "hi": -1.270571,
+      "n": 36,
+      "median": -1.789833
+     },
+     "synthetic_family": {
+      "mean": -5.527148,
+      "lo": -5.622052,
+      "hi": -5.432563,
+      "n": 3388,
+      "median": -5.465027
+     }
+    }
+   },
+   "synthetic_pedals": [
+    "ts808"
+   ]
+  }
+ },
+ "ts_grid_direction": {
+  "n_items": 36,
+  "pairs": {
+   "tone~centroid_oct": {
+    "real": 0.65603,
+    "kb": {
+     "-24": 0.610625,
+     "-18": 0.632545,
+     "-12": 0.624716,
+     "-6": 0.565219
+    }
+   },
+   "gain~centroid_oct": {
+    "real": -0.427437,
+    "kb": {
+     "-24": -0.242684,
+     "-18": 0.125256,
+     "-12": 0.441529,
+     "-6": 0.515117
+    }
+   },
+   "gain~crest_db": {
+    "real": -0.768761,
+    "kb": {
+     "-24": -0.9222,
+     "-18": -0.951948,
+     "-12": -0.897149,
+     "-6": -0.713961
+    }
+   }
+  }
+ },
+ "kb_knob_sweeps": [
+  {
+   "group": "egfxset:RAT",
+   "kb_pedal": "rat",
+   "sweeps": {
+    "distortion": [
+     {
+      "pos": 0.0,
+      "centroid_oct": -0.231916,
+      "crest_db": -0.416879
+     },
+     {
+      "pos": 0.5,
+      "centroid_oct": 1.433558,
+      "crest_db": -16.69646
+     },
+     {
+      "pos": 1.0,
+      "centroid_oct": 1.711433,
+      "crest_db": -17.799507
+     }
+    ],
+    "filter": [
+     {
+      "pos": 0.0,
+      "centroid_oct": 2.209929,
+      "crest_db": -17.03553
+     },
+     {
+      "pos": 0.5,
+      "centroid_oct": 1.711433,
+      "crest_db": -17.799507
+     },
+     {
+      "pos": 1.0,
+      "centroid_oct": 0.618048,
+      "crest_db": -16.176424
+     }
+    ]
+   },
+   "task": "sweep"
+  },
+  {
+   "group": "egfxset:RAT",
+   "kb_pedal": "rat",
+   "sweeps": {
+    "distortion": [
+     {
+      "pos": 0.0,
+      "centroid_oct": -0.161765,
+      "crest_db": 0.254626
+     },
+     {
+      "pos": 0.5,
+      "centroid_oct": 1.196622,
+      "crest_db": -18.238602
+     },
+     {
+      "pos": 1.0,
+      "centroid_oct": 1.507341,
+      "crest_db": -20.110153
+     }
+    ],
+    "filter": [
+     {
+      "pos": 0.0,
+      "centroid_oct": 1.990126,
+      "crest_db": -19.458824
+     },
+     {
+      "pos": 0.5,
+      "centroid_oct": 1.507341,
+      "crest_db": -20.110153
+     },
+     {
+      "pos": 1.0,
+      "centroid_oct": 0.433955,
+      "crest_db": -18.976764
+     }
+    ]
+   },
+   "task": "sweep"
+  },
+  {
+   "group": "egfxset:RAT",
+   "kb_pedal": "rat",
+   "sweeps": {
+    "distortion": [
+     {
+      "pos": 0.0,
+      "centroid_oct": -0.219673,
+      "crest_db": -0.286601
+     },
+     {
+      "pos": 0.5,
+      "centroid_oct": 1.077811,
+      "crest_db": -17.968277
+     },
+     {
+      "pos": 1.0,
+      "centroid_oct": 1.344124,
+      "crest_db": -19.343094
+     }
+    ],
+    "filter": [
+     {
+      "pos": 0.0,
+      "centroid_oct": 1.831318,
+      "crest_db": -18.519472
+     },
+     {
+      "pos": 0.5,
+      "centroid_oct": 1.344124,
+      "crest_db": -19.343094
+     },
+     {
+      "pos": 1.0,
+      "centroid_oct": 0.298646,
+      "crest_db": -17.727111
+     }
+    ]
+   },
+   "task": "sweep"
+  },
+  {
+   "group": "egfxset:TubeScreamer",
+   "kb_pedal": "ts808",
+   "sweeps": {
+    "drive": [
+     {
+      "pos": 0.0,
+      "centroid_oct": -0.036529,
+      "crest_db": -5.517458
+     },
+     {
+      "pos": 0.5,
+      "centroid_oct": 0.146155,
+      "crest_db": -6.900892
+     },
+     {
+      "pos": 1.0,
+      "centroid_oct": 0.068551,
+      "crest_db": -9.963367
+     }
+    ],
+    "tone": [
+     {
+      "pos": 0.0,
+      "centroid_oct": 0.086159,
+      "crest_db": -8.41344
+     },
+     {
+      "pos": 0.5,
+      "centroid_oct": 0.068551,
+      "crest_db": -9.963367
+     },
+     {
+      "pos": 1.0,
+      "centroid_oct": 0.482091,
+      "crest_db": -13.745443
+     }
+    ]
+   },
+   "task": "sweep"
+  },
+  {
+   "group": "egfxset:TubeScreamer",
+   "kb_pedal": "ts808",
+   "sweeps": {
+    "drive": [
+     {
+      "pos": 0.0,
+      "centroid_oct": -0.769125,
+      "crest_db": -8.962246
+     },
+     {
+      "pos": 0.5,
+      "centroid_oct": -0.565049,
+      "crest_db": -10.996091
+     },
+     {
+      "pos": 1.0,
+      "centroid_oct": -0.187012,
+      "crest_db": -14.277533
+     }
+    ],
+    "tone": [
+     {
+      "pos": 0.0,
+      "centroid_oct": -0.263662,
+      "crest_db": -13.50409
+     },
+     {
+      "pos": 0.5,
+      "centroid_oct": -0.187012,
+      "crest_db": -14.277533
+     },
+     {
+      "pos": 1.0,
+      "centroid_oct": 0.611475,
+      "crest_db": -14.87899
+     }
+    ]
+   },
+   "task": "sweep"
+  },
+  {
+   "group": "egfxset:TubeScreamer",
+   "kb_pedal": "ts808",
+   "sweeps": {
+    "drive": [
+     {
+      "pos": 0.0,
+      "centroid_oct": 0.058151,
+      "crest_db": -7.63154
+     },
+     {
+      "pos": 0.5,
+      "centroid_oct": 0.259573,
+      "crest_db": -10.11581
+     },
+     {
+      "pos": 1.0,
+      "centroid_oct": 0.705492,
+      "crest_db": -14.613823
+     }
+    ],
+    "tone": [
+     {
+      "pos": 0.0,
+      "centroid_oct": 0.566358,
+      "crest_db": -13.141894
+     },
+     {
+      "pos": 0.5,
+      "centroid_oct": 0.705492,
+      "crest_db": -14.613823
+     },
+     {
+      "pos": 1.0,
+      "centroid_oct": 1.401604,
+      "crest_db": -14.685118
+     }
+    ]
+   },
+   "task": "sweep"
+  }
+ ],
+ "per_item": [
+  {
+   "item_id": "egfxset-rat-middle-neck-3-2",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.075326,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.242585,
+     "greybox_default": 3.32997
+    },
+    "-18": {
+     "greybox": 1.802242,
+     "greybox_default": 2.81117
+    },
+    "-12": {
+     "greybox": 1.505251,
+     "greybox_default": 2.298988
+    },
+    "-6": {
+     "greybox": 1.375376,
+     "greybox_default": 1.84874
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-6-9",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.528594,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.667074,
+     "greybox_default": 3.786727
+    },
+    "-18": {
+     "greybox": 2.209269,
+     "greybox_default": 3.198353
+    },
+    "-12": {
+     "greybox": 1.804495,
+     "greybox_default": 2.704976
+    },
+    "-6": {
+     "greybox": 1.518948,
+     "greybox_default": 2.255242
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-2-0",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.293355,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.383508,
+     "greybox_default": 3.464888
+    },
+    "-18": {
+     "greybox": 1.874512,
+     "greybox_default": 2.951899
+    },
+    "-12": {
+     "greybox": 1.538894,
+     "greybox_default": 2.442316
+    },
+    "-6": {
+     "greybox": 1.402785,
+     "greybox_default": 1.932464
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-neck-5-10",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.612944,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.077509,
+     "greybox_default": 3.046723
+    },
+    "-18": {
+     "greybox": 1.728004,
+     "greybox_default": 2.531838
+    },
+    "-12": {
+     "greybox": 1.481758,
+     "greybox_default": 2.115286
+    },
+    "-6": {
+     "greybox": 1.42101,
+     "greybox_default": 1.769328
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-3-0",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 6.057861,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.550563,
+     "greybox_default": 3.865352
+    },
+    "-18": {
+     "greybox": 2.10884,
+     "greybox_default": 3.168645
+    },
+    "-12": {
+     "greybox": 1.767947,
+     "greybox_default": 2.616188
+    },
+    "-6": {
+     "greybox": 1.562512,
+     "greybox_default": 2.163379
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-6-17",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.374624,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.498587,
+     "greybox_default": 3.788919
+    },
+    "-18": {
+     "greybox": 2.029291,
+     "greybox_default": 3.151588
+    },
+    "-12": {
+     "greybox": 1.661716,
+     "greybox_default": 2.566894
+    },
+    "-6": {
+     "greybox": 1.425352,
+     "greybox_default": 2.086149
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-6-2",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.545393,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.938304,
+     "greybox_default": 4.005102
+    },
+    "-18": {
+     "greybox": 2.369997,
+     "greybox_default": 3.527896
+    },
+    "-12": {
+     "greybox": 1.91529,
+     "greybox_default": 2.990063
+    },
+    "-6": {
+     "greybox": 1.676963,
+     "greybox_default": 2.424649
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-neck-5-16",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.374986,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.422779,
+     "greybox_default": 3.664737
+    },
+    "-18": {
+     "greybox": 1.914362,
+     "greybox_default": 3.047575
+    },
+    "-12": {
+     "greybox": 1.532528,
+     "greybox_default": 2.485978
+    },
+    "-6": {
+     "greybox": 1.324742,
+     "greybox_default": 1.969362
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-neck-4-0",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.930101,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.210753,
+     "greybox_default": 3.655304
+    },
+    "-18": {
+     "greybox": 1.743172,
+     "greybox_default": 2.984032
+    },
+    "-12": {
+     "greybox": 1.521541,
+     "greybox_default": 2.289132
+    },
+    "-6": {
+     "greybox": 1.423251,
+     "greybox_default": 1.787184
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-neck-1-4",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.090678,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.17237,
+     "greybox_default": 3.427284
+    },
+    "-18": {
+     "greybox": 1.799641,
+     "greybox_default": 2.791658
+    },
+    "-12": {
+     "greybox": 1.652368,
+     "greybox_default": 2.235493
+    },
+    "-6": {
+     "greybox": 1.638458,
+     "greybox_default": 1.842121
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-3-9",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.656294,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.633245,
+     "greybox_default": 3.858825
+    },
+    "-18": {
+     "greybox": 2.216765,
+     "greybox_default": 3.218465
+    },
+    "-12": {
+     "greybox": 1.822542,
+     "greybox_default": 2.671497
+    },
+    "-6": {
+     "greybox": 1.506666,
+     "greybox_default": 2.260613
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-1-0",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.057384,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.283512,
+     "greybox_default": 3.371624
+    },
+    "-18": {
+     "greybox": 1.911803,
+     "greybox_default": 2.797423
+    },
+    "-12": {
+     "greybox": 1.659916,
+     "greybox_default": 2.334849
+    },
+    "-6": {
+     "greybox": 1.518322,
+     "greybox_default": 1.954945
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-6-8",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.449725,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.634547,
+     "greybox_default": 3.73773
+    },
+    "-18": {
+     "greybox": 2.223715,
+     "greybox_default": 3.159888
+    },
+    "-12": {
+     "greybox": 1.87567,
+     "greybox_default": 2.672373
+    },
+    "-6": {
+     "greybox": 1.619541,
+     "greybox_default": 2.262625
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-4-11",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.518922,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.77257,
+     "greybox_default": 3.845376
+    },
+    "-18": {
+     "greybox": 2.282665,
+     "greybox_default": 3.274215
+    },
+    "-12": {
+     "greybox": 1.826197,
+     "greybox_default": 2.812352
+    },
+    "-6": {
+     "greybox": 1.473805,
+     "greybox_default": 2.33771
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-6-6",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.941225,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.327786,
+     "greybox_default": 3.438201
+    },
+    "-18": {
+     "greybox": 1.882949,
+     "greybox_default": 2.914781
+    },
+    "-12": {
+     "greybox": 1.582792,
+     "greybox_default": 2.377846
+    },
+    "-6": {
+     "greybox": 1.450666,
+     "greybox_default": 1.924268
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-neck-3-18",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.880543,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.101969,
+     "greybox_default": 3.224413
+    },
+    "-18": {
+     "greybox": 1.807071,
+     "greybox_default": 2.64099
+    },
+    "-12": {
+     "greybox": 1.686021,
+     "greybox_default": 2.159861
+    },
+    "-6": {
+     "greybox": 1.69576,
+     "greybox_default": 1.851201
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-neck-4-18",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.217867,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.340139,
+     "greybox_default": 3.560044
+    },
+    "-18": {
+     "greybox": 1.917992,
+     "greybox_default": 2.931903
+    },
+    "-12": {
+     "greybox": 1.609895,
+     "greybox_default": 2.392359
+    },
+    "-6": {
+     "greybox": 1.435521,
+     "greybox_default": 1.97047
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-5-9",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.531904,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.596518,
+     "greybox_default": 3.876584
+    },
+    "-18": {
+     "greybox": 2.117074,
+     "greybox_default": 3.235543
+    },
+    "-12": {
+     "greybox": 1.741134,
+     "greybox_default": 2.654608
+    },
+    "-6": {
+     "greybox": 1.534856,
+     "greybox_default": 2.167959
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-neck-3-13",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.905142,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.153848,
+     "greybox_default": 3.292336
+    },
+    "-18": {
+     "greybox": 1.859424,
+     "greybox_default": 2.699996
+    },
+    "-12": {
+     "greybox": 1.752407,
+     "greybox_default": 2.211544
+    },
+    "-6": {
+     "greybox": 1.809045,
+     "greybox_default": 1.906412
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-5-22",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.451876,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.410962,
+     "greybox_default": 3.687316
+    },
+    "-18": {
+     "greybox": 1.959076,
+     "greybox_default": 3.048948
+    },
+    "-12": {
+     "greybox": 1.668705,
+     "greybox_default": 2.476507
+    },
+    "-6": {
+     "greybox": 1.526577,
+     "greybox_default": 2.014323
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-1-16",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.271038,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.486228,
+     "greybox_default": 3.730706
+    },
+    "-18": {
+     "greybox": 2.06951,
+     "greybox_default": 3.11992
+    },
+    "-12": {
+     "greybox": 1.817873,
+     "greybox_default": 2.553491
+    },
+    "-6": {
+     "greybox": 1.742326,
+     "greybox_default": 2.128544
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-4-2",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.872909,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.646175,
+     "greybox_default": 3.952913
+    },
+    "-18": {
+     "greybox": 2.09557,
+     "greybox_default": 3.339714
+    },
+    "-12": {
+     "greybox": 1.718867,
+     "greybox_default": 2.718956
+    },
+    "-6": {
+     "greybox": 1.513121,
+     "greybox_default": 2.159762
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-3-22",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.153414,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.28731,
+     "greybox_default": 3.484397
+    },
+    "-18": {
+     "greybox": 1.917047,
+     "greybox_default": 2.880238
+    },
+    "-12": {
+     "greybox": 1.717433,
+     "greybox_default": 2.351003
+    },
+    "-6": {
+     "greybox": 1.670407,
+     "greybox_default": 1.971904
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-neck-4-14",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.013676,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.246164,
+     "greybox_default": 3.381465
+    },
+    "-18": {
+     "greybox": 1.856606,
+     "greybox_default": 2.805415
+    },
+    "-12": {
+     "greybox": 1.556363,
+     "greybox_default": 2.293499
+    },
+    "-6": {
+     "greybox": 1.408605,
+     "greybox_default": 1.896777
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-neck-2-19",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.148385,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.293016,
+     "greybox_default": 3.469385
+    },
+    "-18": {
+     "greybox": 1.931514,
+     "greybox_default": 2.857955
+    },
+    "-12": {
+     "greybox": 1.706795,
+     "greybox_default": 2.345845
+    },
+    "-6": {
+     "greybox": 1.618675,
+     "greybox_default": 1.973256
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-neck-3-2",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.289825,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.28935,
+     "greybox_default": 3.473396
+    },
+    "-18": {
+     "greybox": 1.849706,
+     "greybox_default": 2.849086
+    },
+    "-12": {
+     "greybox": 1.541046,
+     "greybox_default": 2.336787
+    },
+    "-6": {
+     "greybox": 1.385575,
+     "greybox_default": 1.89166
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-4-22",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.152207,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.314238,
+     "greybox_default": 3.481763
+    },
+    "-18": {
+     "greybox": 1.943077,
+     "greybox_default": 2.899573
+    },
+    "-12": {
+     "greybox": 1.739301,
+     "greybox_default": 2.378564
+    },
+    "-6": {
+     "greybox": 1.65893,
+     "greybox_default": 1.996844
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-neck-3-11",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.936885,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.121554,
+     "greybox_default": 3.261452
+    },
+    "-18": {
+     "greybox": 1.7292,
+     "greybox_default": 2.678392
+    },
+    "-12": {
+     "greybox": 1.487421,
+     "greybox_default": 2.169828
+    },
+    "-6": {
+     "greybox": 1.382078,
+     "greybox_default": 1.773679
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-neck-6-13",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.617743,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.049901,
+     "greybox_default": 3.016785
+    },
+    "-18": {
+     "greybox": 1.760891,
+     "greybox_default": 2.503067
+    },
+    "-12": {
+     "greybox": 1.579116,
+     "greybox_default": 2.0939
+    },
+    "-6": {
+     "greybox": 1.54367,
+     "greybox_default": 1.802038
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-1-10",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.100154,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.280602,
+     "greybox_default": 3.527619
+    },
+    "-18": {
+     "greybox": 1.8917,
+     "greybox_default": 2.902151
+    },
+    "-12": {
+     "greybox": 1.696631,
+     "greybox_default": 2.343183
+    },
+    "-6": {
+     "greybox": 1.665124,
+     "greybox_default": 1.944942
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-6-12",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.6711,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.152985,
+     "greybox_default": 3.089118
+    },
+    "-18": {
+     "greybox": 1.848094,
+     "greybox_default": 2.590359
+    },
+    "-12": {
+     "greybox": 1.644169,
+     "greybox_default": 2.195186
+    },
+    "-6": {
+     "greybox": 1.571274,
+     "greybox_default": 1.890842
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-neck-2-9",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.245189,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.292166,
+     "greybox_default": 3.586518
+    },
+    "-18": {
+     "greybox": 1.871339,
+     "greybox_default": 2.938714
+    },
+    "-12": {
+     "greybox": 1.65376,
+     "greybox_default": 2.364747
+    },
+    "-6": {
+     "greybox": 1.632259,
+     "greybox_default": 1.927407
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-neck-4-16",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.213094,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.349426,
+     "greybox_default": 3.567291
+    },
+    "-18": {
+     "greybox": 1.90522,
+     "greybox_default": 2.966518
+    },
+    "-12": {
+     "greybox": 1.572685,
+     "greybox_default": 2.409654
+    },
+    "-6": {
+     "greybox": 1.404437,
+     "greybox_default": 1.956552
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-neck-2-1",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.664809,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.012923,
+     "greybox_default": 3.004051
+    },
+    "-18": {
+     "greybox": 1.711994,
+     "greybox_default": 2.47946
+    },
+    "-12": {
+     "greybox": 1.557854,
+     "greybox_default": 2.039429
+    },
+    "-6": {
+     "greybox": 1.514292,
+     "greybox_default": 1.737248
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-neck-2-22",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.862998,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.204331,
+     "greybox_default": 3.287419
+    },
+    "-18": {
+     "greybox": 1.932787,
+     "greybox_default": 2.728988
+    },
+    "-12": {
+     "greybox": 1.865532,
+     "greybox_default": 2.264478
+    },
+    "-6": {
+     "greybox": 1.965713,
+     "greybox_default": 1.978755
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-neck-1-0",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.705638,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.049864,
+     "greybox_default": 3.063515
+    },
+    "-18": {
+     "greybox": 1.71869,
+     "greybox_default": 2.516998
+    },
+    "-12": {
+     "greybox": 1.484242,
+     "greybox_default": 2.076908
+    },
+    "-6": {
+     "greybox": 1.353127,
+     "greybox_default": 1.752726
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-neck-4-9",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.510253,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.672135,
+     "greybox_default": 3.781863
+    },
+    "-18": {
+     "greybox": 2.139222,
+     "greybox_default": 3.235051
+    },
+    "-12": {
+     "greybox": 1.692532,
+     "greybox_default": 2.72032
+    },
+    "-6": {
+     "greybox": 1.415236,
+     "greybox_default": 2.195535
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-neck-4-22",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.889932,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.101804,
+     "greybox_default": 3.231211
+    },
+    "-18": {
+     "greybox": 1.790067,
+     "greybox_default": 2.648348
+    },
+    "-12": {
+     "greybox": 1.672341,
+     "greybox_default": 2.160532
+    },
+    "-6": {
+     "greybox": 1.696922,
+     "greybox_default": 1.837462
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-4-12",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.396805,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.482345,
+     "greybox_default": 3.691944
+    },
+    "-18": {
+     "greybox": 1.99753,
+     "greybox_default": 3.082929
+    },
+    "-12": {
+     "greybox": 1.609039,
+     "greybox_default": 2.534707
+    },
+    "-6": {
+     "greybox": 1.379271,
+     "greybox_default": 2.051739
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-1-14",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.073364,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.320087,
+     "greybox_default": 3.52866
+    },
+    "-18": {
+     "greybox": 1.938095,
+     "greybox_default": 2.924277
+    },
+    "-12": {
+     "greybox": 1.715283,
+     "greybox_default": 2.387113
+    },
+    "-6": {
+     "greybox": 1.627569,
+     "greybox_default": 1.987226
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-1-22",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.098548,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.39974,
+     "greybox_default": 3.506131
+    },
+    "-18": {
+     "greybox": 2.044751,
+     "greybox_default": 2.958732
+    },
+    "-12": {
+     "greybox": 1.849142,
+     "greybox_default": 2.466195
+    },
+    "-6": {
+     "greybox": 1.772081,
+     "greybox_default": 2.10465
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-5-10",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.603405,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.839997,
+     "greybox_default": 3.811893
+    },
+    "-18": {
+     "greybox": 2.345613,
+     "greybox_default": 3.303157
+    },
+    "-12": {
+     "greybox": 1.854677,
+     "greybox_default": 2.875418
+    },
+    "-6": {
+     "greybox": 1.45224,
+     "greybox_default": 2.39942
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-3-22",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.118551,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.323458,
+     "greybox_default": 3.459826
+    },
+    "-18": {
+     "greybox": 1.974549,
+     "greybox_default": 2.885736
+    },
+    "-12": {
+     "greybox": 1.758161,
+     "greybox_default": 2.382839
+    },
+    "-6": {
+     "greybox": 1.67729,
+     "greybox_default": 2.027495
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-neck-5-17",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.911734,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.116035,
+     "greybox_default": 3.255041
+    },
+    "-18": {
+     "greybox": 1.73374,
+     "greybox_default": 2.663701
+    },
+    "-12": {
+     "greybox": 1.485216,
+     "greybox_default": 2.160116
+    },
+    "-6": {
+     "greybox": 1.367504,
+     "greybox_default": 1.777346
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-neck-1-1",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.660657,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.029649,
+     "greybox_default": 3.063601
+    },
+    "-18": {
+     "greybox": 1.720887,
+     "greybox_default": 2.524129
+    },
+    "-12": {
+     "greybox": 1.548668,
+     "greybox_default": 2.076444
+    },
+    "-6": {
+     "greybox": 1.525684,
+     "greybox_default": 1.756851
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-neck-4-20",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.06132,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.301659,
+     "greybox_default": 3.457499
+    },
+    "-18": {
+     "greybox": 1.927754,
+     "greybox_default": 2.859718
+    },
+    "-12": {
+     "greybox": 1.672115,
+     "greybox_default": 2.354395
+    },
+    "-6": {
+     "greybox": 1.54648,
+     "greybox_default": 1.976886
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-neck-5-8",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.073603,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.321178,
+     "greybox_default": 3.443333
+    },
+    "-18": {
+     "greybox": 1.83279,
+     "greybox_default": 2.933945
+    },
+    "-12": {
+     "greybox": 1.499372,
+     "greybox_default": 2.375848
+    },
+    "-6": {
+     "greybox": 1.353251,
+     "greybox_default": 1.881733
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-3-7",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.766235,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.904153,
+     "greybox_default": 4.180245
+    },
+    "-18": {
+     "greybox": 2.278107,
+     "greybox_default": 3.56235
+    },
+    "-12": {
+     "greybox": 1.733737,
+     "greybox_default": 2.970905
+    },
+    "-6": {
+     "greybox": 1.392707,
+     "greybox_default": 2.358919
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-3-4",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.31882,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.250234,
+     "greybox_default": 3.384616
+    },
+    "-18": {
+     "greybox": 1.888557,
+     "greybox_default": 2.77415
+    },
+    "-12": {
+     "greybox": 1.621899,
+     "greybox_default": 2.292402
+    },
+    "-6": {
+     "greybox": 1.461644,
+     "greybox_default": 1.928047
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-neck-6-3",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.619234,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.138516,
+     "greybox_default": 3.017378
+    },
+    "-18": {
+     "greybox": 1.863872,
+     "greybox_default": 2.527368
+    },
+    "-12": {
+     "greybox": 1.677764,
+     "greybox_default": 2.167874
+    },
+    "-6": {
+     "greybox": 1.607569,
+     "greybox_default": 1.888076
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-6-9",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.926907,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.339154,
+     "greybox_default": 3.323956
+    },
+    "-18": {
+     "greybox": 2.024634,
+     "greybox_default": 2.806277
+    },
+    "-12": {
+     "greybox": 1.787757,
+     "greybox_default": 2.368575
+    },
+    "-6": {
+     "greybox": 1.6637,
+     "greybox_default": 2.055382
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-1-15",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.398741,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.596181,
+     "greybox_default": 3.876752
+    },
+    "-18": {
+     "greybox": 2.131918,
+     "greybox_default": 3.246691
+    },
+    "-12": {
+     "greybox": 1.821469,
+     "greybox_default": 2.667766
+    },
+    "-6": {
+     "greybox": 1.707607,
+     "greybox_default": 2.19829
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-2-5",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.716938,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.534511,
+     "greybox_default": 3.822071
+    },
+    "-18": {
+     "greybox": 2.028414,
+     "greybox_default": 3.173397
+    },
+    "-12": {
+     "greybox": 1.660273,
+     "greybox_default": 2.607704
+    },
+    "-6": {
+     "greybox": 1.446239,
+     "greybox_default": 2.084822
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-neck-5-4",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.092629,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.435051,
+     "greybox_default": 3.569981
+    },
+    "-18": {
+     "greybox": 1.913472,
+     "greybox_default": 3.067319
+    },
+    "-12": {
+     "greybox": 1.580297,
+     "greybox_default": 2.490196
+    },
+    "-6": {
+     "greybox": 1.436477,
+     "greybox_default": 1.962404
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-1-19",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.04751,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.287411,
+     "greybox_default": 3.51409
+    },
+    "-18": {
+     "greybox": 1.906711,
+     "greybox_default": 2.910249
+    },
+    "-12": {
+     "greybox": 1.676689,
+     "greybox_default": 2.358547
+    },
+    "-6": {
+     "greybox": 1.646438,
+     "greybox_default": 1.967959
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-2-11",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.955499,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.247055,
+     "greybox_default": 3.298215
+    },
+    "-18": {
+     "greybox": 1.896661,
+     "greybox_default": 2.75088
+    },
+    "-12": {
+     "greybox": 1.645634,
+     "greybox_default": 2.287918
+    },
+    "-6": {
+     "greybox": 1.512108,
+     "greybox_default": 1.935658
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-1-15",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.456659,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.595229,
+     "greybox_default": 3.890743
+    },
+    "-18": {
+     "greybox": 2.107235,
+     "greybox_default": 3.265594
+    },
+    "-12": {
+     "greybox": 1.790331,
+     "greybox_default": 2.669002
+    },
+    "-6": {
+     "greybox": 1.674709,
+     "greybox_default": 2.174533
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-3-3",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.790223,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.621582,
+     "greybox_default": 3.978474
+    },
+    "-18": {
+     "greybox": 2.133282,
+     "greybox_default": 3.281617
+    },
+    "-12": {
+     "greybox": 1.750822,
+     "greybox_default": 2.680425
+    },
+    "-6": {
+     "greybox": 1.518258,
+     "greybox_default": 2.197752
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-6-4",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.961727,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.327374,
+     "greybox_default": 3.362859
+    },
+    "-18": {
+     "greybox": 1.905165,
+     "greybox_default": 2.87649
+    },
+    "-12": {
+     "greybox": 1.608616,
+     "greybox_default": 2.37613
+    },
+    "-6": {
+     "greybox": 1.478554,
+     "greybox_default": 1.944835
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-neck-3-9",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.044983,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.194715,
+     "greybox_default": 3.375677
+    },
+    "-18": {
+     "greybox": 1.777998,
+     "greybox_default": 2.774896
+    },
+    "-12": {
+     "greybox": 1.521029,
+     "greybox_default": 2.241016
+    },
+    "-6": {
+     "greybox": 1.397527,
+     "greybox_default": 1.819182
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-4-17",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.455437,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.63246,
+     "greybox_default": 3.794023
+    },
+    "-18": {
+     "greybox": 2.167168,
+     "greybox_default": 3.206247
+    },
+    "-12": {
+     "greybox": 1.783085,
+     "greybox_default": 2.681053
+    },
+    "-6": {
+     "greybox": 1.526665,
+     "greybox_default": 2.222894
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-neck-3-14",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.939421,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.175553,
+     "greybox_default": 3.328408
+    },
+    "-18": {
+     "greybox": 1.83101,
+     "greybox_default": 2.738518
+    },
+    "-12": {
+     "greybox": 1.655444,
+     "greybox_default": 2.230886
+    },
+    "-6": {
+     "greybox": 1.599468,
+     "greybox_default": 1.874351
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-6-14",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.970773,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.260996,
+     "greybox_default": 3.348238
+    },
+    "-18": {
+     "greybox": 1.886774,
+     "greybox_default": 2.774224
+    },
+    "-12": {
+     "greybox": 1.604701,
+     "greybox_default": 2.304861
+    },
+    "-6": {
+     "greybox": 1.455901,
+     "greybox_default": 1.930831
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-1-4",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.29469,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.330856,
+     "greybox_default": 3.550622
+    },
+    "-18": {
+     "greybox": 1.93364,
+     "greybox_default": 2.930837
+    },
+    "-12": {
+     "greybox": 1.654034,
+     "greybox_default": 2.401567
+    },
+    "-6": {
+     "greybox": 1.533566,
+     "greybox_default": 1.996983
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-2-16",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.736144,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.667692,
+     "greybox_default": 4.06377
+    },
+    "-18": {
+     "greybox": 2.127719,
+     "greybox_default": 3.395437
+    },
+    "-12": {
+     "greybox": 1.732279,
+     "greybox_default": 2.747936
+    },
+    "-6": {
+     "greybox": 1.488399,
+     "greybox_default": 2.196333
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-neck-4-10",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.048486,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.270446,
+     "greybox_default": 3.384434
+    },
+    "-18": {
+     "greybox": 1.801471,
+     "greybox_default": 2.820317
+    },
+    "-12": {
+     "greybox": 1.459129,
+     "greybox_default": 2.317225
+    },
+    "-6": {
+     "greybox": 1.298641,
+     "greybox_default": 1.845693
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-neck-3-19",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.892096,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.097684,
+     "greybox_default": 3.271667
+    },
+    "-18": {
+     "greybox": 1.763557,
+     "greybox_default": 2.67068
+    },
+    "-12": {
+     "greybox": 1.612539,
+     "greybox_default": 2.159778
+    },
+    "-6": {
+     "greybox": 1.613078,
+     "greybox_default": 1.811674
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-1-3",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.10152,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.237603,
+     "greybox_default": 3.436152
+    },
+    "-18": {
+     "greybox": 1.895522,
+     "greybox_default": 2.814416
+    },
+    "-12": {
+     "greybox": 1.651561,
+     "greybox_default": 2.292092
+    },
+    "-6": {
+     "greybox": 1.509476,
+     "greybox_default": 1.935428
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-neck-6-11",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.893528,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.205406,
+     "greybox_default": 3.253631
+    },
+    "-18": {
+     "greybox": 1.873418,
+     "greybox_default": 2.707285
+    },
+    "-12": {
+     "greybox": 1.627304,
+     "greybox_default": 2.251768
+    },
+    "-6": {
+     "greybox": 1.499191,
+     "greybox_default": 1.911394
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-1-4",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.39875,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.440551,
+     "greybox_default": 3.674183
+    },
+    "-18": {
+     "greybox": 2.001345,
+     "greybox_default": 3.039016
+    },
+    "-12": {
+     "greybox": 1.673757,
+     "greybox_default": 2.496122
+    },
+    "-6": {
+     "greybox": 1.485588,
+     "greybox_default": 2.05037
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-6-21",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.235328,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.297816,
+     "greybox_default": 3.537493
+    },
+    "-18": {
+     "greybox": 1.915863,
+     "greybox_default": 2.906244
+    },
+    "-12": {
+     "greybox": 1.675602,
+     "greybox_default": 2.362097
+    },
+    "-6": {
+     "greybox": 1.539821,
+     "greybox_default": 1.964912
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-2-20",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.08196,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.196538,
+     "greybox_default": 3.405408
+    },
+    "-18": {
+     "greybox": 1.807892,
+     "greybox_default": 2.790478
+    },
+    "-12": {
+     "greybox": 1.574318,
+     "greybox_default": 2.257708
+    },
+    "-6": {
+     "greybox": 1.468182,
+     "greybox_default": 1.857594
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-neck-5-9",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.091125,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.375667,
+     "greybox_default": 3.484205
+    },
+    "-18": {
+     "greybox": 1.949069,
+     "greybox_default": 2.913788
+    },
+    "-12": {
+     "greybox": 1.636896,
+     "greybox_default": 2.413546
+    },
+    "-6": {
+     "greybox": 1.504745,
+     "greybox_default": 1.989908
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-neck-6-15",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.973069,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.209333,
+     "greybox_default": 3.348216
+    },
+    "-18": {
+     "greybox": 1.844385,
+     "greybox_default": 2.761435
+    },
+    "-12": {
+     "greybox": 1.591395,
+     "greybox_default": 2.26457
+    },
+    "-6": {
+     "greybox": 1.467724,
+     "greybox_default": 1.885283
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-neck-6-9",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.874736,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.132985,
+     "greybox_default": 3.214136
+    },
+    "-18": {
+     "greybox": 1.847804,
+     "greybox_default": 2.624514
+    },
+    "-12": {
+     "greybox": 1.623287,
+     "greybox_default": 2.170454
+    },
+    "-6": {
+     "greybox": 1.479486,
+     "greybox_default": 1.870018
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-5-16",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.288189,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.295399,
+     "greybox_default": 3.573881
+    },
+    "-18": {
+     "greybox": 1.878725,
+     "greybox_default": 2.943559
+    },
+    "-12": {
+     "greybox": 1.604406,
+     "greybox_default": 2.363934
+    },
+    "-6": {
+     "greybox": 1.445115,
+     "greybox_default": 1.923899
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-2-4",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.542516,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.373129,
+     "greybox_default": 3.634813
+    },
+    "-18": {
+     "greybox": 1.9539,
+     "greybox_default": 2.967143
+    },
+    "-12": {
+     "greybox": 1.638748,
+     "greybox_default": 2.425009
+    },
+    "-6": {
+     "greybox": 1.450805,
+     "greybox_default": 2.005306
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-neck-5-22",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.294265,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.419036,
+     "greybox_default": 3.552161
+    },
+    "-18": {
+     "greybox": 2.011797,
+     "greybox_default": 2.973881
+    },
+    "-12": {
+     "greybox": 1.675537,
+     "greybox_default": 2.459783
+    },
+    "-6": {
+     "greybox": 1.465724,
+     "greybox_default": 2.053676
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-5-12",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.485697,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.815901,
+     "greybox_default": 3.856476
+    },
+    "-18": {
+     "greybox": 2.307055,
+     "greybox_default": 3.339913
+    },
+    "-12": {
+     "greybox": 1.83953,
+     "greybox_default": 2.864482
+    },
+    "-6": {
+     "greybox": 1.485129,
+     "greybox_default": 2.362612
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-neck-6-5",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.407629,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.124193,
+     "greybox_default": 3.02476
+    },
+    "-18": {
+     "greybox": 1.789797,
+     "greybox_default": 2.606288
+    },
+    "-12": {
+     "greybox": 1.624592,
+     "greybox_default": 2.164635
+    },
+    "-6": {
+     "greybox": 1.654816,
+     "greybox_default": 1.823503
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-2-8",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.635847,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.545168,
+     "greybox_default": 3.791306
+    },
+    "-18": {
+     "greybox": 2.076729,
+     "greybox_default": 3.153219
+    },
+    "-12": {
+     "greybox": 1.712989,
+     "greybox_default": 2.605005
+    },
+    "-6": {
+     "greybox": 1.495973,
+     "greybox_default": 2.140894
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-4-19",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.450478,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.609676,
+     "greybox_default": 3.866392
+    },
+    "-18": {
+     "greybox": 2.142582,
+     "greybox_default": 3.273725
+    },
+    "-12": {
+     "greybox": 1.821547,
+     "greybox_default": 2.684775
+    },
+    "-6": {
+     "greybox": 1.587824,
+     "greybox_default": 2.192762
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-5-21",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.275019,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.411006,
+     "greybox_default": 3.585556
+    },
+    "-18": {
+     "greybox": 2.003014,
+     "greybox_default": 2.995773
+    },
+    "-12": {
+     "greybox": 1.705785,
+     "greybox_default": 2.46697
+    },
+    "-6": {
+     "greybox": 1.545753,
+     "greybox_default": 2.058493
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-1-20",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.966784,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.31395,
+     "greybox_default": 3.383703
+    },
+    "-18": {
+     "greybox": 1.995865,
+     "greybox_default": 2.839332
+    },
+    "-12": {
+     "greybox": 1.819195,
+     "greybox_default": 2.378443
+    },
+    "-6": {
+     "greybox": 1.792113,
+     "greybox_default": 2.053998
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-4-6",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.087625,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.297959,
+     "greybox_default": 3.389167
+    },
+    "-18": {
+     "greybox": 1.965803,
+     "greybox_default": 2.812361
+    },
+    "-12": {
+     "greybox": 1.76864,
+     "greybox_default": 2.346284
+    },
+    "-6": {
+     "greybox": 1.72259,
+     "greybox_default": 2.010267
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-neck-2-7",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.828652,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.129972,
+     "greybox_default": 3.192245
+    },
+    "-18": {
+     "greybox": 1.687707,
+     "greybox_default": 2.666525
+    },
+    "-12": {
+     "greybox": 1.396032,
+     "greybox_default": 2.180899
+    },
+    "-6": {
+     "greybox": 1.274412,
+     "greybox_default": 1.734786
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-3-14",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.107602,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.219459,
+     "greybox_default": 3.438154
+    },
+    "-18": {
+     "greybox": 1.841394,
+     "greybox_default": 2.819766
+    },
+    "-12": {
+     "greybox": 1.629512,
+     "greybox_default": 2.281346
+    },
+    "-6": {
+     "greybox": 1.546647,
+     "greybox_default": 1.891487
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-4-0",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 6.059854,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.821742,
+     "greybox_default": 4.154053
+    },
+    "-18": {
+     "greybox": 2.197448,
+     "greybox_default": 3.544378
+    },
+    "-12": {
+     "greybox": 1.776279,
+     "greybox_default": 2.906406
+    },
+    "-6": {
+     "greybox": 1.542244,
+     "greybox_default": 2.266056
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-2-9",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.422169,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.351016,
+     "greybox_default": 3.676046
+    },
+    "-18": {
+     "greybox": 1.906601,
+     "greybox_default": 3.009353
+    },
+    "-12": {
+     "greybox": 1.590465,
+     "greybox_default": 2.417494
+    },
+    "-6": {
+     "greybox": 1.417561,
+     "greybox_default": 1.957491
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-3-16",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.229919,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.294557,
+     "greybox_default": 3.567611
+    },
+    "-18": {
+     "greybox": 1.900434,
+     "greybox_default": 2.923559
+    },
+    "-12": {
+     "greybox": 1.678372,
+     "greybox_default": 2.361518
+    },
+    "-6": {
+     "greybox": 1.576712,
+     "greybox_default": 1.951584
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-neck-2-11",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.148704,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.316529,
+     "greybox_default": 3.491861
+    },
+    "-18": {
+     "greybox": 1.900373,
+     "greybox_default": 2.909133
+    },
+    "-12": {
+     "greybox": 1.62412,
+     "greybox_default": 2.377283
+    },
+    "-6": {
+     "greybox": 1.496689,
+     "greybox_default": 1.947001
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-4-15",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.536289,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.571739,
+     "greybox_default": 3.859521
+    },
+    "-18": {
+     "greybox": 2.089746,
+     "greybox_default": 3.231969
+    },
+    "-12": {
+     "greybox": 1.713542,
+     "greybox_default": 2.635309
+    },
+    "-6": {
+     "greybox": 1.479856,
+     "greybox_default": 2.13612
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-neck-4-19",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.787329,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.017831,
+     "greybox_default": 3.121446
+    },
+    "-18": {
+     "greybox": 1.71109,
+     "greybox_default": 2.542535
+    },
+    "-12": {
+     "greybox": 1.569131,
+     "greybox_default": 2.073632
+    },
+    "-6": {
+     "greybox": 1.575539,
+     "greybox_default": 1.758924
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-neck-4-6",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.802941,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.145369,
+     "greybox_default": 3.153135
+    },
+    "-18": {
+     "greybox": 1.828411,
+     "greybox_default": 2.613218
+    },
+    "-12": {
+     "greybox": 1.611111,
+     "greybox_default": 2.186239
+    },
+    "-6": {
+     "greybox": 1.537704,
+     "greybox_default": 1.872985
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-neck-6-4",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.752279,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.359013,
+     "greybox_default": 3.18255
+    },
+    "-18": {
+     "greybox": 2.000253,
+     "greybox_default": 2.743582
+    },
+    "-12": {
+     "greybox": 1.730881,
+     "greybox_default": 2.387537
+    },
+    "-6": {
+     "greybox": 1.621118,
+     "greybox_default": 2.037738
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-neck-2-9",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 4.939778,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.064386,
+     "greybox_default": 3.257843
+    },
+    "-18": {
+     "greybox": 1.692009,
+     "greybox_default": 2.635378
+    },
+    "-12": {
+     "greybox": 1.450775,
+     "greybox_default": 2.114335
+    },
+    "-6": {
+     "greybox": 1.370186,
+     "greybox_default": 1.739823
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-3-3",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.657706,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.542647,
+     "greybox_default": 3.795636
+    },
+    "-18": {
+     "greybox": 2.10179,
+     "greybox_default": 3.149702
+    },
+    "-12": {
+     "greybox": 1.738669,
+     "greybox_default": 2.593186
+    },
+    "-6": {
+     "greybox": 1.511616,
+     "greybox_default": 2.155666
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-1-7",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.21238,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.408987,
+     "greybox_default": 3.651421
+    },
+    "-18": {
+     "greybox": 2.021795,
+     "greybox_default": 3.026357
+    },
+    "-12": {
+     "greybox": 1.753326,
+     "greybox_default": 2.467255
+    },
+    "-6": {
+     "greybox": 1.591196,
+     "greybox_default": 2.061426
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-middle-1-10",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.557029,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.673245,
+     "greybox_default": 4.007302
+    },
+    "-18": {
+     "greybox": 2.166497,
+     "greybox_default": 3.370973
+    },
+    "-12": {
+     "greybox": 1.803654,
+     "greybox_default": 2.75054
+    },
+    "-6": {
+     "greybox": 1.592305,
+     "greybox_default": 2.228517
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-rat-bridge-middle-2-12",
+   "group": "egfxset:RAT",
+   "harmonic": true,
+   "dry_mrstft": 5.169252,
+   "mrstft": {
+    "-24": {
+     "greybox": 2.308336,
+     "greybox_default": 3.511907
+    },
+    "-18": {
+     "greybox": 1.919332,
+     "greybox_default": 2.909115
+    },
+    "-12": {
+     "greybox": 1.652611,
+     "greybox_default": 2.366752
+    },
+    "-6": {
+     "greybox": 1.497565,
+     "greybox_default": 1.957358
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-neck-2-22",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.514305,
+   "mrstft": {
+    "-24": {
+     "whitebox": 2.121408,
+     "greybox": 2.332023,
+     "greybox_default": 2.839447
+    },
+    "-18": {
+     "whitebox": 1.809734,
+     "greybox": 1.951447,
+     "greybox_default": 2.566215
+    },
+    "-12": {
+     "whitebox": 1.502829,
+     "greybox": 1.602072,
+     "greybox_default": 2.26134
+    },
+    "-6": {
+     "whitebox": 1.187553,
+     "greybox": 1.362425,
+     "greybox_default": 1.888664
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-neck-3-15",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.973924,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.683306,
+     "greybox": 1.995052,
+     "greybox_default": 2.36326
+    },
+    "-18": {
+     "whitebox": 1.410737,
+     "greybox": 1.731534,
+     "greybox_default": 2.189099
+    },
+    "-12": {
+     "whitebox": 1.124017,
+     "greybox": 1.452598,
+     "greybox_default": 1.944252
+    },
+    "-6": {
+     "whitebox": 0.826591,
+     "greybox": 1.201166,
+     "greybox_default": 1.667699
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-5-2",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.9893,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.821623,
+     "greybox": 2.21318,
+     "greybox_default": 2.51822
+    },
+    "-18": {
+     "whitebox": 1.558694,
+     "greybox": 1.946502,
+     "greybox_default": 2.372768
+    },
+    "-12": {
+     "whitebox": 1.261497,
+     "greybox": 1.628512,
+     "greybox_default": 2.153915
+    },
+    "-6": {
+     "whitebox": 0.95192,
+     "greybox": 1.306275,
+     "greybox_default": 1.889828
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-3-9",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.106233,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.78126,
+     "greybox": 2.079098,
+     "greybox_default": 2.312607
+    },
+    "-18": {
+     "whitebox": 1.542191,
+     "greybox": 1.855443,
+     "greybox_default": 2.230075
+    },
+    "-12": {
+     "whitebox": 1.266127,
+     "greybox": 1.58378,
+     "greybox_default": 2.070174
+    },
+    "-6": {
+     "whitebox": 0.967695,
+     "greybox": 1.277806,
+     "greybox_default": 1.843566
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-1-19",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.386861,
+   "mrstft": {
+    "-24": {
+     "whitebox": 2.005956,
+     "greybox": 2.310374,
+     "greybox_default": 2.592661
+    },
+    "-18": {
+     "whitebox": 1.693354,
+     "greybox": 2.010275,
+     "greybox_default": 2.443265
+    },
+    "-12": {
+     "whitebox": 1.349507,
+     "greybox": 1.652345,
+     "greybox_default": 2.252171
+    },
+    "-6": {
+     "whitebox": 0.995605,
+     "greybox": 1.338656,
+     "greybox_default": 1.962584
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-2-18",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.364187,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.963391,
+     "greybox": 2.319703,
+     "greybox_default": 2.696234
+    },
+    "-18": {
+     "whitebox": 1.652906,
+     "greybox": 2.015733,
+     "greybox_default": 2.516286
+    },
+    "-12": {
+     "whitebox": 1.344994,
+     "greybox": 1.719275,
+     "greybox_default": 2.257224
+    },
+    "-6": {
+     "whitebox": 1.030548,
+     "greybox": 1.462045,
+     "greybox_default": 1.945325
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-1-6",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.641119,
+   "mrstft": {
+    "-24": {
+     "whitebox": 2.038975,
+     "greybox": 2.349957,
+     "greybox_default": 2.832795
+    },
+    "-18": {
+     "whitebox": 1.716441,
+     "greybox": 2.091669,
+     "greybox_default": 2.557175
+    },
+    "-12": {
+     "whitebox": 1.361931,
+     "greybox": 1.811276,
+     "greybox_default": 2.269177
+    },
+    "-6": {
+     "whitebox": 0.994989,
+     "greybox": 1.525879,
+     "greybox_default": 1.990153
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-1-15",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.645728,
+   "mrstft": {
+    "-24": {
+     "whitebox": 2.074577,
+     "greybox": 2.301948,
+     "greybox_default": 2.702588
+    },
+    "-18": {
+     "whitebox": 1.785472,
+     "greybox": 2.048886,
+     "greybox_default": 2.446822
+    },
+    "-12": {
+     "whitebox": 1.43926,
+     "greybox": 1.698155,
+     "greybox_default": 2.208928
+    },
+    "-6": {
+     "whitebox": 1.057053,
+     "greybox": 1.323199,
+     "greybox_default": 1.981092
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-5-4",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.209221,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.76806,
+     "greybox": 2.130657,
+     "greybox_default": 2.404071
+    },
+    "-18": {
+     "whitebox": 1.52674,
+     "greybox": 1.90494,
+     "greybox_default": 2.288507
+    },
+    "-12": {
+     "whitebox": 1.238657,
+     "greybox": 1.619464,
+     "greybox_default": 2.1184
+    },
+    "-6": {
+     "whitebox": 0.912395,
+     "greybox": 1.295376,
+     "greybox_default": 1.894003
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-4-7",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.362539,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.89735,
+     "greybox": 2.274992,
+     "greybox_default": 2.608679
+    },
+    "-18": {
+     "whitebox": 1.600711,
+     "greybox": 2.002094,
+     "greybox_default": 2.46355
+    },
+    "-12": {
+     "whitebox": 1.279587,
+     "greybox": 1.675105,
+     "greybox_default": 2.248399
+    },
+    "-6": {
+     "whitebox": 0.948524,
+     "greybox": 1.333109,
+     "greybox_default": 1.969724
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-3-6",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.32577,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.752489,
+     "greybox": 2.168279,
+     "greybox_default": 2.577198
+    },
+    "-18": {
+     "whitebox": 1.471362,
+     "greybox": 1.905758,
+     "greybox_default": 2.339607
+    },
+    "-12": {
+     "whitebox": 1.20819,
+     "greybox": 1.659113,
+     "greybox_default": 2.10759
+    },
+    "-6": {
+     "whitebox": 0.944031,
+     "greybox": 1.39795,
+     "greybox_default": 1.836911
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-6-17",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.763913,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.59228,
+     "greybox": 1.88432,
+     "greybox_default": 2.132978
+    },
+    "-18": {
+     "whitebox": 1.362205,
+     "greybox": 1.669742,
+     "greybox_default": 2.010758
+    },
+    "-12": {
+     "whitebox": 1.116034,
+     "greybox": 1.43686,
+     "greybox_default": 1.832458
+    },
+    "-6": {
+     "whitebox": 0.861094,
+     "greybox": 1.214416,
+     "greybox_default": 1.608233
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-3-0",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.883129,
+   "mrstft": {
+    "-24": {
+     "whitebox": 2.074626,
+     "greybox": 2.612677,
+     "greybox_default": 3.120295
+    },
+    "-18": {
+     "whitebox": 1.681148,
+     "greybox": 2.236586,
+     "greybox_default": 2.900645
+    },
+    "-12": {
+     "whitebox": 1.299398,
+     "greybox": 1.839607,
+     "greybox_default": 2.589234
+    },
+    "-6": {
+     "whitebox": 0.943247,
+     "greybox": 1.509298,
+     "greybox_default": 2.20906
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-neck-6-9",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.757538,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.734125,
+     "greybox": 2.128149,
+     "greybox_default": 2.187261
+    },
+    "-18": {
+     "whitebox": 1.526601,
+     "greybox": 1.94233,
+     "greybox_default": 2.085614
+    },
+    "-12": {
+     "whitebox": 1.29052,
+     "greybox": 1.699376,
+     "greybox_default": 1.96635
+    },
+    "-6": {
+     "whitebox": 1.008248,
+     "greybox": 1.414662,
+     "greybox_default": 1.792341
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-2-11",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.155524,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.780663,
+     "greybox": 2.159706,
+     "greybox_default": 2.368011
+    },
+    "-18": {
+     "whitebox": 1.507044,
+     "greybox": 1.895004,
+     "greybox_default": 2.263837
+    },
+    "-12": {
+     "whitebox": 1.208359,
+     "greybox": 1.58182,
+     "greybox_default": 2.085779
+    },
+    "-6": {
+     "whitebox": 0.898211,
+     "greybox": 1.266306,
+     "greybox_default": 1.824156
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-5-13",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.865699,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.78958,
+     "greybox": 2.124434,
+     "greybox_default": 2.348108
+    },
+    "-18": {
+     "whitebox": 1.539761,
+     "greybox": 1.881898,
+     "greybox_default": 2.236021
+    },
+    "-12": {
+     "whitebox": 1.25498,
+     "greybox": 1.572954,
+     "greybox_default": 2.075155
+    },
+    "-6": {
+     "whitebox": 0.960734,
+     "greybox": 1.29444,
+     "greybox_default": 1.833799
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-neck-5-4",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.902653,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.837302,
+     "greybox": 2.27168,
+     "greybox_default": 2.409777
+    },
+    "-18": {
+     "whitebox": 1.598088,
+     "greybox": 2.062719,
+     "greybox_default": 2.32058
+    },
+    "-12": {
+     "whitebox": 1.312122,
+     "greybox": 1.765191,
+     "greybox_default": 2.173009
+    },
+    "-6": {
+     "whitebox": 0.99397,
+     "greybox": 1.42106,
+     "greybox_default": 1.97489
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-neck-1-7",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.114683,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.911862,
+     "greybox": 2.257968,
+     "greybox_default": 2.526147
+    },
+    "-18": {
+     "whitebox": 1.621322,
+     "greybox": 1.993335,
+     "greybox_default": 2.35507
+    },
+    "-12": {
+     "whitebox": 1.319245,
+     "greybox": 1.711823,
+     "greybox_default": 2.133767
+    },
+    "-6": {
+     "whitebox": 1.010182,
+     "greybox": 1.433689,
+     "greybox_default": 1.868572
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-5-13",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.865924,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.578346,
+     "greybox": 1.887695,
+     "greybox_default": 2.10085
+    },
+    "-18": {
+     "whitebox": 1.367958,
+     "greybox": 1.696793,
+     "greybox_default": 2.0046
+    },
+    "-12": {
+     "whitebox": 1.128591,
+     "greybox": 1.480183,
+     "greybox_default": 1.871722
+    },
+    "-6": {
+     "whitebox": 0.861587,
+     "greybox": 1.23418,
+     "greybox_default": 1.677968
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-5-19",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.095847,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.727415,
+     "greybox": 2.047248,
+     "greybox_default": 2.361865
+    },
+    "-18": {
+     "whitebox": 1.487889,
+     "greybox": 1.824726,
+     "greybox_default": 2.212061
+    },
+    "-12": {
+     "whitebox": 1.22303,
+     "greybox": 1.569018,
+     "greybox_default": 2.012433
+    },
+    "-6": {
+     "whitebox": 0.931706,
+     "greybox": 1.288953,
+     "greybox_default": 1.776662
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-6-10",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.793508,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.772573,
+     "greybox": 2.179005,
+     "greybox_default": 2.311378
+    },
+    "-18": {
+     "whitebox": 1.548867,
+     "greybox": 1.95211,
+     "greybox_default": 2.196662
+    },
+    "-12": {
+     "whitebox": 1.293153,
+     "greybox": 1.678839,
+     "greybox_default": 2.06004
+    },
+    "-6": {
+     "whitebox": 1.013196,
+     "greybox": 1.402486,
+     "greybox_default": 1.844548
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-neck-3-19",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.996489,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.759997,
+     "greybox": 2.098816,
+     "greybox_default": 2.371497
+    },
+    "-18": {
+     "whitebox": 1.509719,
+     "greybox": 1.845074,
+     "greybox_default": 2.233676
+    },
+    "-12": {
+     "whitebox": 1.229587,
+     "greybox": 1.551409,
+     "greybox_default": 2.047517
+    },
+    "-6": {
+     "whitebox": 0.922137,
+     "greybox": 1.261306,
+     "greybox_default": 1.790029
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-3-19",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.058507,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.69818,
+     "greybox": 2.004202,
+     "greybox_default": 2.349654
+    },
+    "-18": {
+     "whitebox": 1.436025,
+     "greybox": 1.744182,
+     "greybox_default": 2.197396
+    },
+    "-12": {
+     "whitebox": 1.151499,
+     "greybox": 1.453406,
+     "greybox_default": 1.972471
+    },
+    "-6": {
+     "whitebox": 0.849973,
+     "greybox": 1.179722,
+     "greybox_default": 1.698709
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-4-7",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.37655,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.781592,
+     "greybox": 2.12784,
+     "greybox_default": 2.489175
+    },
+    "-18": {
+     "whitebox": 1.517712,
+     "greybox": 1.862425,
+     "greybox_default": 2.336349
+    },
+    "-12": {
+     "whitebox": 1.243837,
+     "greybox": 1.593047,
+     "greybox_default": 2.117809
+    },
+    "-6": {
+     "whitebox": 0.970502,
+     "greybox": 1.336234,
+     "greybox_default": 1.844498
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-neck-6-16",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.60501,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.53245,
+     "greybox": 1.826353,
+     "greybox_default": 2.014918
+    },
+    "-18": {
+     "whitebox": 1.349739,
+     "greybox": 1.668767,
+     "greybox_default": 1.891868
+    },
+    "-12": {
+     "whitebox": 1.134025,
+     "greybox": 1.478647,
+     "greybox_default": 1.734489
+    },
+    "-6": {
+     "whitebox": 0.878063,
+     "greybox": 1.246903,
+     "greybox_default": 1.573101
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-3-1",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.646845,
+   "mrstft": {
+    "-24": {
+     "whitebox": 2.01707,
+     "greybox": 2.448684,
+     "greybox_default": 2.850619
+    },
+    "-18": {
+     "whitebox": 1.696862,
+     "greybox": 2.128242,
+     "greybox_default": 2.690513
+    },
+    "-12": {
+     "whitebox": 1.361007,
+     "greybox": 1.781948,
+     "greybox_default": 2.446519
+    },
+    "-6": {
+     "whitebox": 1.025231,
+     "greybox": 1.436044,
+     "greybox_default": 2.126665
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-6-20",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.959593,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.681425,
+     "greybox": 2.004639,
+     "greybox_default": 2.281625
+    },
+    "-18": {
+     "whitebox": 1.472924,
+     "greybox": 1.808859,
+     "greybox_default": 2.130074
+    },
+    "-12": {
+     "whitebox": 1.239212,
+     "greybox": 1.586169,
+     "greybox_default": 1.956885
+    },
+    "-6": {
+     "whitebox": 0.969473,
+     "greybox": 1.326625,
+     "greybox_default": 1.754485
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-4-9",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.408681,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.835096,
+     "greybox": 2.214224,
+     "greybox_default": 2.583121
+    },
+    "-18": {
+     "whitebox": 1.530726,
+     "greybox": 1.937788,
+     "greybox_default": 2.391474
+    },
+    "-12": {
+     "whitebox": 1.225174,
+     "greybox": 1.658542,
+     "greybox_default": 2.185532
+    },
+    "-6": {
+     "whitebox": 0.940181,
+     "greybox": 1.426061,
+     "greybox_default": 1.908617
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-1-0",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.250619,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.784627,
+     "greybox": 2.153744,
+     "greybox_default": 2.461035
+    },
+    "-18": {
+     "whitebox": 1.499612,
+     "greybox": 1.921588,
+     "greybox_default": 2.315425
+    },
+    "-12": {
+     "whitebox": 1.190107,
+     "greybox": 1.652369,
+     "greybox_default": 2.113806
+    },
+    "-6": {
+     "whitebox": 0.900001,
+     "greybox": 1.396978,
+     "greybox_default": 1.871759
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-6-2",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.876611,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.802127,
+     "greybox": 2.16264,
+     "greybox_default": 2.353724
+    },
+    "-18": {
+     "whitebox": 1.577375,
+     "greybox": 1.934183,
+     "greybox_default": 2.228017
+    },
+    "-12": {
+     "whitebox": 1.298212,
+     "greybox": 1.636291,
+     "greybox_default": 2.064841
+    },
+    "-6": {
+     "whitebox": 0.978413,
+     "greybox": 1.305671,
+     "greybox_default": 1.852403
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-1-13",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.601644,
+   "mrstft": {
+    "-24": {
+     "whitebox": 2.002154,
+     "greybox": 2.283831,
+     "greybox_default": 2.673383
+    },
+    "-18": {
+     "whitebox": 1.720446,
+     "greybox": 2.037207,
+     "greybox_default": 2.429412
+    },
+    "-12": {
+     "whitebox": 1.401341,
+     "greybox": 1.721177,
+     "greybox_default": 2.210005
+    },
+    "-6": {
+     "whitebox": 1.057826,
+     "greybox": 1.38474,
+     "greybox_default": 1.973167
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-6-11",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.942451,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.764669,
+     "greybox": 2.152311,
+     "greybox_default": 2.290372
+    },
+    "-18": {
+     "whitebox": 1.579829,
+     "greybox": 2.003796,
+     "greybox_default": 2.18074
+    },
+    "-12": {
+     "whitebox": 1.332992,
+     "greybox": 1.782946,
+     "greybox_default": 2.071664
+    },
+    "-6": {
+     "whitebox": 1.016865,
+     "greybox": 1.479718,
+     "greybox_default": 1.91659
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-1-18",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.48216,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.825131,
+     "greybox": 2.048486,
+     "greybox_default": 2.459061
+    },
+    "-18": {
+     "whitebox": 1.574185,
+     "greybox": 1.774278,
+     "greybox_default": 2.290481
+    },
+    "-12": {
+     "whitebox": 1.311624,
+     "greybox": 1.520032,
+     "greybox_default": 2.066934
+    },
+    "-6": {
+     "whitebox": 1.043029,
+     "greybox": 1.307065,
+     "greybox_default": 1.778548
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-3-4",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.429517,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.806737,
+     "greybox": 2.16681,
+     "greybox_default": 2.557246
+    },
+    "-18": {
+     "whitebox": 1.504079,
+     "greybox": 1.855896,
+     "greybox_default": 2.412557
+    },
+    "-12": {
+     "whitebox": 1.215948,
+     "greybox": 1.576988,
+     "greybox_default": 2.178234
+    },
+    "-6": {
+     "whitebox": 0.957091,
+     "greybox": 1.339666,
+     "greybox_default": 1.855389
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-6-15",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.695835,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.475333,
+     "greybox": 1.7601,
+     "greybox_default": 1.982797
+    },
+    "-18": {
+     "whitebox": 1.285489,
+     "greybox": 1.580412,
+     "greybox_default": 1.850258
+    },
+    "-12": {
+     "whitebox": 1.082075,
+     "greybox": 1.397283,
+     "greybox_default": 1.705751
+    },
+    "-6": {
+     "whitebox": 0.854248,
+     "greybox": 1.203665,
+     "greybox_default": 1.522421
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-neck-2-13",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.365382,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.991936,
+     "greybox": 2.346561,
+     "greybox_default": 2.798498
+    },
+    "-18": {
+     "whitebox": 1.700127,
+     "greybox": 2.056961,
+     "greybox_default": 2.486465
+    },
+    "-12": {
+     "whitebox": 1.372401,
+     "greybox": 1.730849,
+     "greybox_default": 2.240368
+    },
+    "-6": {
+     "whitebox": 1.025233,
+     "greybox": 1.373771,
+     "greybox_default": 1.945838
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-3-4",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.408715,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.895406,
+     "greybox": 2.303559,
+     "greybox_default": 2.701077
+    },
+    "-18": {
+     "whitebox": 1.589677,
+     "greybox": 2.009341,
+     "greybox_default": 2.482624
+    },
+    "-12": {
+     "whitebox": 1.275756,
+     "greybox": 1.70827,
+     "greybox_default": 2.235721
+    },
+    "-6": {
+     "whitebox": 0.969105,
+     "greybox": 1.433761,
+     "greybox_default": 1.942662
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-2-19",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.463754,
+   "mrstft": {
+    "-24": {
+     "whitebox": 2.004308,
+     "greybox": 2.350896,
+     "greybox_default": 2.698439
+    },
+    "-18": {
+     "whitebox": 1.671995,
+     "greybox": 2.005541,
+     "greybox_default": 2.544839
+    },
+    "-12": {
+     "whitebox": 1.324427,
+     "greybox": 1.630298,
+     "greybox_default": 2.31074
+    },
+    "-6": {
+     "whitebox": 0.982409,
+     "greybox": 1.343057,
+     "greybox_default": 1.975833
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-4-9",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.229949,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.685808,
+     "greybox": 2.038704,
+     "greybox_default": 2.367026
+    },
+    "-18": {
+     "whitebox": 1.438543,
+     "greybox": 1.822152,
+     "greybox_default": 2.182928
+    },
+    "-12": {
+     "whitebox": 1.193359,
+     "greybox": 1.614591,
+     "greybox_default": 2.010302
+    },
+    "-6": {
+     "whitebox": 0.937572,
+     "greybox": 1.380088,
+     "greybox_default": 1.789142
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-1-22",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.545989,
+   "mrstft": {
+    "-24": {
+     "whitebox": 2.49994,
+     "greybox": 2.578442,
+     "greybox_default": 2.799091
+    },
+    "-18": {
+     "whitebox": 2.332028,
+     "greybox": 2.384896,
+     "greybox_default": 2.716907
+    },
+    "-12": {
+     "whitebox": 2.153847,
+     "greybox": 2.182387,
+     "greybox_default": 2.575886
+    },
+    "-6": {
+     "whitebox": 1.995941,
+     "greybox": 2.063908,
+     "greybox_default": 2.386802
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-2-10",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.189948,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.884435,
+     "greybox": 2.309479,
+     "greybox_default": 2.498055
+    },
+    "-18": {
+     "whitebox": 1.606685,
+     "greybox": 2.043931,
+     "greybox_default": 2.388843
+    },
+    "-12": {
+     "whitebox": 1.300736,
+     "greybox": 1.724953,
+     "greybox_default": 2.2207
+    },
+    "-6": {
+     "whitebox": 0.98587,
+     "greybox": 1.399225,
+     "greybox_default": 1.961305
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-6-17",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.015474,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.693875,
+     "greybox": 1.962275,
+     "greybox_default": 2.263654
+    },
+    "-18": {
+     "whitebox": 1.460497,
+     "greybox": 1.754556,
+     "greybox_default": 2.12957
+    },
+    "-12": {
+     "whitebox": 1.210322,
+     "greybox": 1.513579,
+     "greybox_default": 1.937472
+    },
+    "-6": {
+     "whitebox": 0.941418,
+     "greybox": 1.271139,
+     "greybox_default": 1.71504
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-neck-4-11",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.983238,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.822766,
+     "greybox": 2.157439,
+     "greybox_default": 2.349356
+    },
+    "-18": {
+     "whitebox": 1.612015,
+     "greybox": 1.948289,
+     "greybox_default": 2.244568
+    },
+    "-12": {
+     "whitebox": 1.34099,
+     "greybox": 1.671936,
+     "greybox_default": 2.083217
+    },
+    "-6": {
+     "whitebox": 1.007851,
+     "greybox": 1.331698,
+     "greybox_default": 1.872751
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-neck-5-0",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.89598,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.888442,
+     "greybox": 2.343106,
+     "greybox_default": 2.510669
+    },
+    "-18": {
+     "whitebox": 1.631598,
+     "greybox": 2.052017,
+     "greybox_default": 2.432239
+    },
+    "-12": {
+     "whitebox": 1.311797,
+     "greybox": 1.681758,
+     "greybox_default": 2.262644
+    },
+    "-6": {
+     "whitebox": 0.989271,
+     "greybox": 1.267529,
+     "greybox_default": 1.991174
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-5-13",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.024096,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.677131,
+     "greybox": 2.001664,
+     "greybox_default": 2.281841
+    },
+    "-18": {
+     "whitebox": 1.455841,
+     "greybox": 1.809063,
+     "greybox_default": 2.135126
+    },
+    "-12": {
+     "whitebox": 1.221396,
+     "greybox": 1.587617,
+     "greybox_default": 1.955863
+    },
+    "-6": {
+     "whitebox": 0.960176,
+     "greybox": 1.340878,
+     "greybox_default": 1.75995
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-neck-5-5",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.744381,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.762699,
+     "greybox": 2.198415,
+     "greybox_default": 2.290482
+    },
+    "-18": {
+     "whitebox": 1.560918,
+     "greybox": 2.016955,
+     "greybox_default": 2.185889
+    },
+    "-12": {
+     "whitebox": 1.305596,
+     "greybox": 1.73637,
+     "greybox_default": 2.045581
+    },
+    "-6": {
+     "whitebox": 1.000199,
+     "greybox": 1.402277,
+     "greybox_default": 1.880404
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-1-12",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.519027,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.915865,
+     "greybox": 2.179324,
+     "greybox_default": 2.525988
+    },
+    "-18": {
+     "whitebox": 1.643515,
+     "greybox": 1.952854,
+     "greybox_default": 2.291317
+    },
+    "-12": {
+     "whitebox": 1.325914,
+     "greybox": 1.637549,
+     "greybox_default": 2.099697
+    },
+    "-6": {
+     "whitebox": 0.982607,
+     "greybox": 1.281178,
+     "greybox_default": 1.879943
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-neck-2-20",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.076763,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.978693,
+     "greybox": 2.255541,
+     "greybox_default": 2.529623
+    },
+    "-18": {
+     "whitebox": 1.730178,
+     "greybox": 1.986981,
+     "greybox_default": 2.393394
+    },
+    "-12": {
+     "whitebox": 1.452074,
+     "greybox": 1.714736,
+     "greybox_default": 2.178615
+    },
+    "-6": {
+     "whitebox": 1.143713,
+     "greybox": 1.44994,
+     "greybox_default": 1.900582
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-neck-4-7",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.903678,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.771829,
+     "greybox": 2.080501,
+     "greybox_default": 2.417979
+    },
+    "-18": {
+     "whitebox": 1.494612,
+     "greybox": 1.806306,
+     "greybox_default": 2.221909
+    },
+    "-12": {
+     "whitebox": 1.215907,
+     "greybox": 1.546911,
+     "greybox_default": 1.971786
+    },
+    "-6": {
+     "whitebox": 0.9345,
+     "greybox": 1.305621,
+     "greybox_default": 1.700503
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-6-4",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.068325,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.809713,
+     "greybox": 2.195122,
+     "greybox_default": 2.430869
+    },
+    "-18": {
+     "whitebox": 1.571962,
+     "greybox": 1.98078,
+     "greybox_default": 2.318345
+    },
+    "-12": {
+     "whitebox": 1.283004,
+     "greybox": 1.702932,
+     "greybox_default": 2.145733
+    },
+    "-6": {
+     "whitebox": 0.959712,
+     "greybox": 1.359308,
+     "greybox_default": 1.921922
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-4-12",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.398287,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.781497,
+     "greybox": 2.134677,
+     "greybox_default": 2.469269
+    },
+    "-18": {
+     "whitebox": 1.519109,
+     "greybox": 1.919356,
+     "greybox_default": 2.255724
+    },
+    "-12": {
+     "whitebox": 1.236935,
+     "greybox": 1.697079,
+     "greybox_default": 2.098383
+    },
+    "-6": {
+     "whitebox": 0.946868,
+     "greybox": 1.449505,
+     "greybox_default": 1.879501
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-3-6",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.32507,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.655105,
+     "greybox": 2.042495,
+     "greybox_default": 2.396875
+    },
+    "-18": {
+     "whitebox": 1.389189,
+     "greybox": 1.793163,
+     "greybox_default": 2.250494
+    },
+    "-12": {
+     "whitebox": 1.144395,
+     "greybox": 1.564112,
+     "greybox_default": 2.047443
+    },
+    "-6": {
+     "whitebox": 0.909472,
+     "greybox": 1.337018,
+     "greybox_default": 1.792584
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-4-2",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.303579,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.952961,
+     "greybox": 2.343391,
+     "greybox_default": 2.794159
+    },
+    "-18": {
+     "whitebox": 1.615265,
+     "greybox": 1.980287,
+     "greybox_default": 2.623654
+    },
+    "-12": {
+     "whitebox": 1.270424,
+     "greybox": 1.600427,
+     "greybox_default": 2.336303
+    },
+    "-6": {
+     "whitebox": 0.930087,
+     "greybox": 1.274162,
+     "greybox_default": 1.965002
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-5-11",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.899838,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.513037,
+     "greybox": 1.798168,
+     "greybox_default": 2.059697
+    },
+    "-18": {
+     "whitebox": 1.332383,
+     "greybox": 1.641764,
+     "greybox_default": 1.897521
+    },
+    "-12": {
+     "whitebox": 1.123555,
+     "greybox": 1.466404,
+     "greybox_default": 1.766026
+    },
+    "-6": {
+     "whitebox": 0.871985,
+     "greybox": 1.25298,
+     "greybox_default": 1.610257
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-neck-6-10",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.685796,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.716984,
+     "greybox": 2.10497,
+     "greybox_default": 2.197446
+    },
+    "-18": {
+     "whitebox": 1.498373,
+     "greybox": 1.890973,
+     "greybox_default": 2.118125
+    },
+    "-12": {
+     "whitebox": 1.253139,
+     "greybox": 1.637805,
+     "greybox_default": 1.958318
+    },
+    "-6": {
+     "whitebox": 0.988039,
+     "greybox": 1.374559,
+     "greybox_default": 1.750063
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-3-4",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.25127,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.844429,
+     "greybox": 2.197339,
+     "greybox_default": 2.550402
+    },
+    "-18": {
+     "whitebox": 1.547567,
+     "greybox": 1.88979,
+     "greybox_default": 2.397063
+    },
+    "-12": {
+     "whitebox": 1.245152,
+     "greybox": 1.591275,
+     "greybox_default": 2.172253
+    },
+    "-6": {
+     "whitebox": 0.958537,
+     "greybox": 1.324504,
+     "greybox_default": 1.857845
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-neck-2-19",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.162909,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.877287,
+     "greybox": 2.147381,
+     "greybox_default": 2.515375
+    },
+    "-18": {
+     "whitebox": 1.568251,
+     "greybox": 1.831924,
+     "greybox_default": 2.354555
+    },
+    "-12": {
+     "whitebox": 1.231828,
+     "greybox": 1.482873,
+     "greybox_default": 2.106111
+    },
+    "-6": {
+     "whitebox": 0.893126,
+     "greybox": 1.194927,
+     "greybox_default": 1.788079
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-2-20",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.357477,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.935121,
+     "greybox": 2.278649,
+     "greybox_default": 2.664822
+    },
+    "-18": {
+     "whitebox": 1.611842,
+     "greybox": 1.933177,
+     "greybox_default": 2.500114
+    },
+    "-12": {
+     "whitebox": 1.283793,
+     "greybox": 1.590653,
+     "greybox_default": 2.24821
+    },
+    "-6": {
+     "whitebox": 0.961003,
+     "greybox": 1.359243,
+     "greybox_default": 1.909895
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-1-20",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.046276,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.562377,
+     "greybox": 1.742989,
+     "greybox_default": 2.086714
+    },
+    "-18": {
+     "whitebox": 1.335314,
+     "greybox": 1.522817,
+     "greybox_default": 1.953338
+    },
+    "-12": {
+     "whitebox": 1.093957,
+     "greybox": 1.281717,
+     "greybox_default": 1.767406
+    },
+    "-6": {
+     "whitebox": 0.851738,
+     "greybox": 1.09867,
+     "greybox_default": 1.546196
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-3-8",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.403791,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.694168,
+     "greybox": 2.065189,
+     "greybox_default": 2.500698
+    },
+    "-18": {
+     "whitebox": 1.409661,
+     "greybox": 1.820423,
+     "greybox_default": 2.219683
+    },
+    "-12": {
+     "whitebox": 1.137699,
+     "greybox": 1.582243,
+     "greybox_default": 2.011281
+    },
+    "-6": {
+     "whitebox": 0.885215,
+     "greybox": 1.361739,
+     "greybox_default": 1.762197
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-neck-4-12",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.74938,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.696076,
+     "greybox": 2.00121,
+     "greybox_default": 2.293216
+    },
+    "-18": {
+     "whitebox": 1.476671,
+     "greybox": 1.783957,
+     "greybox_default": 2.10964
+    },
+    "-12": {
+     "whitebox": 1.226555,
+     "greybox": 1.541131,
+     "greybox_default": 1.89787
+    },
+    "-6": {
+     "whitebox": 0.944833,
+     "greybox": 1.280231,
+     "greybox_default": 1.679839
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-4-3",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.576363,
+   "mrstft": {
+    "-24": {
+     "whitebox": 2.042943,
+     "greybox": 2.399223,
+     "greybox_default": 2.732214
+    },
+    "-18": {
+     "whitebox": 1.719972,
+     "greybox": 2.098545,
+     "greybox_default": 2.624141
+    },
+    "-12": {
+     "whitebox": 1.357769,
+     "greybox": 1.712163,
+     "greybox_default": 2.412116
+    },
+    "-6": {
+     "whitebox": 0.997455,
+     "greybox": 1.320988,
+     "greybox_default": 2.112487
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-2-21",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.242194,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.779018,
+     "greybox": 2.037733,
+     "greybox_default": 2.416159
+    },
+    "-18": {
+     "whitebox": 1.520573,
+     "greybox": 1.801946,
+     "greybox_default": 2.245735
+    },
+    "-12": {
+     "whitebox": 1.239122,
+     "greybox": 1.537014,
+     "greybox_default": 2.031452
+    },
+    "-6": {
+     "whitebox": 0.94948,
+     "greybox": 1.311398,
+     "greybox_default": 1.791267
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-neck-2-1",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.832827,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.958989,
+     "greybox": 2.314022,
+     "greybox_default": 2.576298
+    },
+    "-18": {
+     "whitebox": 1.647268,
+     "greybox": 1.960656,
+     "greybox_default": 2.42091
+    },
+    "-12": {
+     "whitebox": 1.327503,
+     "greybox": 1.609656,
+     "greybox_default": 2.198608
+    },
+    "-6": {
+     "whitebox": 1.043707,
+     "greybox": 1.35297,
+     "greybox_default": 1.871062
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-1-3",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.692782,
+   "mrstft": {
+    "-24": {
+     "whitebox": 2.11262,
+     "greybox": 2.445451,
+     "greybox_default": 2.921949
+    },
+    "-18": {
+     "whitebox": 1.753339,
+     "greybox": 2.11944,
+     "greybox_default": 2.633766
+    },
+    "-12": {
+     "whitebox": 1.377541,
+     "greybox": 1.788999,
+     "greybox_default": 2.372558
+    },
+    "-6": {
+     "whitebox": 1.022694,
+     "greybox": 1.531273,
+     "greybox_default": 2.055902
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-4-21",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.04329,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.696146,
+     "greybox": 1.991775,
+     "greybox_default": 2.294593
+    },
+    "-18": {
+     "whitebox": 1.445813,
+     "greybox": 1.755406,
+     "greybox_default": 2.164525
+    },
+    "-12": {
+     "whitebox": 1.157414,
+     "greybox": 1.460984,
+     "greybox_default": 1.970353
+    },
+    "-6": {
+     "whitebox": 0.839556,
+     "greybox": 1.158087,
+     "greybox_default": 1.721563
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-5-3",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.225698,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.76483,
+     "greybox": 2.127859,
+     "greybox_default": 2.415212
+    },
+    "-18": {
+     "whitebox": 1.504942,
+     "greybox": 1.875639,
+     "greybox_default": 2.309926
+    },
+    "-12": {
+     "whitebox": 1.213256,
+     "greybox": 1.578969,
+     "greybox_default": 2.125396
+    },
+    "-6": {
+     "whitebox": 0.891651,
+     "greybox": 1.253478,
+     "greybox_default": 1.875671
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-6-15",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.726376,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.519531,
+     "greybox": 1.819454,
+     "greybox_default": 2.007419
+    },
+    "-18": {
+     "whitebox": 1.34367,
+     "greybox": 1.674296,
+     "greybox_default": 1.901195
+    },
+    "-12": {
+     "whitebox": 1.134479,
+     "greybox": 1.498572,
+     "greybox_default": 1.776991
+    },
+    "-6": {
+     "whitebox": 0.881535,
+     "greybox": 1.279405,
+     "greybox_default": 1.624297
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-5-11",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.898971,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.556702,
+     "greybox": 1.85225,
+     "greybox_default": 2.133123
+    },
+    "-18": {
+     "whitebox": 1.335992,
+     "greybox": 1.63534,
+     "greybox_default": 1.994885
+    },
+    "-12": {
+     "whitebox": 1.105769,
+     "greybox": 1.419786,
+     "greybox_default": 1.82393
+    },
+    "-6": {
+     "whitebox": 0.864755,
+     "greybox": 1.197436,
+     "greybox_default": 1.604362
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-1-16",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.643623,
+   "mrstft": {
+    "-24": {
+     "whitebox": 2.052127,
+     "greybox": 2.257575,
+     "greybox_default": 2.708272
+    },
+    "-18": {
+     "whitebox": 1.77019,
+     "greybox": 1.987362,
+     "greybox_default": 2.471133
+    },
+    "-12": {
+     "whitebox": 1.44706,
+     "greybox": 1.668727,
+     "greybox_default": 2.189783
+    },
+    "-6": {
+     "whitebox": 1.066759,
+     "greybox": 1.338693,
+     "greybox_default": 1.929192
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-5-5",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.934306,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.811898,
+     "greybox": 2.223296,
+     "greybox_default": 2.433774
+    },
+    "-18": {
+     "whitebox": 1.565978,
+     "greybox": 1.981649,
+     "greybox_default": 2.328887
+    },
+    "-12": {
+     "whitebox": 1.277255,
+     "greybox": 1.657226,
+     "greybox_default": 2.164935
+    },
+    "-6": {
+     "whitebox": 0.954596,
+     "greybox": 1.315265,
+     "greybox_default": 1.937805
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-2-12",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.144906,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.777655,
+     "greybox": 2.136434,
+     "greybox_default": 2.354614
+    },
+    "-18": {
+     "whitebox": 1.507334,
+     "greybox": 1.864719,
+     "greybox_default": 2.249283
+    },
+    "-12": {
+     "whitebox": 1.205555,
+     "greybox": 1.543701,
+     "greybox_default": 2.066224
+    },
+    "-6": {
+     "whitebox": 0.894137,
+     "greybox": 1.231706,
+     "greybox_default": 1.801401
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-5-11",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.048435,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.540593,
+     "greybox": 1.858547,
+     "greybox_default": 2.247296
+    },
+    "-18": {
+     "whitebox": 1.302508,
+     "greybox": 1.633965,
+     "greybox_default": 2.024705
+    },
+    "-12": {
+     "whitebox": 1.071722,
+     "greybox": 1.420756,
+     "greybox_default": 1.823336
+    },
+    "-6": {
+     "whitebox": 0.837695,
+     "greybox": 1.221428,
+     "greybox_default": 1.595748
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-neck-5-11",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.603686,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.568242,
+     "greybox": 1.83542,
+     "greybox_default": 2.026296
+    },
+    "-18": {
+     "whitebox": 1.381904,
+     "greybox": 1.675882,
+     "greybox_default": 1.885216
+    },
+    "-12": {
+     "whitebox": 1.166142,
+     "greybox": 1.467141,
+     "greybox_default": 1.733663
+    },
+    "-6": {
+     "whitebox": 0.913087,
+     "greybox": 1.258177,
+     "greybox_default": 1.580668
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-5-7",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.163343,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.941694,
+     "greybox": 2.306278,
+     "greybox_default": 2.526403
+    },
+    "-18": {
+     "whitebox": 1.697652,
+     "greybox": 2.056677,
+     "greybox_default": 2.408399
+    },
+    "-12": {
+     "whitebox": 1.389936,
+     "greybox": 1.723496,
+     "greybox_default": 2.251678
+    },
+    "-6": {
+     "whitebox": 1.031543,
+     "greybox": 1.348295,
+     "greybox_default": 2.023914
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-5-12",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.894707,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.635303,
+     "greybox": 1.938329,
+     "greybox_default": 2.121025
+    },
+    "-18": {
+     "whitebox": 1.446182,
+     "greybox": 1.767237,
+     "greybox_default": 2.021686
+    },
+    "-12": {
+     "whitebox": 1.212374,
+     "greybox": 1.561716,
+     "greybox_default": 1.913379
+    },
+    "-6": {
+     "whitebox": 0.927042,
+     "greybox": 1.302793,
+     "greybox_default": 1.748832
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-3-0",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.257626,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.998016,
+     "greybox": 2.414921,
+     "greybox_default": 2.795268
+    },
+    "-18": {
+     "whitebox": 1.661916,
+     "greybox": 2.086196,
+     "greybox_default": 2.623841
+    },
+    "-12": {
+     "whitebox": 1.316967,
+     "greybox": 1.724287,
+     "greybox_default": 2.380639
+    },
+    "-6": {
+     "whitebox": 0.993501,
+     "greybox": 1.398371,
+     "greybox_default": 2.056225
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-neck-1-16",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.100261,
+   "mrstft": {
+    "-24": {
+     "whitebox": 2.012533,
+     "greybox": 2.210281,
+     "greybox_default": 2.657758
+    },
+    "-18": {
+     "whitebox": 1.699297,
+     "greybox": 1.883419,
+     "greybox_default": 2.464607
+    },
+    "-12": {
+     "whitebox": 1.339836,
+     "greybox": 1.522852,
+     "greybox_default": 2.173028
+    },
+    "-6": {
+     "whitebox": 0.954505,
+     "greybox": 1.185339,
+     "greybox_default": 1.825888
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-neck-6-1",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.765307,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.722029,
+     "greybox": 2.096626,
+     "greybox_default": 2.204023
+    },
+    "-18": {
+     "whitebox": 1.52034,
+     "greybox": 1.904839,
+     "greybox_default": 2.10611
+    },
+    "-12": {
+     "whitebox": 1.272206,
+     "greybox": 1.655095,
+     "greybox_default": 1.956085
+    },
+    "-6": {
+     "whitebox": 0.980094,
+     "greybox": 1.37367,
+     "greybox_default": 1.772334
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-5-6",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.079865,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.971072,
+     "greybox": 2.357341,
+     "greybox_default": 2.496289
+    },
+    "-18": {
+     "whitebox": 1.72202,
+     "greybox": 2.115476,
+     "greybox_default": 2.416223
+    },
+    "-12": {
+     "whitebox": 1.40801,
+     "greybox": 1.765269,
+     "greybox_default": 2.291972
+    },
+    "-6": {
+     "whitebox": 1.041436,
+     "greybox": 1.378489,
+     "greybox_default": 2.071414
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-1-3",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.547688,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.880275,
+     "greybox": 2.357009,
+     "greybox_default": 2.65771
+    },
+    "-18": {
+     "whitebox": 1.595287,
+     "greybox": 2.1048,
+     "greybox_default": 2.498633
+    },
+    "-12": {
+     "whitebox": 1.30825,
+     "greybox": 1.837961,
+     "greybox_default": 2.30314
+    },
+    "-6": {
+     "whitebox": 1.022144,
+     "greybox": 1.54837,
+     "greybox_default": 2.045248
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-4-4",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.242665,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.900149,
+     "greybox": 2.297871,
+     "greybox_default": 2.671159
+    },
+    "-18": {
+     "whitebox": 1.580957,
+     "greybox": 1.980939,
+     "greybox_default": 2.513583
+    },
+    "-12": {
+     "whitebox": 1.247468,
+     "greybox": 1.615457,
+     "greybox_default": 2.273454
+    },
+    "-6": {
+     "whitebox": 0.913228,
+     "greybox": 1.27708,
+     "greybox_default": 1.953972
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-4-5",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.29998,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.979838,
+     "greybox": 2.34693,
+     "greybox_default": 2.592849
+    },
+    "-18": {
+     "whitebox": 1.708446,
+     "greybox": 2.104147,
+     "greybox_default": 2.483866
+    },
+    "-12": {
+     "whitebox": 1.390288,
+     "greybox": 1.762235,
+     "greybox_default": 2.305264
+    },
+    "-6": {
+     "whitebox": 1.050259,
+     "greybox": 1.397579,
+     "greybox_default": 2.062497
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-neck-4-3",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.962691,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.998881,
+     "greybox": 2.39572,
+     "greybox_default": 2.58342
+    },
+    "-18": {
+     "whitebox": 1.698623,
+     "greybox": 2.098945,
+     "greybox_default": 2.489828
+    },
+    "-12": {
+     "whitebox": 1.329563,
+     "greybox": 1.693045,
+     "greybox_default": 2.319944
+    },
+    "-6": {
+     "whitebox": 0.946471,
+     "greybox": 1.266783,
+     "greybox_default": 2.044206
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-3-3",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.646843,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.97625,
+     "greybox": 2.411305,
+     "greybox_default": 2.830921
+    },
+    "-18": {
+     "whitebox": 1.646555,
+     "greybox": 2.100134,
+     "greybox_default": 2.618777
+    },
+    "-12": {
+     "whitebox": 1.308309,
+     "greybox": 1.769566,
+     "greybox_default": 2.371735
+    },
+    "-6": {
+     "whitebox": 0.975818,
+     "greybox": 1.462627,
+     "greybox_default": 2.06218
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-neck-4-16",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.849035,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.879793,
+     "greybox": 2.211767,
+     "greybox_default": 2.541538
+    },
+    "-18": {
+     "whitebox": 1.604768,
+     "greybox": 1.911425,
+     "greybox_default": 2.332941
+    },
+    "-12": {
+     "whitebox": 1.296858,
+     "greybox": 1.585485,
+     "greybox_default": 2.109801
+    },
+    "-6": {
+     "whitebox": 0.962667,
+     "greybox": 1.258791,
+     "greybox_default": 1.81612
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-5-16",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.153244,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.714295,
+     "greybox": 2.030028,
+     "greybox_default": 2.305975
+    },
+    "-18": {
+     "whitebox": 1.468917,
+     "greybox": 1.816594,
+     "greybox_default": 2.194111
+    },
+    "-12": {
+     "whitebox": 1.213868,
+     "greybox": 1.585614,
+     "greybox_default": 2.014783
+    },
+    "-6": {
+     "whitebox": 0.945939,
+     "greybox": 1.323454,
+     "greybox_default": 1.78699
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-6-22",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.918722,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.665227,
+     "greybox": 1.98777,
+     "greybox_default": 2.257311
+    },
+    "-18": {
+     "whitebox": 1.453052,
+     "greybox": 1.79003,
+     "greybox_default": 2.11466
+    },
+    "-12": {
+     "whitebox": 1.216007,
+     "greybox": 1.563322,
+     "greybox_default": 1.941877
+    },
+    "-6": {
+     "whitebox": 0.940011,
+     "greybox": 1.300288,
+     "greybox_default": 1.735927
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-1-14",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.691229,
+   "mrstft": {
+    "-24": {
+     "whitebox": 2.090098,
+     "greybox": 2.395224,
+     "greybox_default": 2.802966
+    },
+    "-18": {
+     "whitebox": 1.75686,
+     "greybox": 2.091521,
+     "greybox_default": 2.545634
+    },
+    "-12": {
+     "whitebox": 1.381065,
+     "greybox": 1.704416,
+     "greybox_default": 2.319291
+    },
+    "-6": {
+     "whitebox": 0.99202,
+     "greybox": 1.315669,
+     "greybox_default": 2.031162
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-3-15",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.143563,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.734865,
+     "greybox": 2.057178,
+     "greybox_default": 2.341075
+    },
+    "-18": {
+     "whitebox": 1.461791,
+     "greybox": 1.788724,
+     "greybox_default": 2.230821
+    },
+    "-12": {
+     "whitebox": 1.164325,
+     "greybox": 1.492015,
+     "greybox_default": 2.028504
+    },
+    "-6": {
+     "whitebox": 0.856341,
+     "greybox": 1.193932,
+     "greybox_default": 1.751589
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-2-9",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.702147,
+   "mrstft": {
+    "-24": {
+     "whitebox": 2.090551,
+     "greybox": 2.42616,
+     "greybox_default": 2.847296
+    },
+    "-18": {
+     "whitebox": 1.777395,
+     "greybox": 2.110312,
+     "greybox_default": 2.65875
+    },
+    "-12": {
+     "whitebox": 1.427693,
+     "greybox": 1.758671,
+     "greybox_default": 2.405875
+    },
+    "-6": {
+     "whitebox": 1.069544,
+     "greybox": 1.41274,
+     "greybox_default": 2.09337
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-1-17",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.515694,
+   "mrstft": {
+    "-24": {
+     "whitebox": 2.056642,
+     "greybox": 2.357553,
+     "greybox_default": 2.716769
+    },
+    "-18": {
+     "whitebox": 1.731058,
+     "greybox": 2.019213,
+     "greybox_default": 2.488522
+    },
+    "-12": {
+     "whitebox": 1.372837,
+     "greybox": 1.605371,
+     "greybox_default": 2.295256
+    },
+    "-6": {
+     "whitebox": 0.995969,
+     "greybox": 1.239637,
+     "greybox_default": 1.984313
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-5-9",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.127379,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.786299,
+     "greybox": 2.13972,
+     "greybox_default": 2.378928
+    },
+    "-18": {
+     "whitebox": 1.535845,
+     "greybox": 1.902727,
+     "greybox_default": 2.2706
+    },
+    "-12": {
+     "whitebox": 1.246377,
+     "greybox": 1.617242,
+     "greybox_default": 2.101489
+    },
+    "-6": {
+     "whitebox": 0.932398,
+     "greybox": 1.317002,
+     "greybox_default": 1.862899
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-2-12",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.512101,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.914245,
+     "greybox": 2.261614,
+     "greybox_default": 2.518347
+    },
+    "-18": {
+     "whitebox": 1.649556,
+     "greybox": 2.007125,
+     "greybox_default": 2.413169
+    },
+    "-12": {
+     "whitebox": 1.353676,
+     "greybox": 1.71104,
+     "greybox_default": 2.229285
+    },
+    "-6": {
+     "whitebox": 1.04046,
+     "greybox": 1.394337,
+     "greybox_default": 1.973479
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-middle-neck-4-20",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.829183,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.824874,
+     "greybox": 2.135763,
+     "greybox_default": 2.514455
+    },
+    "-18": {
+     "whitebox": 1.530517,
+     "greybox": 1.811343,
+     "greybox_default": 2.323761
+    },
+    "-12": {
+     "whitebox": 1.216035,
+     "greybox": 1.478516,
+     "greybox_default": 2.058747
+    },
+    "-6": {
+     "whitebox": 0.896497,
+     "greybox": 1.217734,
+     "greybox_default": 1.730457
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-neck-3-4",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.177989,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.927869,
+     "greybox": 2.298495,
+     "greybox_default": 2.61834
+    },
+    "-18": {
+     "whitebox": 1.64722,
+     "greybox": 2.025614,
+     "greybox_default": 2.456667
+    },
+    "-12": {
+     "whitebox": 1.329088,
+     "greybox": 1.711019,
+     "greybox_default": 2.230943
+    },
+    "-6": {
+     "whitebox": 0.987061,
+     "greybox": 1.362094,
+     "greybox_default": 1.952711
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-middle-5-17",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.818112,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.601723,
+     "greybox": 1.902895,
+     "greybox_default": 2.136272
+    },
+    "-18": {
+     "whitebox": 1.391034,
+     "greybox": 1.711557,
+     "greybox_default": 2.033709
+    },
+    "-12": {
+     "whitebox": 1.157328,
+     "greybox": 1.490823,
+     "greybox_default": 1.873533
+    },
+    "-6": {
+     "whitebox": 0.896009,
+     "greybox": 1.250295,
+     "greybox_default": 1.673407
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-neck-1-10",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.500772,
+   "mrstft": {
+    "-24": {
+     "whitebox": 2.001363,
+     "greybox": 2.349532,
+     "greybox_default": 2.735201
+    },
+    "-18": {
+     "whitebox": 1.675993,
+     "greybox": 2.047189,
+     "greybox_default": 2.455103
+    },
+    "-12": {
+     "whitebox": 1.319392,
+     "greybox": 1.683667,
+     "greybox_default": 2.242906
+    },
+    "-6": {
+     "whitebox": 0.964228,
+     "greybox": 1.323728,
+     "greybox_default": 1.962274
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-neck-6-5",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 1.807198,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.969527,
+     "greybox": 2.321756,
+     "greybox_default": 2.571596
+    },
+    "-18": {
+     "whitebox": 1.670101,
+     "greybox": 1.999935,
+     "greybox_default": 2.429763
+    },
+    "-12": {
+     "whitebox": 1.358731,
+     "greybox": 1.651755,
+     "greybox_default": 2.19721
+    },
+    "-6": {
+     "whitebox": 1.058768,
+     "greybox": 1.36184,
+     "greybox_default": 1.892149
+    }
+   }
+  },
+  {
+   "item_id": "egfxset-tubescreamer-bridge-1-20",
+   "group": "egfxset:TubeScreamer",
+   "harmonic": true,
+   "dry_mrstft": 2.24537,
+   "mrstft": {
+    "-24": {
+     "whitebox": 1.856702,
+     "greybox": 2.150457,
+     "greybox_default": 2.430493
+    },
+    "-18": {
+     "whitebox": 1.574081,
+     "greybox": 1.869856,
+     "greybox_default": 2.315447
+    },
+    "-12": {
+     "whitebox": 1.261773,
+     "greybox": 1.559927,
+     "greybox_default": 2.116275
+    },
+    "-6": {
+     "whitebox": 0.932831,
+     "greybox": 1.293831,
+     "greybox_default": 1.833223
+    }
+   }
+  }
+ ]
+}

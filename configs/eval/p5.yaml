@@ -79,3 +79,5 @@ eval:
   sim_real:                               # D11
     input_peak_sweep_dbfs: [-24.0, -18.0, -12.0, -6.0]
     resample_to: 44100
+    max_items_per_group: 100              # deterministic subsample per dataset:device (sha256
+                                          # of the item id); null = all (white-box is slow)
