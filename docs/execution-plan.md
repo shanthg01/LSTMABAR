@@ -6,7 +6,7 @@ Companion to [design.md](design.md). This is a solo side project, assumed at ~8�
 - **P0 and P1 are done; M1 is reached** (PRs #1–#17).
 - **P2 and P3 are done; M2 is reached** (PRs #19–#27; owner browser check of the M2 demo passed 2026-10-12). P2's gate passes for DS-1 and, via a documented deviation, for TS808 (see [P2 status](#p2-status)).
 - **P4 is done: dataset v1 is frozen** (PRs #29–#37 and the freeze PR) **and the gold set is paired with target tones** (task 4.5; see [P4 status](#p4-status)).
-- **Next: P5** (evaluation harness and baselines → M3). P4 follow-ups are listed under the P4 status.
+- **Next: P5** (evaluation harness and baselines → M3): start from the [P5 kickoff brief](#p5-kickoff-brief); P6 has [prep notes](#p6-prep-notes). Neither waits for real `human` gold items (friends, in progress; fallback in D9). P4 follow-ups are listed under the P4 status.
 
 Each phase ends with an **exit gate**: don't start dependent work until it passes. Each task is tagged with where it runs:
 - **[L]** local CPU
@@ -387,6 +387,60 @@ Prepared 2026-10-12 for a fresh session. Read this, CLAUDE.md, design §5 (data)
 
 **Exit gate:** baseline report reproducible from a clean checkout; M3 demo works.
 
+### P5 kickoff brief
+
+Prepared 2026-10-14 for a fresh session. Read this, CLAUDE.md, design §6–7, [spike A findings](../spikes/clap_vocab/FINDINGS.md), the P4 status above and [DATA_CARD.md](../DATA_CARD.md) first; confirm D1–D11 below with the owner before writing code. Same workflow as P2/P4: `v2/...` branches, wave 0 contracts merged first, parallel worktree agents, an independent review agent per PR, merge on PASS + green CI. "P4 decision N" / "R N" refer to the P4 kickoff brief.
+
+**Not blocked by real `human` gold items.** All of P5 and P6 except the real-human headline and the listening test (6.6) runs without them. The report carries a `human` column from the start ("n/a, 0 items") and fills it on a re-run once friend items are paired: `gold-import` → owner labels the targets → `gold-targets --draft-missing gold.targets_file=data/gold/targets/targets_v2.yaml` (a copy of v1 plus the new rows, so the v1 file and the `targets_sha256` in the `gold_v1` index stay unchanged) → owner reviews the new rows and sets `status: reviewed` → `gold-pair gold.version=gold_v2 gold.targets_file=...targets_v2.yaml`. See D9 if they never arrive.
+
+**What P5 builds on (already on `main`):**
+- Dataset v1 (`data/manifests/v1/`, audio in `data/rendered/v1/`, gitignored): `RenderItem` / `Caption` / `DryClip` records in `data/schema.py` (`read_jsonl`), layout in `data/layout.py`. Splits: train 24,528 / val 1,444 / test 560 / `test_unseen_pedal` 280 items; 50,130 captions (one template per item, plus a paraphrase for 23,318). Labels are normalized `board_params` (mask knobs by `enabled`); white-box items also carry `board_params_derived`; `clamped` / `label_clamp_notes` flags (R6). Each item's dry input was scaled to its own `input_peak_dbfs` ~ U(−24, −6) (R3).
+- `test_real` (`data/manifests/test_real.jsonl`, `TestRealItem`; 2,789 items at 48 kHz, 720 `internal_only`: never publish per-item audio or numbers from those). Items have a dry input (a clean DI note for EGFxSet; mixed material for pOD-set, P4 decision 8) and wet audio, `settings`, `family` and `kb_pedal_id` (ts808 for the TS Mini, rat for the RAT2, none for BD-2 and the pOD-set pedals), but no instruction text and no board labels.
+- Gold: `data/gold/targets/targets_v1.yaml` (regions) and `data/manifests/gold_v1.jsonl` (`gold.GoldRender`, `gold.read_manifest`): 450 items × 3 test clips × (target + ≤ 2 distractors) = 3,615 renders at −15 dBFS; each record has `gold_source`, `role`, `axis`, `ambiguous`, `in_scope`, `unseen_pedal`, `clip_id`, the region and the `RenderItem` (wet path, `board_params`, descriptors).
+- `dsp.pedalboard.default_pedalboard()` (render any `BoardParams`), `data.render.RenderContext` (white-box + grey-box engines, KB, `derive`), `data.levels` (R3 helpers incl. `inference_normalize`), `analysis.descriptors` / `analysis.archetypes` (the readout stored in `RenderItem.descriptors_*`), `audio.decode_audio`, `runs.create_run_dir`, `seed.seed_everything`.
+- `src/lstmabar/eval/`, `models/`, `train/` are empty packages. Extras: `clap` (transformers), `dsp` (auraloss, dasp-pytorch), `analysis` (librosa), `llm` (anthropic); all four are installed locally (`uv sync --extra dev --extra demo --extra whitebox --extra analysis --extra llm --extra clap --extra dsp`; `uv sync` drops extras not listed). `laion/larger_clap_general`, `laion/clap-htsat-unfused` and `BAAI/bge-base-en-v1.5` are in the local Hugging Face cache and load offline.
+
+**Owner actions:**
+- **API key for the LLM zero-shot baseline (5.3):** rotate the key before 5.3 and set a cap. Estimate: per caption, test 1,074 + unseen 531 + val 2,752 (val ranks the baselines, D7) + gold 450 ≈ 4.8k requests on `claude-haiku-5-5` via Batches, still well under $1; propose a hard cap of $1 with the R1 ledger/guard pattern. Confirm the model at kickoff with the `claude-api` skill.
+- Confirm D1–D11.
+- Optional: Colab for Text2FX at scale (5.3); for P6 stage 2, the data upload in the P6 prep notes.
+
+**Kickoff decisions** (recommendations; confirm with the owner):
+
+- **D1. Eval units and level rule.** Synthetic `test` / `test_unseen_pedal`: render the prediction on the item's dry clip at the item's own `input_peak_dbfs` (the target was rendered there). Gold and the demo: inputs normalized to `audio.inference_peak_dbfs` (−15 dBFS, R3); gold targets already use it. `test_real`: see D11. `val` is for selection only (D8); test splits are touched once per reported run.
+- **D2. Metrics (5.1, `eval/metrics.py`).**
+  - Parameters (synthetic items, point labels): normalized L1 per knob, masked by the label's gates; gate F1 per block (threshold 0.5).
+  - Gold *region distance*: normalized L1 from the prediction to the target region, only over the knobs the region constrains (its level axes, overrides and gated blocks; knobs a free region pins at their default are skipped). For KB-pedal targets, whose regions are boxes in pedal-knob space, use the board labels of the rendered targets (`GoldRender.render["board_params"]`, the calibrated label for white-box pedals) as the reference set: distance to the nearest of them.
+  - Audio: MR-STFT (auraloss) between prediction and target wet, both peak-normalized (renders are stored that way); descriptor errors |Δ centroid| in octaves, |Δ odd/even| dB, |Δ HNR| dB, archetype L1, NaN-aware (skip harmonic terms when the dry voiced fraction is below `analysis.min_voiced_fraction`).
+  - **Gold 2AFC:** for each (item, clip, distractor), a win if d(pred, target) < d(pred, distractor), with d = MR-STFT (primary) and a descriptor distance (secondary). Item score = mean over its clips and distractors; chance = 0.5. Report per `gold_source`, per distractor axis and per subset: headline = `in_scope` and not `ambiguous`; ambiguous, out-of-scope and unseen-pedal items separately. The report states that gain distractors also change the drive voicing and that light-compression contrasts are weak (targets file header).
+  - CLAP score: secondary only (spike A).
+- **D3. Stats (5.2, `eval/stats.py`).** The unit is the item. 95 % bootstrap CIs over items (10k resamples, seeded); model vs baseline compared on paired per-item scores (paired bootstrap of the difference + Wilcoxon signed-rank) with an effect size (Cliff's delta, or mean paired difference / SD); ≥ 5 seeds for anything trained, seed variance reported next to the item CIs; deterministic baselines run once.
+- **D4. Baselines (5.3, `eval/baselines/`)** behind one interface, `predict(texts, dry_audio | None, sample_rate) -> list[FloatBoard]` (normalized, with gates; free-board params, no pedal names).
+  - no-op: every gate off.
+  - mean params: the train labels' mean (knobs masked by gate; a gate is on if its train mean ≥ 0.5).
+  - kNN caption retrieval: embed train captions with CLAP text and, as a variant, `bge-base-en-v1.5` loaded with `transformers.AutoModel` (CLS pooling, L2-normalized; no sentence-transformers dependency); the k nearest → the median of their labels; k tuned on val. Text only.
+  - LLM zero-shot (LLM2Fx-style): the model gets the board's knob list (names, units, ranges and block order from `param_specs`) and the instruction and returns JSON params; cached, ledger + cap, the SDK mocked in CI. The prompt is written fresh and never includes caption templates or gold text.
+  - Text2FX-style: per-example optimization of board params (logits through a sigmoid) maximizing CLAP text–audio similarity of the render on the input clip; a few hundred steps; a subset locally, full on Colab. Expected weak beyond drive amount (spike A); kept, since that contrast is part of the story.
+  - v1 model: not comparable (different label scheme, legacy DDSP engine); the report says so rather than dropping it silently.
+- **D5. Embedding cache (5.5).** `data/cache/clap/<model>/<split>.npz` (and `data/cache/bge/` for kNN), keyed by id with the source content sha256 so stale entries are detected. Text: all captions + gold instructions. Audio: per **item** for the model's audio input (the dry clip at that item's `input_peak_dbfs`, since the model sees the level through the audio, P4 decision 2); gold and demo inputs at −15 dBFS; wets for the CLAP-score metric.
+  - Checkpoint: cache **both** and choose on val. Spike A gives no clear winner: `clap-htsat-unfused` has the stronger drive contrast (ρ +1.00 / +0.94 vs +0.83 / +0.77) and the only usable brightness contrast (+0.94 / +0.83 vs −1.00 / +0.26), but a hub effect (`soft_od` ranks first for 27 of 30 words); `larger_clap_general` has the better single-word drive vocabulary ("distorted" 1.00, "heavy" 0.97); mean word AUC is about 0.6 for both. The other one is the P6 ablation.
+  - Gotchas (verified 2026-10-14, transformers 5.19, offline): `get_text_features` / `get_audio_features` return an output object; the 512-d embedding is `.pooler_output` (as in `spikes/clap_vocab/run.py`). CLAP's feature extractor expects 48 kHz audio: resample the 44.1 kHz renders.
+- **D6. Report (5.4).** `lstmabar eval` (config `configs/eval/p5.yaml`, run dir via `create_run_dir`, `seed_everything`) → `reports/p5_baselines.{md,json}`: rows = methods, columns = metric × split × gold source (+ subsets), every cell with its CI and n; a separate `test_real` section (D11). Aggregates that include `internal_only` items are aggregate only. Reproducible from a clean checkout given the data dirs; records the dataset sha256, the `gold_v1` index hash and the embedding cache hashes.
+- **D7. M3 demo (5.6).** Text box → the best baseline on val (D8) sets the knobs through the existing generated sliders; the R3 inference rule is wired into the demo input path (`demo.render.prepare_input` → `levels.inference_normalize`; `prepare_input` does not normalize yet). No gold data in the demo.
+- **D8. Val "gold-proxy" for selection (design §6).** Gold is test-only, so selection uses val: MR-STFT to the target wet + masked param L1, plus a synthetic val 2AFC whose distractors follow the gold axis rules. That needs a new wave-0 helper mapping a point label (free board or KB pedal + knobs) to a categorical `gold.Region` (levels from the targets-file tables) so `gold.draft_distractors` can be reused. Never select on any gold split.
+- **D9. Headline fallback if real `human` items never arrive.**
+  - The P6 exit gate's `test_gold` headline is then reported on each of the three LLM-written gold sets **separately** (never pooled or relabeled), every number with its CI. "Beats the baselines" requires non-overlapping CIs on **each** of the three sets (in-scope, non-ambiguous items), and the claim is worded "on LLM-written test instructions".
+  - Caveat stated with it: the training paraphrases are also Claude-written (`claude-haiku-5-5`), so LLM-written test instructions are closer in style to the training captions than real people's; this weakens the template-circularity guard of design §5.
+  - `test_unseen_pedal` and the D11 `test_real` numbers are reported next to it as supporting evidence, not as text-adherence results.
+  - If ≥ ~30 real items arrive, they are the headline and the LLM-written sets are supplementary. Proposed 2026-10-14; once confirmed, log it in design §10 and update R10 and the P4 follow-up on real `human` items.
+- **D10. CI.** CI installs `dev` + `whitebox` only. Recommendation: add `--extra dsp` to CI in wave 0 (MR-STFT is the primary 2AFC distance; auraloss is small). librosa (`analysis`), CLAP (`clap`, plus a checkpoint download) and the LLM SDK stay out of CI: tests use fixtures and tiny synthetic inputs, mock the SDK, and skip (`pytest.importorskip`) when transformers or librosa are missing. No network in tests.
+- **D11. `test_real` protocol.** Its items have no instruction text, so text-driven baselines are **not** evaluated on it in P5. P5 reports the **sim-to-real gap** (P4 decision 8): for items with a `kb_pedal_id`, the KB render at the item's `settings` on its clean note (white-box ts808; grey-box rat, and also the derived grey-box board for ts808) vs the real wet (map the EGFxSet `settings` keys onto the KB knobs and check knob direction: TS drive/tone/level, RAT distortion/filter/volume): MR-STFT and descriptor errors after loudness matching (true input level unknown; also sweep the assumed input level), resampled 48 → 44.1 kHz. The RAT2 items are unseen-pedal items (holdout `rat`); BD-2 and the pOD-set pedals have no KB entry and get family-level descriptor comparisons only. Text-driven `test_real` evaluation would need instructions per device/setting written by the owner (not template-generated); optional, P6 or later.
+
+**Suggested waves:**
+- wave 0 (main session): contracts: `eval/data.py` (iterators over synthetic splits with captions, `test_real`, gold grouped by item/clip), `eval/metrics.py` and `eval/stats.py` signatures, `eval/baselines/base.py`, the label → `Region` helper (D8), report JSON schema, `configs/eval/p5.yaml`, `lstmabar eval` CLI skeleton, fixtures, `--extra dsp` in CI.
+- wave 1, in parallel: (a) metrics + stats; (b) embedding cache (both CLAP checkpoints + bge); (c) no-op, mean and kNN baselines; (d) LLM zero-shot (after the key is rotated); (e) `test_real` sim-to-real gap (D11).
+- wave 2: report + full baseline run; Text2FX; M3 demo.
+
 ## P6 — Model and experiments (weeks 14–17) → M4
 
 | # | Task | Where | Output |
@@ -400,7 +454,20 @@ Prepared 2026-10-12 for a fresh session. Read this, CLAUDE.md, design §5 (data)
 | 6.7 | Results report with CIs, negative results included | L | `reports/v2_results.md` |
 | 6.8 | **M4 demo:** model-driven knobs, nearest-pedal explanation, toggle vs baseline | L (CPU inference) | demo update |
 
-**Exit gate:** the model beats the baselines on `test_gold` with non-overlapping 95% CIs, **or** a documented negative result. Either way, the M4 demo ships.
+**Exit gate:** the model beats the baselines on `test_gold` with non-overlapping 95% CIs, **or** a documented negative result. Either way, the M4 demo ships. If no real `human` gold items exist by then, the `test_gold` headline follows the [P5 kickoff brief](#p5-kickoff-brief) fallback (D9: each LLM-written set separately, worded as such).
+
+### P6 prep notes
+
+For the P6 kickoff (after the M3 gate). Confirm with the owner then; they build on the P5 decisions above.
+
+- **Data loading** (none exists yet): a torch `Dataset` over `RenderItem`s joining the dry clip (at the item's `input_peak_dbfs`), wet, captions (one template, plus a paraphrase for most items; sample one per step), normalized labels with gate masks, and the cached embeddings (P5 D5). Stage 1 needs embeddings + labels only (small; runs locally on CPU); stage 2 needs dry audio to render through the pedalboard and wet audio as the target.
+- **Losses** (design §6): `L_param` = masked L1 on normalized knobs + gate BCE. White-box items train on the calibrated `board_params` (R4), whose clamp is not the derived one. Down-weight or dedupe the **clamped grey-box train items: 5,245** (of 8,934 items with a clamped *derived* label: 5,789 grey-box, i.e. 5,245 train, 300 val, 133 test and 111 unseen-pedal rat; and 3,145 white-box items that train on calibrated labels); the weight is a config key (P4 decision 10, R6). `L_audio` = MR-STFT through `default_pedalboard` (oversampled Drive). `L_clap` optional, drive-amount contrast only (spike A).
+- **Selection:** early stopping on the val gold-proxy (P5 D8), never on gold.
+- **Colab data (owner action before stage 2):** setting `paths.data` to Drive moves every data dir, so copy `data/rendered/v1/` (~7.1 GB, dry + wet), `data/rendered/gold_v1/` (979 MB, for gold eval), `data/manifests/`, `data/calibration/` and `data/cache/clap/` (+ `bge/`) to `MyDrive/lstmabar/data/` (a zip per directory uploads faster), then run with `paths.data=/content/drive/MyDrive/lstmabar/data`. `internal_only` audio (pOD-set) stays on the local machine; EGFxSet (CC BY) may be copied. Colab runs Python 3.13 (CI covers it).
+- **Seeds and splits:** 5 seeds of the main config; optionally rotate the held-out player (P1 or P2 as test) in a later seed set (P4 decision 11).
+- **Ablations (6.5):** text-only / audio-only / shuffled audio; physics mapping vs unconstrained params; CLAP vs `bge-base` text backbone; the two CLAP checkpoints (P5 D5); frozen vs fine-tuned encoders (if time).
+- **Listening test (6.6):** design §7 governs: ≥ 10 listeners (aim for 10; report n if fewer). Pairwise model vs best baseline vs no-op on gold items. If the same friends also write gold instructions, collect the instructions first, before they hear any model output.
+- **Exit gate:** as written above, with the P5 D9 fallback for the `test_gold` headline.
 
 ## P7 — Extensions (week 18+, pick in order)
 
