@@ -55,12 +55,22 @@ def fx(tmp_path_factory):
     return cfg
 
 
+class _Made(dict):
+    """name -> FakeEncoder, plus the list of loader calls."""
+
+    def __init__(self):
+        super().__init__()
+        self.loads: list[str] = []
+
+
 @pytest.fixture
 def fakes(monkeypatch):
-    made: dict[str, FakeEncoder] = {}
+    made = _Made()
+    loads = made.loads
 
     def load(name, device="cpu", lean=False):
         made.setdefault(name, FakeEncoder(name, 6 if name.startswith("bge") else DIM))
+        loads.append(name)
         return made[name]
 
     monkeypatch.setattr(embed, "load_text_encoder", load)
@@ -138,10 +148,12 @@ def test_build_full_cache(fx, fakes, tmp_path):
 
     # second run: nothing recomputed, files untouched
     n0 = _n_embedded(fakes)
+    fakes.loads.clear()
     mtime = cache_path(cdir, "clap-htsat-unfused", "val", "audio").stat().st_mtime_ns
     stats = embed.build(cfg)
     assert _n_embedded(fakes) == n0
     assert all(s.n_computed == 0 for s in stats)
+    assert fakes.loads == []  # lazy: a fully cached rerun loads no encoder
     assert cache_path(cdir, "clap-htsat-unfused", "val", "audio").stat().st_mtime_ns == mtime
 
 
@@ -239,6 +251,7 @@ def _real(name):
         pytest.skip(f"{name} not in the local HF cache")
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("name", ["clap-htsat-unfused", "larger_clap_general"])
 def test_clap_encoder(name, monkeypatch):
     monkeypatch.setenv("HF_HUB_OFFLINE", "1")

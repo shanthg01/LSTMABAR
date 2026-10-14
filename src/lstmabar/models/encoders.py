@@ -13,6 +13,7 @@ dataset clips are 3 s).
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Sequence
 from typing import Protocol
 
@@ -22,6 +23,7 @@ from lstmabar.audio import resample
 from lstmabar.models.embed_cache import FAMILIES, HF_IDS, l2_normalize
 
 CLAP_SAMPLE_RATE = 48000
+CLAP_MAX_SECONDS = 10  # feature-extractor window; longer clips are randomly cropped
 BGE_MAX_LENGTH = 512
 
 
@@ -121,6 +123,12 @@ class ClapEncoder:
                     resample(np.asarray(a, dtype=np.float32), sample_rate, CLAP_SAMPLE_RATE)
                     for a in audio[i : i + batch_size]
                 ]
+                if any(len(c) > CLAP_MAX_SECONDS * CLAP_SAMPLE_RATE for c in chunk):
+                    warnings.warn(
+                        f"{self.name}: clip longer than {CLAP_MAX_SECONDS} s; CLAP's feature "
+                        "extractor crops it at a random offset (rand_trunc)",
+                        stacklevel=2,
+                    )
                 a_in = self.processor.feature_extractor(
                     chunk, sampling_rate=CLAP_SAMPLE_RATE, return_tensors="pt"
                 ).to(self.device)

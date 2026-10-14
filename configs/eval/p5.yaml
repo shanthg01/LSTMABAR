@@ -35,6 +35,8 @@ eval:
     text_models: [bge-base-en-v1.5]
     batch_size: 32
     clap_sample_rate: 48000
+    save_every: 2000                      # rows between periodic saves (resumable build)
+    num_threads: 4                        # torch threads (shared machine)
 
   baselines:                              # D4
     knn:
