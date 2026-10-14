@@ -16,6 +16,10 @@ eval:
   max_items: null                         # cap per split for smoke runs (--limit overrides)
   methods: [noop, mean, knn_clap, knn_bge, llm_zero_shot, text2fx]
   workers: 2                              # 16 GB machine
+  select_harmonic: false                  # val selection (and the val table) with
+                                          # metrics.harmonic_descriptors=false (~90 % of scoring
+                                          # time); reported splits keep metrics.* below. The
+                                          # report states where they were off (5.4)
 
   metrics:                                # D2
     gate_threshold: 0.5
