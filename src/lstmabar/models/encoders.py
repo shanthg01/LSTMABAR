@@ -63,9 +63,13 @@ def is_cached(name: str) -> bool:
 
 
 class ClapEncoder:
-    """Text + audio towers of a CLAP checkpoint (``transformers.ClapModel``)."""
+    """Text + audio towers of a CLAP checkpoint (``transformers.ClapModel``).
 
-    def __init__(self, name: str, device: str = "cpu"):
+    ``towers`` keeps only some towers in memory (the other one is dropped after loading, e.g.
+    for bulk text embedding on a memory-starved machine); calling a dropped tower raises.
+    """
+
+    def __init__(self, name: str, device: str = "cpu", towers: tuple[str, ...] = ("text", "audio")):
         import torch
         from transformers import ClapModel, ClapProcessor
 
@@ -75,12 +79,23 @@ class ClapEncoder:
         self.device = torch.device(device)
         hf = HF_IDS[name]
         self.processor = ClapProcessor.from_pretrained(hf, local_files_only=True)
-        self.model = ClapModel.from_pretrained(hf, local_files_only=True).eval().to(self.device)
+        model = ClapModel.from_pretrained(hf, local_files_only=True).eval()
+        self.towers = tuple(towers)
+        for tower in ("text", "audio"):
+            if tower not in self.towers:
+                setattr(model, f"{tower}_model", None)
+                setattr(model, f"{tower}_projection", None)
+        self.model = model.to(self.device)
         self.dim = int(self.model.config.projection_dim)
+
+    def _need(self, tower: str) -> None:
+        if tower not in self.towers:
+            raise RuntimeError(f"{self.name}: loaded without its {tower} tower")
 
     def encode_text(self, texts: Sequence[str], batch_size: int = 32) -> np.ndarray:
         import torch
 
+        self._need("text")
         out = []
         with torch.inference_mode():
             for i in range(0, len(texts), batch_size):
@@ -98,6 +113,7 @@ class ClapEncoder:
     ) -> np.ndarray:
         import torch
 
+        self._need("audio")
         out = []
         with torch.inference_mode():
             for i in range(0, len(audio), batch_size):
@@ -152,17 +168,20 @@ def _stack(chunks: list[np.ndarray], dim: int) -> np.ndarray:
     return l2_normalize(np.concatenate(chunks, axis=0))
 
 
-def load_text_encoder(name: str, device: str = "cpu") -> TextEncoder:
+def load_text_encoder(name: str, device: str = "cpu", lean: bool = False) -> TextEncoder:
+    """``lean``: a CLAP checkpoint keeps only its text tower in memory."""
     if name not in FAMILIES:
         raise KeyError(f"unknown embedding model {name!r}; known: {sorted(FAMILIES)}")
-    return ClapEncoder(name, device) if FAMILIES[name] == "clap" else BgeEncoder(name, device)
+    if FAMILIES[name] == "clap":
+        return ClapEncoder(name, device, towers=("text",) if lean else ("text", "audio"))
+    return BgeEncoder(name, device)
 
 
-def load_audio_encoder(name: str, device: str = "cpu") -> AudioEncoder:
-    """CLAP checkpoints only (bge has no audio tower)."""
+def load_audio_encoder(name: str, device: str = "cpu", lean: bool = False) -> AudioEncoder:
+    """CLAP checkpoints only (bge has no audio tower). ``lean``: keep only the audio tower."""
     if FAMILIES.get(name) != "clap":
         raise KeyError(f"{name!r} has no audio tower; CLAP checkpoints only")
-    return ClapEncoder(name, device)
+    return ClapEncoder(name, device, towers=("audio",) if lean else ("text", "audio"))
 
 
 __all__ = [

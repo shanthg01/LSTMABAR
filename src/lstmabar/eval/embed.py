@@ -23,6 +23,7 @@ aggregate only) is written to ``<eval.report_dir>/embedding_cache.md``.
 
 from __future__ import annotations
 
+import gc
 import hashlib
 import logging
 import tempfile
@@ -35,7 +36,6 @@ import numpy as np
 
 from lstmabar.data.schema import SPLITS
 from lstmabar.models.embed_cache import (
-    FAMILIES,
     HF_IDS,
     KINDS,
     EmbeddingTable,
@@ -52,7 +52,7 @@ ALL_SPLITS: tuple[str, ...] = (*SPLITS, GOLD)
 WET_SPLITS: tuple[str, ...] = ("val", "test", "test_unseen_pedal", GOLD)
 REPORT_NAME = "embedding_cache.md"
 DEFAULT_SAVE_EVERY = 2000
-DEFAULT_NUM_THREADS = 6
+DEFAULT_NUM_THREADS = 4
 
 Row = tuple[str, str, object]  # (id, source sha256, payload: text or float32 array)
 
@@ -288,15 +288,13 @@ class _EncoderCache:
 
     def get(self, model: str, kind: str):
         tower = "text" if kind == "text" else "audio"
-        if FAMILIES[model] == "clap":
-            key = (model, "clap")  # one ClapModel serves both towers
-        else:
-            key = (model, tower)
+        key = (model, tower)  # lean CLAP encoders: only the tower in use stays in memory
         if key != self.key:
             self.enc = None
+            gc.collect()
             t0 = time.perf_counter()
             loader = load_text_encoder if tower == "text" else load_audio_encoder
-            self.enc = loader(model, self.device)
+            self.enc = loader(model, self.device, lean=True)
             self.key = key
             log.info("loaded %s in %.1f s", model, time.perf_counter() - t0)
         return self.enc

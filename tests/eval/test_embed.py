@@ -59,7 +59,7 @@ def fx(tmp_path_factory):
 def fakes(monkeypatch):
     made: dict[str, FakeEncoder] = {}
 
-    def load(name, device="cpu"):
+    def load(name, device="cpu", lean=False):
         made.setdefault(name, FakeEncoder(name, 6 if name.startswith("bge") else DIM))
         return made[name]
 
@@ -258,6 +258,15 @@ def test_clap_encoder(name, monkeypatch):
     assert a.shape == (3, 512) and a.dtype == np.float32
     np.testing.assert_allclose(np.linalg.norm(a, axis=1), 1.0, rtol=1e-5)
     np.testing.assert_allclose(a[:1], a_enc.encode_audio(x[:1], 44100), atol=1e-4)
+    del a_enc
+    # lean loaders (what `eval embed` uses) give the same vectors as the full model
+    lean_t = load_text_encoder(name, lean=True)
+    np.testing.assert_allclose(lean_t.encode_text(["heavy distortion"]), t[1:], atol=1e-5)
+    with pytest.raises(RuntimeError, match="audio tower"):
+        lean_t.encode_audio(x[:1], 44100)
+    del lean_t
+    lean_a = load_audio_encoder(name, lean=True)
+    np.testing.assert_allclose(lean_a.encode_audio(x, 44100, batch_size=2), a, atol=1e-4)
 
 
 def test_bge_encoder(monkeypatch):
