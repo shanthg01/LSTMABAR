@@ -16,6 +16,10 @@ eval:
   max_items: null                         # cap per split for smoke runs (--limit overrides)
   methods: [noop, mean, knn_clap, knn_bge, llm_zero_shot, text2fx]
   workers: 2                              # 16 GB machine
+  select_harmonic: false                  # val selection (and the val table) with
+                                          # metrics.harmonic_descriptors=false (~90 % of scoring
+                                          # time); reported splits keep metrics.* below. The
+                                          # report states where they were off (5.4)
 
   metrics:                                # D2
     gate_threshold: 0.5
@@ -75,3 +79,5 @@ eval:
   sim_real:                               # D11
     input_peak_sweep_dbfs: [-24.0, -18.0, -12.0, -6.0]
     resample_to: 44100
+    max_items_per_group: 100              # deterministic subsample per dataset:device (sha256
+                                          # of the item id); null = all (white-box is slow)

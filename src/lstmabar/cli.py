@@ -73,12 +73,37 @@ def demo_launch_kwargs(args: argparse.Namespace) -> dict:
     }
 
 
+def demo_config(args: argparse.Namespace):
+    """The demo config: ``--config`` if given (an error is printed and ``None`` returned when
+    it cannot be loaded), else ``configs/demo.yaml`` resolved from the repo root, so the demo
+    starts from any working directory. If that default cannot be loaded, the demo still runs
+    without the text action (``None``, with a warning)."""
+    from lstmabar.demo.text import DEFAULT_CONFIG
+
+    path = args.config if args.config is not None else DEFAULT_CONFIG
+    try:
+        return load_config(path, args.overrides)
+    except Exception as e:
+        if args.config is not None:
+            print(f"error: could not load the demo config: {e}", file=sys.stderr)
+        else:
+            print(
+                f"warning: could not load the default demo config ({type(e).__name__}); "
+                "the text action is disabled",
+                file=sys.stderr,
+            )
+        return None
+
+
 def cmd_demo(args: argparse.Namespace) -> int:
     """Launch the Gradio demo (needs the ``demo`` extra)."""
     from lstmabar.demo.app import build_app
 
+    cfg = demo_config(args)
+    if cfg is None and args.config is not None:
+        return 1
     try:
-        app = build_app()
+        app = build_app(cfg=cfg, warm_up=True)
     except ImportError as e:
         if (e.name or "").split(".")[0] != "gradio":
             raise
@@ -162,6 +187,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_demo.add_argument(
         "--auth", type=_auth_pair, default=None, metavar="USER:PASS", help="require a login"
     )
+    p_demo.add_argument(
+        "--config",
+        default=None,
+        help="demo config (demo.text_method, ...); default: the repo's configs/demo.yaml",
+    )
+    p_demo.add_argument(
+        "overrides", nargs="*", help="dotlist overrides, e.g. demo.text_method=knn_clap"
+    )
     p_demo.set_defaults(func=cmd_demo)
 
     p_rec = sub.add_parser("recover", help="run the DSP parameter-recovery check (P1 exit gate)")
@@ -202,7 +235,7 @@ def main(argv: list[str] | None = None) -> int:
     # `lstmabar data <step> --flag a.b=1`: argparse cannot place positional dotlist overrides
     # after the optionals (subparsers rule out parse_intermixed_args), so collect them here.
     if extra:
-        if getattr(args, "command", None) in ("data", "eval", "train") and all(
+        if getattr(args, "command", None) in ("data", "eval", "train", "demo") and all(
             "=" in x and not x.startswith("-") for x in extra
         ):
             args.overrides = [*args.overrides, *extra]

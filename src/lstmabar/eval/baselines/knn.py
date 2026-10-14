@@ -238,6 +238,20 @@ class KnnMethod(Method):
         out = self._aggregate(self._neighbours(queries, self.k))
         return [complete_board(vector_board(row)) for row in out]
 
+    def predict_vectors(self, vectors: np.ndarray) -> list[FloatBoard]:
+        """Like :meth:`predict` from text vectors computed elsewhere (``(Q, D)``, e.g. the
+        demo's on-the-fly encoding of a query that is not in the cache)."""
+        if self._vectors is None:
+            raise RuntimeError(f"{self.name}.predict_vectors called before fit")
+        v = embed_cache.l2_normalize(np.atleast_2d(np.asarray(vectors, dtype=np.float32)))
+        if v.shape[1] != self._vectors.shape[1]:
+            raise ValueError(
+                f"{self.name}: query vectors have dim {v.shape[1]}, "
+                f"the train table {self._vectors.shape[1]}"
+            )
+        out = self._aggregate(top_k(v, self._vectors, self.k))
+        return [complete_board(vector_board(row)) for row in out]
+
     def select(self, val: Sequence[SynthItem]) -> dict[str, Any]:
         """Pick k on val captions by mean masked param L1 + mean gate error (per item, then
         over items; NaN L1 terms, i.e. all-off labels, are skipped). Ties: smaller k."""

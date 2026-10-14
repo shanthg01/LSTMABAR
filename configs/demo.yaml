@@ -1,0 +1,21 @@
+# M3 demo (P5 task 5.6, D7). Usage: lstmabar demo [--config configs/demo.yaml] [dotlist overrides]
+# e.g. lstmabar demo demo.text_method=knn_clap demo.text_hparams.k=10
+#      lstmabar demo demo.text_method=p6_model eval.model.checkpoint=runs/.../checkpoint.pt
+# The eval config supplies the data paths (train split for fitting), the embedding cache dir
+# and the kNN settings; the demo never reads gold data.
+defaults:
+  - eval/p5.yaml
+
+name: demo
+
+demo:
+  # Method behind "Set knobs from text": mean | noop | knn_clap | knn_bge | p6_model
+  # (lstmabar.demo.text.DEMO_METHODS). `mean` until the val selection (D8) names the best
+  # baseline; then set it here.
+  text_method: mean
+  text_hparams: {}            # passed to Method.set_hparams (e.g. {k: 10} for kNN); {}: none
+
+eval:
+  model:                      # p6_model (lstmabar.models.method.ModelMethod)
+    checkpoint: null          # a stage-1 checkpoint.pt
+    encode_missing: true      # demo queries are never cached: encode on the fly
