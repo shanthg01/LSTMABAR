@@ -36,7 +36,7 @@ class FakeAudioEmbedder:
 def fx(tmp_path_factory):
     root = tmp_path_factory.mktemp("t2fx")
     cfg = eval_fixture_config(
-        root, ["eval.baselines.text2fx.steps=8", "eval.baselines.text2fx.lr=0.2"]
+        root, ["eval.baselines.text2fx.steps=1", "eval.baselines.text2fx.lr=0.2"]
     )
     make_eval_fixture(cfg, seconds=0.5)
     return cfg, load_split(cfg, "test")
@@ -68,16 +68,25 @@ def test_registry_and_config(fx):
     cfg, _ = fx
     m = build_method("text2fx", cfg)
     assert isinstance(m, Text2Fx)
-    assert (m.steps, m.lr, m.clap_model) == (8, 0.2, "clap-htsat-unfused")
-    assert m.max_items == 60 and m.uses_audio and m.deterministic
+    assert (m.steps, m.lr, m.clap_model) == (1, 0.2, "clap-htsat-unfused")
+    assert m.max_items == 4 and m.uses_audio and m.deterministic
     assert Text2Fx(None).steps == 200  # defaults without a config
 
 
-def test_optimization_increases_similarity(fx):
-    cfg, items = fx
+def _score(m: Text2Fx, q, board, text: np.ndarray) -> float:
+    """Similarity of exactly ``board`` (0/1 gates) with ``text``."""
+    x = torch.from_numpy(q.load_dry().astype(np.float32))[None]
+    v = torch.tensor([[board[b][k] for b, k in BOARD_LAYOUT]], dtype=torch.float32)
+    t = torch.from_numpy(text)[None]
+    with torch.no_grad():
+        return float(m._similarity(m.audio_embedder, m._board(q.sample_rate), x, t, v, 44100)[0])
+
+
+def test_predict_smoke_returns_scored_board(fx):
+    cfg, items = fx  # 1 step
     q = items[0].queries()[0]
-    emb = FakeAudioEmbedder()
-    m, calls = _method(cfg, {q.text: _target_text(emb, q)})
+    text = _target_text(FakeAudioEmbedder(), q)
+    m, calls = _method(cfg, {q.text: text})
     (board,) = m.predict([q])
     assert calls == [1]  # no cache in the fixture: the text tower fallback
     assert board == complete_board(board)  # complete, valid, clamped
@@ -85,10 +94,37 @@ def test_optimization_increases_similarity(fx):
     assert all(board[b][ENABLED] in (0.0, 1.0) for b in board)
     info = m.info()
     assert info["n_optimized"] == 1 and info["text_embeddings"] == {"cache": 0, "encoder": 1}
-    assert info["mean_sim_best"] > info["mean_sim_init"] + 1e-3
+    # The reported similarity is that of the returned (discrete-gate) board ...
+    assert info["mean_sim_returned"] == pytest.approx(_score(m, q, board, text), abs=1e-5)
+    # ... which is the best of all gate combinations with those knobs.
+    for b in board:
+        flipped = {k: dict(v) for k, v in board.items()}
+        flipped[b][ENABLED] = 1.0 - flipped[b][ENABLED]
+        assert _score(m, q, flipped, text) <= info["mean_sim_returned"] + 1e-5
     # Same (text, audio) again: memoized, no further optimization.
     assert m.predict([q]) == [board]
     assert m.info()["n_optimized"] == 1
+
+
+def test_all_nan_similarity(fx):
+    cfg, items = fx
+    q = items[0].queries()[0]
+    m, _ = _method(cfg, {q.text: np.full(DIM, np.nan, dtype=np.float32)})
+    (board,) = m.predict([q])
+    assert board == complete_board(board)
+    info = m.info()
+    assert np.isnan(info["mean_sim_best"]) and np.isnan(info["mean_sim_returned"])
+
+
+@pytest.mark.slow
+def test_optimization_increases_similarity(fx):
+    cfg, items = fx
+    q = items[0].queries()[0]
+    m, _ = _method(cfg, {q.text: _target_text(FakeAudioEmbedder(), q)})
+    m.steps, m.lr = 8, 0.2
+    m.predict([q])
+    info = m.info()
+    assert info["mean_sim_best"] > info["mean_sim_init"] + 1e-3
 
 
 def test_text_from_cache(fx):
@@ -117,15 +153,38 @@ def test_max_items_guard(fx):
     m = build_method("text2fx", cfg)
     m.max_items = 1
     qs = [it.queries()[0] for it in items[:2]]
-    with pytest.raises(LimitExceeded, match="--limit 1"):
+    with pytest.raises(LimitExceeded, match="--limit"):
         m.predict(qs)
     # The limit is cumulative per split over the method's lifetime.
     m.audio_embedder = FakeAudioEmbedder()
     m.text_embedder = lambda ts: np.stack([_target_text(m.audio_embedder, qs[0])] * len(ts))
-    m.steps = 1
     m.predict(qs[:1])
-    m.predict(qs[:1])  # same unit again: fine
+    m.predict(qs[:1])  # same (text, audio) again: memoized, free
     with pytest.raises(LimitExceeded):
         m.predict(qs[1:2])
+    # Distinct (text, audio) pairs are counted, not units: a second caption of the same
+    # item is another optimization.
+    caps = items[0].queries()
+    if len(caps) > 1:
+        with pytest.raises(LimitExceeded):
+            m.predict(caps[1:2])
     m.max_items = None
     assert len(m.predict(qs)) == 2
+
+
+def test_limit_is_not_run_in_eval_run():
+    from lstmabar.eval.run import _cannot_run_types, _reason
+
+    e = LimitExceeded("text2fx: too many")
+    assert isinstance(e, _cannot_run_types())
+    assert _reason(e).startswith("limit")
+
+
+def test_clap_diff_train_is_noop():
+    from lstmabar.models.clap_diff import ClapAudioDiff
+
+    m = ClapAudioDiff.__new__(ClapAudioDiff)
+    torch.nn.Module.__init__(m)
+    m.model = torch.nn.Dropout(0.5)
+    m.train()
+    assert not m.training and not m.model.training

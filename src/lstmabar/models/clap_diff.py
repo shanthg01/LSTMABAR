@@ -105,7 +105,7 @@ class ClapAudioDiff(nn.Module):
             raise ValueError(f"{encoder.name}: feature extractor rate {fe.sampling_rate}")
         self.name = encoder.name
         self.dim = int(encoder.dim)
-        self.model = encoder.model
+        self.model = encoder.model.eval()
         for p in self.model.parameters():
             p.requires_grad_(False)
         self.n_fft = int(fe.fft_window_size)
@@ -115,6 +115,13 @@ class ClapAudioDiff(nn.Module):
             "mel", torch.from_numpy(np.asarray(fe.mel_filters_slaney, dtype=np.float32))
         )  # (n_freq, n_mels)
         self.register_buffer("window", torch.hann_window(self.n_fft, periodic=True))
+
+    def train(self, mode: bool = True) -> ClapAudioDiff:
+        """No-op: the frozen tower always stays in eval mode (no dropout / batch-norm
+        updates), even if a parent module is switched to training."""
+        self.training = False
+        self.model.eval()
+        return self
 
     def _repeatpad(self, x: Tensor) -> Tensor:
         n = x.shape[-1]
