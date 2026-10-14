@@ -56,33 +56,40 @@ def _label_matrix(boards: Sequence[FloatBoard]) -> np.ndarray:
 
 def top_k(queries: np.ndarray, table: np.ndarray, k: int, chunk: int = CHUNK) -> np.ndarray:
     """``(Q, k)`` indices of the k most cosine-similar rows of ``table`` per query, most
-    similar first; ties broken by the lower row index (deterministic)."""
+    similar first; ties broken by the lower row index (deterministic).
+
+    Both inputs must already be L2-normalized (cache vectors are; the dot product is then
+    the cosine). The top-k of a larger k has the top-k of a smaller k as its prefix."""
     n = table.shape[0]
     k = min(int(k), n)
     out = np.zeros((queries.shape[0], k), dtype=np.int64)
     if k == 0:
         return out
-    t = embed_cache.l2_normalize(table)
-    q = embed_cache.l2_normalize(queries)
+    q = np.asarray(queries, dtype=np.float32)
+    t = np.asarray(table, dtype=np.float32)
     for s in range(0, q.shape[0], chunk):
         sims = q[s : s + chunk] @ t.T  # (c, N)
         if k < n:
-            cand = np.argpartition(-sims, k - 1, axis=1)[:, :k]
+            cand = np.sort(np.argpartition(-sims, k - 1, axis=1)[:, :k], axis=1)
         else:
             cand = np.broadcast_to(np.arange(n), (sims.shape[0], n))
-        # A tie at the k-th similarity may leave equal rows outside ``cand``; widen to every
-        # row at or above the k-th value so the lower-index rule is exact.
-        kth = np.take_along_axis(sims, cand, axis=1).min(axis=1, keepdims=True)
-        for r in range(sims.shape[0]):
+        cs = np.take_along_axis(sims, cand, axis=1)
+        # ``cand`` is index-sorted, so a stable sort on -sim breaks ties by the lower index.
+        order = np.argsort(-cs, axis=1, kind="stable")
+        out[s : s + chunk] = np.take_along_axis(cand, order, axis=1)
+        # A tie at the k-th similarity may leave an equal, lower-index row outside ``cand``:
+        # redo those (rare) rows exactly.
+        kth = cs.min(axis=1)
+        for r in np.flatnonzero((sims >= kth[:, None]).sum(axis=1) > k):
             rows = np.flatnonzero(sims[r] >= kth[r])
-            order = np.lexsort((rows, -sims[r, rows]))
-            out[s + r] = rows[order[:k]]
+            out[s + r] = rows[np.lexsort((rows, -sims[r, rows]))[:k]]
     return out
 
 
 def aggregate(neighbour_labels: np.ndarray) -> np.ndarray:
     """``(Q, k, L)`` neighbour label vectors -> ``(Q, L)`` boards (median of enabled
-    neighbours per knob, falling back to the median of all; majority gate)."""
+    neighbours per knob, falling back to the median of all; majority gate: on iff at least
+    half the neighbours enable the block, so an even-k 50/50 split turns it on)."""
     q, k, _ = neighbour_labels.shape
     out = np.zeros((q, len(BOARD_LAYOUT)))
     if k == 0:
@@ -129,10 +136,13 @@ class KnnMethod(Method):
             raise ValueError("eval.baselines.knn.k_grid must be non-empty positive ints")
         self.k = sorted(self.k_grid)[len(self.k_grid) // 2]  # until selected on val
         self.cache_dir = str(cfg.eval.embeddings.dir)
-        self._vectors: np.ndarray | None = None
-        self._labels: np.ndarray | None = None
+        self._vectors: np.ndarray | None = None  # (n_captions, D), L2-normalized
+        self._labels: np.ndarray | None = None  # (n_items, L) item label vectors
+        self._cap_item: np.ndarray | None = None  # (n_captions,) caption -> item row
         self._n_items = 0
-        self._selection: dict[str, Any] | None = None
+        self._selection: dict[str, Any] = {"criterion": "default", "chosen": {"k": self.k}}
+        self._tables: dict[str, embed_cache.EmbeddingTable] = {}  # query splits
+        self._nn: tuple[tuple, int, np.ndarray] | None = None  # (query keys, kmax, idx)
 
     # ------------------------------------------------------------------ cache access
 
@@ -145,23 +155,55 @@ class KnnMethod(Method):
             ) from e
 
     def _query_vectors(self, queries: Sequence[Query]) -> np.ndarray:
-        try:
-            return embed_cache.lookup_queries(self.cache_dir, self.model, "text", queries)
-        except FileNotFoundError as e:
-            raise FileNotFoundError(f"{self.name}: {e}") from e
-        except KeyError as e:
-            raise KeyError(f"{self.name}: {e.args[0]} ({EMBED_HINT})") from e
+        """Cached text vectors per query (one table per ``Query.split``), rejecting ids that
+        are missing or whose cached sha256 no longer matches the query text."""
+        by_split: dict[str, list[int]] = {}
+        for i, q in enumerate(queries):
+            by_split.setdefault(q.split, []).append(i)
+        out: np.ndarray | None = None
+        for split, rows in by_split.items():
+            if split not in self._tables:
+                self._tables[split] = self._table(split)
+            table = self._tables[split]
+            expected = {queries[i].text_key: embed_cache.text_sha256(queries[i].text) for i in rows}
+            stale = table.stale(expected)
+            if stale:
+                raise ValueError(
+                    f"{self.name}: {len(stale)} {split} query texts missing or stale in the "
+                    f"{self.model} cache (first: {stale[0]!r}); {EMBED_HINT}"
+                )
+            v = table.lookup([queries[i].text_key for i in rows])
+            if out is None:
+                out = np.zeros((len(queries), v.shape[1]), dtype=np.float32)
+            out[rows] = v
+        assert out is not None
+        return embed_cache.l2_normalize(out)
+
+    def _neighbours(self, queries: Sequence[Query], k: int) -> np.ndarray:
+        """``(Q, k)`` train-caption indices, computed once at the largest k needed and
+        reused (sliced) for the same queries."""
+        if self._vectors is None:
+            raise RuntimeError(f"{self.name} used before fit")
+        key = tuple((q.split, q.text_key) for q in queries)
+        if self._nn is None or self._nn[0] != key or self._nn[1] < k:
+            kmax = max(k, *self.k_grid)
+            self._nn = (key, kmax, top_k(self._query_vectors(queries), self._vectors, kmax))
+        return self._nn[2][:, :k]
+
+    def _aggregate(self, idx: np.ndarray) -> np.ndarray:
+        assert self._labels is not None and self._cap_item is not None
+        return aggregate(self._labels[self._cap_item[idx]])
 
     # ------------------------------------------------------------------ Method API
 
     def fit(self, train: Sequence[SynthItem]) -> None:
         table = self._table("train")
-        ids, texts, boards = [], [], []
-        for it in train:
+        ids, texts, owner = [], [], []
+        for j, it in enumerate(train):
             for c in it.captions:
                 ids.append(c.caption_id)
                 texts.append(c.text)
-                boards.append(it.label)
+                owner.append(j)
         if not ids:
             raise ValueError(f"{self.name}.fit: train split has no captions")
         stale = table.stale(
@@ -173,8 +215,10 @@ class KnnMethod(Method):
                 f"{self.model} cache (first: {stale[0]!r}); {EMBED_HINT}"
             )
         self._vectors = embed_cache.l2_normalize(table.lookup(ids))
-        self._labels = _label_matrix(boards)
+        self._labels = _label_matrix([it.label for it in train])
+        self._cap_item = np.asarray(owner, dtype=np.int64)
         self._n_items = len(train)
+        self._nn = None
 
     def hparam_grid(self) -> list[dict[str, Any]]:
         return [{"k": k} for k in self.k_grid]
@@ -186,43 +230,38 @@ class KnnMethod(Method):
         self.k = k
         self._selection = {"criterion": "runner", "chosen": {"k": k}}
 
-    def _predict_vectors(self, qv: np.ndarray, k: int) -> np.ndarray:
-        if self._vectors is None or self._labels is None:
-            raise RuntimeError(f"{self.name}.predict called before fit")
-        idx = top_k(qv, self._vectors, k)
-        return aggregate(self._labels[idx])
-
     def predict(self, queries: Sequence[Query]) -> list[FloatBoard]:
+        if self._vectors is None:
+            raise RuntimeError(f"{self.name}.predict called before fit")
         if not queries:
             return []
-        out = self._predict_vectors(self._query_vectors(queries), self.k)
+        out = self._aggregate(self._neighbours(queries, self.k))
         return [complete_board(vector_board(row)) for row in out]
 
     def select(self, val: Sequence[SynthItem]) -> dict[str, Any]:
         """Pick k on val captions by mean masked param L1 + mean gate error (per item, then
         over items; NaN L1 terms, i.e. all-off labels, are skipped). Ties: smaller k."""
-        if self._vectors is None or self._labels is None:
+        if self._vectors is None:
             raise RuntimeError(f"{self.name}.select called before fit")
-        queries = [q for it in val for q in it.queries()]
+        queries, inv = [], []
+        for j, it in enumerate(val):
+            for q in it.queries():
+                queries.append(q)
+                inv.append(j)
         if not queries:
             raise ValueError(f"{self.name}.select: val has no captions")
-        units = np.array([q.unit_id for q in queries])
-        by_item = {it.item_id: it.label for it in val}
-        labels = _label_matrix([by_item[u] for u in units])
-        qv = self._query_vectors(queries)
-        kmax = max(self.k_grid)
-        idx = top_k(qv, self._vectors, kmax)
-        _, inv = np.unique(units, return_inverse=True)
+        inv_a = np.asarray(inv, dtype=np.int64)
+        labels = _label_matrix([it.label for it in val])[inv_a]
+        idx = self._neighbours(queries, max(self.k_grid))
         scores = []
         for k in sorted(self.k_grid):
-            pred = aggregate(self._labels[idx[:, :k]])
-            l1, gerr = masked_errors(pred, labels)
-            l1_item = _group_nanmean(l1, inv)
-            g_item = _group_nanmean(gerr, inv)
+            l1, gerr = masked_errors(self._aggregate(idx[:, :k]), labels)
+            l1_item = _group_nanmean(l1, inv_a)
+            g_item = _group_nanmean(gerr, inv_a)
             row = {
                 "k": k,
                 "param_l1": float(np.nanmean(l1_item)) if np.isfinite(l1_item).any() else 0.0,
-                "gate_error": float(np.mean(g_item)),
+                "gate_error": float(np.nanmean(g_item)),
             }
             row["score"] = row["param_l1"] + row["gate_error"]
             scores.append(row)
@@ -246,8 +285,7 @@ class KnnMethod(Method):
             "train_captions": 0 if self._vectors is None else int(self._vectors.shape[0]),
             "train_items": self._n_items,
         }
-        if self._selection is not None:
-            out["selection"] = self._selection
+        out["selection"] = self._selection
         return out
 
 

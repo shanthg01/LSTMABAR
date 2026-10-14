@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -16,8 +17,9 @@ from lstmabar.eval.baselines.base import (
     default_board,
 )
 from lstmabar.eval.baselines.knn import aggregate, top_k
+from lstmabar.eval.baselines.trivial import MeanParams
 from lstmabar.eval.fixtures import eval_fixture_config, make_eval_fixture
-from lstmabar.models.embed_cache import EmbeddingTable, cache_path, text_sha256
+from lstmabar.models.embed_cache import EmbeddingTable, cache_path, l2_normalize, text_sha256
 
 MODELS = {"knn_clap": "clap-htsat-unfused", "knn_bge": "bge-base-en-v1.5"}
 
@@ -154,3 +156,68 @@ def test_top_k_ties_and_aggregate_masking():
     rows[:, di] = 0.0  # nobody enables drive: median over all, gate off
     out = aggregate(rows[None])[0]
     assert out[di] == 0.0 and out[gi] == pytest.approx(0.4)
+
+
+def test_knn_stale_query_rejected(fx, tmp_path):
+    cfg, train, val = fx
+    cfg2 = eval_fixture_config(tmp_path)
+    model = MODELS["knn_bge"]
+    _one_hot_cache(cfg2, model, train, val)
+    vcaps = [c for it in val for c in it.captions]
+    n_train = sum(len(it.captions) for it in train)
+    ids = [c.caption_id for c in vcaps]
+    _write(cfg2, model, "val", ids, ["edited"] * len(ids), np.eye(len(ids), n_train))
+    m = build_method("knn_bge", cfg2)
+    m.fit(train)
+    with pytest.raises(ValueError, match="stale.*lstmabar eval embed"):
+        m.predict(val[0].queries())
+
+
+def test_knn_before_fit_raises(fx):
+    cfg, _, val = fx
+    m = build_method("knn_clap", cfg)
+    assert m.info()["selection"] == {"criterion": "default", "chosen": {"k": m.k}}
+    with pytest.raises(RuntimeError):
+        m.predict(val[0].queries())
+    with pytest.raises(RuntimeError):
+        m.select(val)
+
+
+def test_top_k_boundary_tie_and_chunking():
+    table = np.array([[0, 1], [1, 0], [0, 1], [1, 0], [1, 0]], dtype=np.float32)
+    assert top_k(np.array([[1.0, 0.0]]), table, 2).tolist() == [[1, 3]]
+    rng = np.random.default_rng(0)
+    t = l2_normalize(rng.normal(size=(200, 8)))
+    q = l2_normalize(rng.normal(size=(37, 8)))
+    a = top_k(q, t, 10)
+    assert np.array_equal(a, top_k(q, t, 10, chunk=1))
+    assert np.array_equal(a[:, :3], top_k(q, t, 3))
+
+
+def test_aggregate_even_split_gate_on():
+    di = BOARD_LAYOUT.index(("drive", "enabled"))
+    rows = np.stack([np.array(board_vector(default_board(0.0))) for _ in range(2)])
+    rows[:, di] = [1.0, 0.0]
+    assert aggregate(rows[None])[0][di] == 1.0
+
+
+def test_mean_hand_built_train():
+    def lab(drive_on, gain, eq_on, high):
+        b = default_board(0.0)
+        b["drive"].update(enabled=drive_on, gain_db=gain)
+        b["eq"].update(enabled=eq_on, high_db=high)
+        return b
+
+    train = [
+        SimpleNamespace(label=lab(1.0, 0.2, 0.0, 0.9)),
+        SimpleNamespace(label=lab(1.0, 0.6, 1.0, 0.1)),
+        SimpleNamespace(label=lab(0.0, 1.0, 0.0, 0.5)),
+    ]
+    m = MeanParams()
+    m.fit(train)
+    p = m.predict([None])[0]
+    d = default_board(0.0)
+    assert p["drive"]["enabled"] == 1.0 and p["drive"]["gain_db"] == pytest.approx(0.4)
+    assert p["eq"]["enabled"] == 0.0 and p["eq"]["high_db"] == pytest.approx(0.1)
+    assert p["compressor"] == d["compressor"]
+    assert p["drive"]["tone_db"] == pytest.approx(d["drive"]["tone_db"])
