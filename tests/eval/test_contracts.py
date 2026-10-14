@@ -55,6 +55,7 @@ def test_load_split_joins_captions_and_levels(fx):
     qs = it.queries()
     assert [q.query_id for q in qs] == [c.caption_id for c in it.captions]
     assert all(q.unit_id == it.item_id and q.audio_key == it.item_id for q in qs)
+    assert all(q.split == "test" for q in qs)
     x = qs[0].load_dry()
     peak = 20 * np.log10(np.max(np.abs(x)))
     assert peak == pytest.approx(it.item.input_peak_dbfs, abs=1e-6)
@@ -77,6 +78,7 @@ def test_gold_items_grouped_by_clip(fx):
         assert [d.distractor_index for d in c.distractors] == [0, 1]
     qs = g.queries()
     assert len({q.audio_key for q in qs}) == 2 and qs[0].audio_key.endswith("@-15.0")
+    assert all(q.split == "gold" for q in qs)
     x = qs[0].load_dry()
     assert 20 * np.log10(np.max(np.abs(x))) == pytest.approx(-15.0, abs=1e-6)
     assert D.load_render_audio(cfg, g.clips[0].target).shape == x.shape
@@ -89,6 +91,7 @@ def test_test_real_loader(fx):
     real = D.load_test_real(cfg)
     assert [r.item.item_id for r in real] == ["fx-real-0", "fx-real-1"]
     assert real[1].internal_only and not real[0].internal_only
+    assert real[0].kb_pedal == "ts808" and real[1].kb_pedal is None
     x, sr = real[0].load_dry()
     assert sr == 48000 and x.ndim == 1
 
@@ -107,7 +110,15 @@ def test_board_helpers():
 
 
 def test_method_registry_names():
-    assert set(REGISTRY) == {"noop", "mean", "knn_clap", "knn_bge", "llm_zero_shot", "text2fx"}
+    assert set(REGISTRY) == {
+        "noop",
+        "mean",
+        "knn_clap",
+        "knn_bge",
+        "llm_zero_shot",
+        "text2fx",
+        "p6_model",
+    }
 
     class Const(Method):
         name = "const"

@@ -75,4 +75,11 @@ def write_report(report: dict[str, Any], out_dir: str | Path, name: str) -> tupl
     raise NotImplementedError
 
 
-__all__ = ["REPORT_SCHEMA", "ComparisonRow", "Row", "build_report", "render_markdown"]
+__all__ = [
+    "REPORT_SCHEMA",
+    "ComparisonRow",
+    "Row",
+    "build_report",
+    "render_markdown",
+    "write_report",
+]

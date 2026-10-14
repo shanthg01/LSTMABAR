@@ -5,8 +5,11 @@ A method maps queries (:class:`lstmabar.eval.data.Query`: instruction text + dry
 compressor -> drive -> eq). Methods never output pedal names; the board is the only output
 space, so every method is scored with the same renderer.
 
-Lifecycle used by the runner: ``fit(train)`` once, ``select(val)`` once (hyperparameters such
-as kNN ``k`` are chosen on val only, D8, never on gold), then ``predict`` per split.
+Lifecycle used by the runner: ``fit(train)`` once; then hyperparameter selection on val only
+(D8, never on gold): for each ``d`` in ``hparam_grid()`` the runner calls ``set_hparams(d)``,
+scores val with ``runner.score_val`` and keeps the ``d`` minimizing
+``proxy.selection_score`` (``runner.select_hparams``); methods with cheaper internal
+criteria may instead override ``select(val)``. Then ``predict`` per split.
 """
 
 from __future__ import annotations
@@ -36,8 +39,16 @@ class Method(ABC):
     def fit(self, train: Sequence[SynthItem]) -> None:  # noqa: B027 - optional hook
         """Learn from the train split (labels, captions). Default: nothing to learn."""
 
+    def hparam_grid(self) -> list[dict[str, Any]]:
+        """Candidate hyperparameters for runner-driven val selection (``[]``: none)."""
+        return []
+
+    def set_hparams(self, hparams: dict[str, Any]) -> None:  # noqa: B027 - optional hook
+        """Apply one entry of :meth:`hparam_grid`."""
+
     def select(self, val: Sequence[SynthItem]) -> dict[str, Any]:
-        """Choose hyperparameters on val (D8). Returns what was chosen (for the report)."""
+        """Method-internal val selection (D8). Returns what was chosen (for the report).
+        Default: nothing (the runner handles :meth:`hparam_grid`)."""
         return {}
 
     @abstractmethod
@@ -57,6 +68,7 @@ REGISTRY: dict[str, str] = {
     "knn_bge": "knn:KnnBge",
     "llm_zero_shot": "llm:LlmZeroShot",
     "text2fx": "text2fx:Text2Fx",
+    "p6_model": "lstmabar.models.method:ModelMethod",  # P6 (6.1); fully qualified
 }
 
 
@@ -64,7 +76,9 @@ def build_method(name: str, cfg: Any = None, seed: int = 0) -> Method:
     if name not in REGISTRY:
         raise KeyError(f"unknown method {name!r}; known: {sorted(REGISTRY)}")
     module, cls = REGISTRY[name].split(":")
-    m = importlib.import_module(f"lstmabar.eval.baselines.{module}")
+    if "." not in module:  # short form: a module under lstmabar.eval.baselines
+        module = f"lstmabar.eval.baselines.{module}"
+    m = importlib.import_module(module)
     return getattr(m, cls)(cfg, seed=seed)
 
 

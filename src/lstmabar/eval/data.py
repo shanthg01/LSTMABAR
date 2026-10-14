@@ -18,6 +18,7 @@ be imported by caption code.
 
 from __future__ import annotations
 
+import functools
 from collections import defaultdict
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
@@ -57,6 +58,7 @@ class Query:
 
     query_id: str  # caption_id (synthetic) | "<gold_id>-c<clip_index>" (gold)
     unit_id: str  # the statistical unit (D3): item_id | gold_id
+    split: str  # synthetic split | "gold" (selects the embedding-cache table)
     text: str
     text_key: str
     audio_key: str
@@ -98,6 +100,7 @@ class SynthItem:
             Query(
                 query_id=c.caption_id,
                 unit_id=self.item.item_id,
+                split=self.item.split,
                 text=c.text,
                 text_key=c.caption_id,
                 audio_key=self.item.item_id,
@@ -111,8 +114,22 @@ class SynthItem:
 
     def load_dry(self) -> np.ndarray:
         """Dry clip at the item's own input level (what the target was rendered from)."""
-        x, _ = levels.read_audio(self.dry_path)
-        return levels.apply_input_level(x, float(self.item.input_peak_dbfs))
+        return self.queries_for_audio().load_dry()
+
+    def queries_for_audio(self) -> Query:
+        """A text-less query on this item's dry input (audio-only uses, e.g. embedding)."""
+        return Query(
+            query_id=self.item.item_id,
+            unit_id=self.item.item_id,
+            split=self.item.split,
+            text="",
+            text_key="",
+            audio_key=self.item.item_id,
+            clip_id=self.item.clip_id,
+            input_peak_dbfs=float(self.item.input_peak_dbfs),
+            sample_rate=self.sample_rate,
+            dry_path=self.dry_path,
+        )
 
     def load_wet(self) -> np.ndarray:
         """The stored wet render (peak-normalized to ``render.wet_peak_dbfs``)."""
@@ -210,6 +227,7 @@ class GoldItem:
     clips: tuple[GoldClip, ...]
     input_peak_dbfs: float = -15.0
     sample_rate: int = 44100
+    split: str = "gold"  # "val" for val gold-proxy items (eval.proxy.load_proxy_items)
 
     def subsets(self) -> list[str]:
         """The :data:`GOLD_SUBSETS` this item belongs to (always includes ``"all"``)."""
@@ -230,6 +248,7 @@ class GoldItem:
             Query(
                 query_id=f"{self.gold_id}-c{c.clip_index}",
                 unit_id=self.gold_id,
+                split=self.split,
                 text=self.instruction,
                 text_key=self.gold_id,
                 audio_key=gold_audio_key(c.clip_id, self.input_peak_dbfs),
@@ -300,6 +319,24 @@ def load_gold_items(cfg, limit: int | None = None) -> list[GoldItem]:
     return out
 
 
+def load_dry_track(cfg, clip_id: str):
+    """The cached pYIN track of a dry clip (``data/cache/f0/<clip_id>.npz``, checked against
+    the clip's sha256), or ``None`` if not cached. Renders are time-aligned with their dry
+    input, so this is the ``track`` for ``metrics.analyse_render``."""
+    from lstmabar.data.render import load_track
+
+    layout = DataLayout.from_config(cfg)
+    clip = _clips_cached(str(layout.dry_manifest)).get(clip_id)
+    if clip is None:
+        return None
+    return load_track(layout.f0_cache(clip_id), clip.sha256)
+
+
+@functools.lru_cache(maxsize=4)
+def _clips_cached(manifest: str) -> dict[str, DryClip]:
+    return {c.clip_id: c for c in read_jsonl(manifest, DryClip)}
+
+
 def load_render_audio(cfg, render: GoldRender | RenderItem) -> np.ndarray:
     """A gold render's (or any ``RenderItem``'s) stored wet audio."""
     layout = DataLayout.from_config(cfg)
@@ -320,6 +357,12 @@ class RealItem:
     def internal_only(self) -> bool:
         """Never publish per-item audio or numbers for these (aggregate only, D6)."""
         return bool(self.item.internal_only)
+
+    @property
+    def kb_pedal(self) -> str | None:
+        """The D11 switch: a KB pedal id (ts808, rat = holdout) gets KB renders; ``None``
+        (BD-2, pOD-set pedals) gets family-level descriptor comparisons only."""
+        return self.item.kb_pedal_id
 
     def load_dry(self) -> tuple[np.ndarray, int]:
         return levels.read_audio(self.dry_path)
@@ -353,6 +396,7 @@ __all__ = [
     "dry_clips",
     "gold_audio_key",
     "iter_items",
+    "load_dry_track",
     "load_gold_items",
     "load_render_audio",
     "load_split",

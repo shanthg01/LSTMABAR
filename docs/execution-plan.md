@@ -440,7 +440,7 @@ Prepared 2026-10-14 for a fresh session. Read this, CLAUDE.md, design §6–7, [
 
 **Suggested waves:**
 - wave 0 (main session): contracts: `eval/data.py` (iterators over synthetic splits with captions, `test_real`, gold grouped by item/clip), `eval/metrics.py` and `eval/stats.py` signatures, `eval/baselines/base.py`, the label → `Region` helper (D8), report JSON schema, `configs/eval/p5.yaml`, `lstmabar eval` CLI skeleton, fixtures, `--extra dsp` in CI.
-- wave 1, in parallel: (a) metrics + stats; (b) embedding cache (both CLAP checkpoints + bge); (c) no-op, mean and kNN baselines; (d) LLM zero-shot (after the key is rotated); (e) `test_real` sim-to-real gap (D11).
+- wave 1, in parallel: (a) metrics + stats; (b) embedding cache (both CLAP checkpoints + bge); (c) no-op, mean and kNN baselines; (d) LLM zero-shot (after the key is rotated); (e) `test_real` sim-to-real gap (D11); (f) val gold-proxy (D8: label → `Region`, proxy renders, selection score); (g) P6 stage-1 model on the embedding-cache contract (P6 prep notes).
 - wave 2: report + full baseline run; Text2FX; M3 demo.
 
 ## P6 — Model and experiments (weeks 14–17) → M4

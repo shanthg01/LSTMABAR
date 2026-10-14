@@ -21,7 +21,8 @@ eval:
     gate_threshold: 0.5
     mrstft_fft_sizes: [512, 1024, 2048]   # dsp.losses.multi_resolution_stft_loss
     afc_distances: [mrstft, descriptor]   # primary, secondary
-    descriptor_keys: [centroid_hz, odd_even_db, hnr_db]
+    descriptor_keys: [centroid_hz, odd_even_db, hnr_db]   # source descriptor keys; the error
+                                                          # terms are metrics.DESCRIPTOR_TERMS
 
   stats:                                  # D3
     n_resamples: 10000
@@ -38,6 +39,8 @@ eval:
   baselines:                              # D4
     knn:
       k_grid: [1, 3, 5, 10, 25, 50]       # tuned on val (D8)
+      clap_model: clap-htsat-unfused      # knn_clap text backbone (the other CLAP: ablation)
+      bge_model: bge-base-en-v1.5         # knn_bge
     llm:
       model: claude-haiku-5-5
       max_usd: 1.0                        # hard cap (R1 ledger/guard pattern)

@@ -35,6 +35,20 @@ def label_to_region(item: RenderItem, targets: Targets) -> Region:
     raise NotImplementedError
 
 
+def load_proxy_items(cfg, limit: int | None = None):
+    """Val proxy units as ``eval.data.GoldItem`` s (``split="val"``, ``source=PROXY_SOURCE``,
+    instruction = the item's first caption by ``caption_id``, ``input_peak_dbfs`` = the item's
+    level, one clip whose target is the item's own wet as a ``GoldRender`` and whose
+    distractors are the proxy renders), so ``runner.score_gold`` scores them unchanged."""
+    raise NotImplementedError
+
+
+def selection_score(result, cfg) -> float:
+    """Scalar D8 selection objective of a ``runner.score_val`` result (lower is better):
+    mean MR-STFT to the target wet + mean masked param L1 + (1 - mean proxy 2AFC)."""
+    raise NotImplementedError
+
+
 def region_levels(region: Region) -> Mapping[str, str]:
     """``{axis: level}`` of a region (for the report's per-axis breakdown)."""
     raise NotImplementedError
@@ -45,4 +59,11 @@ def run(cfg, args) -> int:
     raise NotImplementedError
 
 
-__all__ = ["PROXY_SOURCE", "label_to_region", "region_levels", "run"]
+__all__ = [
+    "PROXY_SOURCE",
+    "label_to_region",
+    "load_proxy_items",
+    "region_levels",
+    "run",
+    "selection_score",
+]

@@ -66,6 +66,7 @@ class EmbeddingTable:
     kind: str
 
     def __post_init__(self) -> None:
+        # An empty table must still be 2-D: pass np.zeros((0, dim)).
         self.vectors = np.asarray(self.vectors, dtype=np.float32)
         if self.vectors.ndim != 2 or self.vectors.shape[0] != len(self.ids):
             raise ValueError(f"vectors {self.vectors.shape} do not match {len(self.ids)} ids")
@@ -137,6 +138,20 @@ def load_table(cache_dir: str | Path, model: str, split: str, kind: str) -> Embe
     return EmbeddingTable.load(path)
 
 
+def lookup_queries(cache_dir, model: str, kind: str, queries) -> np.ndarray:
+    """``(len(queries), D)`` vectors for ``eval.data.Query`` s (``kind`` ``text`` uses
+    ``q.text_key``, ``audio`` uses ``q.audio_key``), loading each split's table once."""
+    attr = {"text": "text_key", "audio": "audio_key"}[kind]
+    tables: dict[str, EmbeddingTable] = {}
+    rows = []
+    for q in queries:
+        if q.split not in tables:
+            tables[q.split] = load_table(cache_dir, model, q.split, kind)
+        rows.append(tables[q.split].lookup([getattr(q, attr)])[0])
+    dim = next(iter(tables.values())).dim if tables else 0
+    return np.stack(rows) if rows else np.zeros((0, dim), dtype=np.float32)
+
+
 def l2_normalize(v: np.ndarray, eps: float = 1e-12) -> np.ndarray:
     v = np.asarray(v, dtype=np.float32)
     return v / np.maximum(np.linalg.norm(v, axis=-1, keepdims=True), eps)
@@ -151,5 +166,6 @@ __all__ = [
     "cache_path",
     "l2_normalize",
     "load_table",
+    "lookup_queries",
     "text_sha256",
 ]

@@ -74,6 +74,22 @@ def score_synthetic(
 
 
 def score_gold(method: Method, items: Sequence[GoldItem], cfg, seed: int = 0) -> SplitResult:
+    """Gold 2AFC etc. Also scores val gold-proxy items (``proxy.load_proxy_items``: GoldItems
+    with ``split == "val"``); the result's ``split`` is the items' split."""
+    raise NotImplementedError
+
+
+def score_val(method: Method, val: Sequence[SynthItem], cfg, seed: int = 0) -> SplitResult:
+    """The D8 selection run: :func:`score_synthetic` on val plus :func:`score_gold` on the val
+    proxy items (merged per unit: ``afc_*`` keys join the synthetic keys)."""
+    raise NotImplementedError
+
+
+def select_hparams(method: Method, val: Sequence[SynthItem], cfg, seed: int = 0) -> dict:
+    """Try every ``method.hparam_grid()`` entry on val, keep the one minimizing
+    ``proxy.selection_score`` (ties: first in grid order), apply it, and return
+    ``{"chosen": {...}, "scores": [...]}``; falls back to ``method.select(val)`` when the grid
+    is empty."""
     raise NotImplementedError
 
 
@@ -85,4 +101,6 @@ __all__ = [
     "predict_all",
     "score_gold",
     "score_synthetic",
+    "score_val",
+    "select_hparams",
 ]
