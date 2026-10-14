@@ -16,8 +16,10 @@ import lstmabar
 from lstmabar.config import load_config
 from lstmabar.data.cli import add_data_parser
 from lstmabar.dsp.recovery import RecoveryConfig, run_recovery, write_report
+from lstmabar.eval.cli import add_eval_parser
 from lstmabar.runs import create_run_dir, device_name, git_info
 from lstmabar.seed import seed_everything
+from lstmabar.train.cli import add_train_parser
 
 
 def cmd_info(_: argparse.Namespace) -> int:
@@ -188,6 +190,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_fid.set_defaults(func=cmd_fidelity)
 
     add_data_parser(sub)
+    add_eval_parser(sub)
+    add_train_parser(sub)
 
     return parser
 
@@ -198,7 +202,7 @@ def main(argv: list[str] | None = None) -> int:
     # `lstmabar data <step> --flag a.b=1`: argparse cannot place positional dotlist overrides
     # after the optionals (subparsers rule out parse_intermixed_args), so collect them here.
     if extra:
-        if getattr(args, "command", None) == "data" and all(
+        if getattr(args, "command", None) in ("data", "eval", "train") and all(
             "=" in x and not x.startswith("-") for x in extra
         ):
             args.overrides = [*args.overrides, *extra]
