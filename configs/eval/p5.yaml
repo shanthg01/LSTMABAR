@@ -80,9 +80,10 @@ eval:
     shard_size: 100                       # renders per resumable shard
     workers: 2                            # capped at 2 (16 GB machine)
     # proxy.selection_score weights, rescaled so each term spans ~1 between an oracle (render
-    # of the label) and the simple baselines on 80 val proxy units (valproxy_v1, 2026-10-14):
-    # MR-STFT 0.41 oracle vs 3.19-3.32 (noop/mean/shuffled labels), masked param L1 0 vs
-    # 0.18-0.25, 1 - 2AFC 0.006 vs 0.39-0.69. At weight 1 MR-STFT would dominate.
+    # of the label) and the simple baselines on 80 val proxy units (valproxy_v1, 2026-10-14,
+    # runner.score_val with harmonic_descriptors=false): MR-STFT 0.41 oracle vs 3.19-3.34
+    # (noop / val-mean / shuffled labels), masked param L1 0 vs 0.17-0.25, 1 - 2AFC 0.006 vs
+    # 0.39-0.69. At weight 1 MR-STFT would dominate.
     selection_weights: {mrstft: 0.33, param_l1: 4.0, afc: 1.5}
 
   sim_real:                               # D11
