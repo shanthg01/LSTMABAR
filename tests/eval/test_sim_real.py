@@ -107,3 +107,30 @@ def test_run_greybox_aggregate_only_for_internal(fx, monkeypatch):
 @pytest.mark.slow
 def test_run_with_whitebox(fx, monkeypatch):
     _run(fx, monkeypatch, ("whitebox", "greybox"))
+
+
+def test_discussion_appended_once_and_rerender(fx, monkeypatch):
+    cfg, root = fx
+    rep = root / "reports"
+    _run(fx, monkeypatch, ("greybox",))
+    disc = rep / S.DISCUSSION_FILE
+    disc.write_text("## Discussion\n\nhand-written note\n", encoding="utf-8")
+    try:
+        before = (rep / "sim_real.json").read_text(encoding="utf-8")
+        assert S.run(cfg, SimpleNamespace(limit=None, workers=1, run_dir=str(rep))) == 0
+        md = (rep / "sim_real.md").read_text(encoding="utf-8")
+        assert md.count("hand-written note") == 1 and md.count("## Discussion") == 1
+        assert (rep / "sim_real.json").read_text(encoding="utf-8") == before  # no re-scoring
+        res = json.loads(before)
+        assert all("synthetic_pedals" in g for g in res["family_shifts"].values())
+    finally:
+        disc.unlink()
+
+
+def test_one_setting_per_unit_and_grid_keys():
+    row = {"group": "g", "kb_pedal": "ts808", "knobs": {"drive": 1.0}, "levels": {}}
+    with pytest.raises(ValueError, match="one setting per unit"):
+        S.aggregate_kb([row, row | {"knobs": {"drive": 0.5}}], None)
+    assert S.ts_grid_knobs({"gain": 0.4, "tone": 1.0}, "x") == {"drive": 0.4, "tone": 1.0}
+    with pytest.raises(KeyError, match="tone"):
+        S.ts_grid_knobs({"gain": 0.4}, "x")

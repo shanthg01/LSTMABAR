@@ -49,7 +49,7 @@ from typing import Any
 
 import numpy as np
 
-from lstmabar.eval.stats import CI
+from lstmabar.eval.stats import bootstrap_ci
 
 POD_SEGMENT_S = (60.0, 10.0)
 """(offset, duration) in seconds of the pOD-set ``a`` files analysed (~6 min each; the same
@@ -62,6 +62,9 @@ REFERENCE_DRY = "dry"
 ERROR_TERMS: tuple[str, ...] = ("mrstft", "centroid_oct", "odd_even_db", "hnr_db")
 SHIFT_TERMS: tuple[str, ...] = ("centroid_oct", "odd_even_db", "hnr_db", "crest_db")
 DIRECTION_TERMS: tuple[str, ...] = ("centroid_oct", "crest_db")
+DISCUSSION_FILE = "sim_real_discussion.md"
+"""Hand-written discussion in ``eval.report_dir``, appended verbatim to the generated report
+(kept separate so a re-run neither clobbers nor duplicates it)."""
 TUBEDREAMER = "tubedreamer"
 KNOB_SWEEP = {"ts808": ("drive", "tone"), "rat": ("distortion", "filter")}
 KNOB_SWEEP_POSITIONS = (0.0, 0.5, 1.0)
@@ -72,32 +75,13 @@ KNOB_SWEEP_LEVEL_DBFS = -12.0
 # ============================================================================ small helpers
 
 
-def bootstrap_ci(
-    values: Sequence[float] | np.ndarray,
-    n_resamples: int = 10_000,
-    seed: int = 0,
-    alpha: float = 0.05,
-) -> CI:
-    """NaN-aware percentile bootstrap CI of the mean over items.
-
-    TODO(P5 wave 1a): switch to ``lstmabar.eval.stats.bootstrap_ci`` once it is implemented on
-    ``main`` (same contract: NaNs dropped, ``n < 2`` gives ``lo = hi = mean``)."""
-    v = np.asarray([x for x in values if x is not None], dtype=np.float64)
-    v = v[np.isfinite(v)]
-    n = int(v.size)
-    if n == 0:
-        return CI(float("nan"), float("nan"), float("nan"), 0)
-    m = float(v.mean())
-    if n < 2:
-        return CI(m, m, m, n)
-    rng = np.random.default_rng(seed)
-    means = np.empty(n_resamples)
-    step = max(1, 250_000 // n)  # bound memory (~2 MB): resample in chunks
-    for s in range(0, n_resamples, step):
-        k = min(step, n_resamples - s)
-        means[s : s + k] = v[rng.integers(0, n, size=(k, n))].mean(axis=1)
-    lo, hi = np.quantile(means, [alpha / 2, 1 - alpha / 2])
-    return CI(m, float(lo), float(hi), n)
+def ts_grid_knobs(settings: Mapping[str, float], item_id: str) -> dict[str, float]:
+    """pOD-set tubedreamer ``{gain, tone}`` -> ts808 ``{drive, tone}`` (gain -> drive is an
+    assumption, stated in the report). A missing key raises rather than defaulting."""
+    missing = {"gain", "tone"} - set(settings)
+    if missing:
+        raise KeyError(f"{item_id}: tubedreamer grid item lacks {sorted(missing)}")
+    return {"drive": float(settings["gain"]), "tone": float(settings["tone"])}
 
 
 def subsample_key(item_id: str) -> str:
@@ -166,6 +150,9 @@ def descriptor_shift(wet: Mapping[str, Any], dry: Mapping[str, Any]) -> dict[str
 
 
 def mrstft(pred: np.ndarray, target: np.ndarray, fft_sizes: Sequence[int]) -> float:
+    """MR-STFT on the signals as given. Deliberately not ``eval.metrics.mrstft``: that one
+    peak-normalizes both inputs, which would undo the RMS loudness match (D11) applied by
+    :meth:`_Worker.score`."""
     import torch
 
     from lstmabar.dsp.losses import multi_resolution_stft_loss
@@ -385,8 +372,7 @@ def eval_shift_item(job: dict) -> dict:
     if job.get("ts_grid"):
         from lstmabar.data import levels
 
-        s = job["settings"]
-        knobs = {"drive": float(s.get("gain", 0.5)), "tone": float(s.get("tone", 0.5))}
+        knobs = ts_grid_knobs(job["settings"], job["item_id"])
         out["kb_shift"] = {}
         for lv in w.levels:
             y = w.greybox("ts808", knobs, levels.apply_input_level(x[:n], lv))
@@ -442,6 +428,10 @@ def aggregate_kb(rows: Sequence[dict], cfg) -> dict:
         by_group[r["group"]].append(r)
     for g, rs in sorted(by_group.items()):
         pedal = rs[0]["kb_pedal"]
+        if any(r["knobs"] != rs[0]["knobs"] for r in rs):
+            raise ValueError(
+                f"{g}: items have different settings; the report assumes one setting per unit"
+            )
         engines = [*KB_ENGINES.get(pedal, ("greybox",)), REFERENCE_DEFAULT]
         lvls = list(rs[0]["levels"])
         terms = [*ERROR_TERMS, *(f"agree_{t}" for t in DIRECTION_TERMS)]
@@ -500,6 +490,7 @@ def aggregate_shifts(rows: Sequence[dict], synth: Mapping[str, Mapping[str, list
             "n_items": len(rs),
             "n_harmonic": int(sum(r["harmonic"] for r in rs)),
             "internal_only": any(r["internal_only"] for r in rs),
+            "synthetic_pedals": sorted(synth.get(f"pedals:{fam}", {})),
             "terms": terms,
         }
     return groups
@@ -545,6 +536,7 @@ def synthetic_shifts(cfg) -> dict[str, dict[str, list[float]]]:
         if it.scenario != "pedal" or it.pedal_id not in kb:
             continue
         sh = descriptor_shift(it.descriptors_wet, it.descriptors_dry)
+        out[f"pedals:{kb[it.pedal_id].family}"][it.pedal_id].append(1.0)
         for key in (f"family:{kb[it.pedal_id].family}", f"pedal:{it.pedal_id}"):
             for t in SHIFT_TERMS:
                 out[key][t].append(sh[t])
@@ -717,18 +709,40 @@ def run(cfg, args) -> int:
 
     workers = min(2, int(getattr(args, "workers", None) or cfg.eval.workers or 1))
     limit = getattr(args, "limit", None)
+    lf = {"encoding": "utf-8", "newline": "\n"}  # LF on Windows too
+    out = Path(str(cfg.eval.report_dir))
+    out.mkdir(parents=True, exist_ok=True)
+    disc_path = out / DISCUSSION_FILE
+    if getattr(args, "run_dir", None):  # re-render only: md from an existing sim_real.json
+        res = json.loads((Path(args.run_dir) / "sim_real.json").read_text(encoding="utf-8"))
+        if _backfill_synthetic_pedals(res, cfg):
+            (out / "sim_real.json").write_text(_dumps(res), **lf)
+        disc = disc_path.read_text(encoding="utf-8") if disc_path.exists() else None
+        (out / "sim_real.md").write_text(render_markdown(res, disc), **lf)
+        print(f"re-rendered {out.as_posix()}/sim_real.md (no scoring)")
+        return 0
     t0 = time.perf_counter()
     res = evaluate(cfg, limit=limit, workers=workers)
     res["protocol"]["runtime_s"] = round(time.perf_counter() - t0, 1)
     run_dir = create_run_dir(cfg, cfg.paths.runs, "eval_sim_real")
-    lf = {"encoding": "utf-8", "newline": "\n"}  # LF on Windows too
     (run_dir / "sim_real.json").write_text(_dumps(res), **lf)
-    out = Path(str(cfg.eval.report_dir))
-    out.mkdir(parents=True, exist_ok=True)
     (out / "sim_real.json").write_text(_dumps(res), **lf)
-    (out / "sim_real.md").write_text(render_markdown(res), **lf)
+    disc = disc_path.read_text(encoding="utf-8") if disc_path.exists() else None
+    (out / "sim_real.md").write_text(render_markdown(res, disc), **lf)
     print(f"wrote {out.as_posix()}/sim_real.md and .json (run dir {run_dir.name})")
     return 0
+
+
+def _backfill_synthetic_pedals(res: dict, cfg) -> bool:
+    """Reports written before ``synthetic_pedals`` existed: recompute that list (the pedals
+    behind each synthetic family distribution) from the v1 manifests. True if changed."""
+    groups = res.get("family_shifts", {})
+    if all("synthetic_pedals" in g for g in groups.values()):
+        return False
+    synth = synthetic_shifts(cfg)
+    for g in groups.values():
+        g["synthetic_pedals"] = sorted(synth.get(f"pedals:{g['family']}", {}))
+    return True
 
 
 def _clean(v):
@@ -760,7 +774,7 @@ def _num(x, digits: int = 2) -> str:
     return "n/a" if x is None or not math.isfinite(float(x)) else f"{float(x):+.{digits}f}"
 
 
-def render_markdown(res: Mapping) -> str:
+def render_markdown(res: Mapping, discussion: str | None = None) -> str:
     p = res["protocol"]
     L: list[str] = [
         "# test_real sim-to-real gap (P5 D11)",
@@ -824,7 +838,7 @@ def render_markdown(res: Mapping) -> str:
         "## Family-level descriptor shifts (wet - dry)",
         "",
         "Real recordings vs the synthetic v1 `train` renders of KB pedals of the same family "
-        "(overdrive: ts808; distortion: ds1, rat). Aggregate only; mean [CI] (n), median.",
+        f"({_family_pedals(res)}). Aggregate only; mean [CI] (n), median.",
         "",
         "| group | family | term | real | synthetic family |",
         "|---|---|---|---|---|",
@@ -874,7 +888,16 @@ def render_markdown(res: Mapping) -> str:
             kb = ", ".join(f"{lv}: {_num(r)}" for lv, r in v["kb"].items())
             L.append(f"| {name} | {_num(v['real'])} | {kb} |")
         L.append("")
+    if discussion:
+        L += ["", discussion.strip()]
     return "\n".join(L).rstrip() + "\n"
+
+
+def _family_pedals(res: Mapping) -> str:
+    fams: dict[str, list[str]] = {}
+    for g in res.get("family_shifts", {}).values():
+        fams.setdefault(g["family"], list(g.get("synthetic_pedals") or []))
+    return "; ".join(f"{f}: {', '.join(p) or 'none'}" for f, p in sorted(fams.items()))
 
 
 __all__ = [

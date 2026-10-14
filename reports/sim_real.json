@@ -1270,7 +1270,10 @@
       "median": -5.465027
      }
     }
-   }
+   },
+   "synthetic_pedals": [
+    "ts808"
+   ]
   },
   "egfxset:RAT": {
    "family": "distortion",
@@ -1342,7 +1345,10 @@
       "median": -5.999156
      }
     }
-   }
+   },
+   "synthetic_pedals": [
+    "ds1"
+   ]
   },
   "egfxset:TubeScreamer": {
    "family": "overdrive",
@@ -1414,7 +1420,10 @@
       "median": -5.465027
      }
     }
-   }
+   },
+   "synthetic_pedals": [
+    "ts808"
+   ]
   },
   "podset:bluesdriver": {
    "family": "overdrive",
@@ -1486,7 +1495,10 @@
       "median": -5.465027
      }
     }
-   }
+   },
+   "synthetic_pedals": [
+    "ts808"
+   ]
   },
   "podset:kingoftone": {
    "family": "overdrive",
@@ -1558,7 +1570,10 @@
       "median": -5.465027
      }
     }
-   }
+   },
+   "synthetic_pedals": [
+    "ts808"
+   ]
   },
   "podset:ktr": {
    "family": "overdrive",
@@ -1630,7 +1645,10 @@
       "median": -5.465027
      }
     }
-   }
+   },
+   "synthetic_pedals": [
+    "ts808"
+   ]
   },
   "podset:ocd": {
    "family": "overdrive",
@@ -1702,7 +1720,10 @@
       "median": -5.465027
      }
     }
-   }
+   },
+   "synthetic_pedals": [
+    "ts808"
+   ]
   },
   "podset:tubedreamer": {
    "family": "overdrive",
@@ -1774,7 +1795,10 @@
       "median": -5.465027
      }
     }
-   }
+   },
+   "synthetic_pedals": [
+    "ts808"
+   ]
   }
  },
  "ts_grid_direction": {

@@ -68,7 +68,7 @@ Best-of-sweep level counts (MR-STFT): whitebox: {'-6': 100}; greybox: {'-6': 100
 
 ## Family-level descriptor shifts (wet - dry)
 
-Real recordings vs the synthetic v1 `train` renders of KB pedals of the same family (overdrive: ts808; distortion: ds1, rat). Aggregate only; mean [CI] (n), median.
+Real recordings vs the synthetic v1 `train` renders of KB pedals of the same family (distortion: ds1; overdrive: ts808). Aggregate only; mean [CI] (n), median.
 
 | group | family | term | real | synthetic family |
 |---|---|---|---|---|
@@ -124,37 +124,42 @@ pOD-set `tubedreamer` gain x tone grid (36 items, internal: aggregate only) vs t
 | gain~centroid_oct | -0.43 | -24: -0.24, -18: +0.13, -12: +0.44, -6: +0.52 |
 | gain~crest_db | -0.77 | -24: -0.92, -18: -0.95, -12: -0.90, -6: -0.71 |
 
-## Discussion (hand-written for this run, 2026-10-14; re-check if regenerated)
 
-**Settings mapping and knob direction.** The `test_real` manifest stores EGFxSet settings as KB pot rotations in [0, 1] (`data.test_real.map_settings` / `knob_rotation`; `test_real.egfxset.knob_map` renames the CSV's TubeScreamer `overdrive` to the KB pot `drive`, and the ingest rejects any name that is not a KB pot). KB knobs are rotations too (`physics.kb.Pot` applies the taper), so the values pass through unchanged: TubeScreamer -> `ts808` {drive 1.0, tone 0.5, level 0.5}, RAT -> `rat` {distortion 1.0, filter 0.5, volume 1.0}. EGFxSet recorded each unit at **one** setting, so knob direction cannot be checked inside the KB groups. What the run does show:
-- KB grey-box knob sweeps go the documented way: `ts808` tone and drive raise the centroid (drive also lowers the crest factor); `rat` filter lowers the centroid (turning it up cuts treble) and distortion raises the centroid and lowers the crest factor.
-- At the item settings, every KB render moves the crest factor the same way as the real pedal (agreement 1.00 for every engine and level), and the centroid the same way for 0.93-0.98 of items at -6 dBFS (TS white-box 0.97, TS grey-box 0.93, RAT grey-box 0.98). At -24 dBFS the TS grey-box agrees on the centroid for only 0.49 of items, because the render is barely driven there.
-- On the pOD-set `tubedreamer` gain x tone grid (TS-derived, not a TS808; internal, aggregate only; the gain -> drive mapping is an assumption), tone vs centroid shift has the same sign and size for real and KB (Spearman +0.66 real, +0.57 to +0.63 KB), and gain vs crest shift too (-0.77 real, -0.71 to -0.95 KB). Gain vs centroid does not match: -0.43 real, but the KB sign depends on the assumed input level (-0.24 at -24 dBFS, +0.13 to +0.52 at -18 to -6 dBFS).
-- No RAT setting grid exists in `test_real`, so `rat` direction is checked only on the KB side.
+## Discussion
 
-**KB items: the sim-to-real gap.** For both KB pedals, the render at the item settings is closer to the real wet than both references, at every sweep level. TS808 at -6 dBFS: MR-STFT 0.97 (white-box) and 1.34 (grey-box), vs 2.17 for the dry and 1.86 for the default-knob grey-box. The white-box beats the grey-box at every level. RAT (unseen pedal) grey-box at -6 dBFS: 1.53, vs 5.19 for the dry and 2.00 for default knobs. Descriptor errors follow MR-STFT: TS white-box |Δ centroid| 0.10 octave and |Δ odd/even| 2.2 dB at -6 dBFS. The HNR errors (2-4 dB) are about the size of the dry-vs-wet HNR difference, so they say little.
+Hand-written for the 2026-10-14 run (`reports/sim_real_discussion.md`, appended verbatim by `lstmabar eval sim-real`). Every number below is from `reports/sim_real.json`. Re-check them if the report is regenerated from a new run.
+
+**Settings mapping and knob direction.**
+- *Mapping.* The `test_real` manifest stores EGFxSet settings as KB pot rotations in [0, 1] (`data.test_real.map_settings` / `knob_rotation`). `test_real.egfxset.knob_map` renames the CSV's TubeScreamer `overdrive` to the KB pot `drive`, and the ingest rejects any name that is not a KB pot. KB knobs are rotations too (`physics.kb.Pot` applies the taper), so the values pass through unchanged:
+  - TubeScreamer -> `ts808` {drive 1.0, tone 0.5, level 0.5}
+  - RAT -> `rat` {distortion 1.0, filter 0.5, volume 1.0}
+- *One setting per unit.* EGFxSet recorded each unit at a single setting, and `aggregate_kb` asserts this. So knob direction cannot be checked within the KB groups. What the run does show:
+  - **KB knob sweeps go the documented way.** `ts808` tone clockwise is brighter (centroid shift +0.13 / +0.20 / +0.83 oct at 0 / 0.5 / 1), and drive is brighter and lowers the crest factor. `rat` filter clockwise is darker (+2.01 / +1.52 / +0.45 oct), and distortion is brighter and lowers the crest factor.
+  - **Per-item sign agreement.** Every KB render moves the crest factor the same way as the real pedal (1.00 for every engine and level). At −6 dBFS the centroid moves the same way for 0.97 (TS white-box), 0.93 (TS grey-box) and 0.98 (RAT grey-box) of items. This check discriminates weakly: the default-knob grey-box also scores 0.86 (TS) and 0.98 (RAT) at −6 dBFS.
+  - **pOD-set `tubedreamer` grid.** This is a TS-derived pedal, not a TS808; it is internal (aggregate only), and the gain -> drive mapping is an assumption. Tone vs centroid shift agrees between real and KB (Spearman +0.66 real, +0.57 to +0.63 KB), and so does gain vs crest shift (−0.77 real, −0.71 to −0.95 KB). Gain vs centroid does not: −0.43 real, while the KB sign depends on the assumed input level (−0.24 at −24 dBFS, +0.13 to +0.52 at −18 to −6 dBFS).
+  - **RAT.** `test_real` has no RAT setting grid, so `rat` direction is checked only on the KB side.
+
+**KB items: the sim-to-real gap.**
+- *MR-STFT.* At −12 and −6 dBFS, every render at the item settings has a lower MR-STFT than both references.
+  - TS808 at −6 dBFS: 0.97 (white-box) and 1.34 (grey-box), vs 2.17 for the dry and 1.86 for the default-knob grey-box.
+  - RAT (unseen pedal) grey-box at −6 dBFS: 1.53, vs 5.19 for the dry and 2.00 for default knobs.
+  - This does not hold at every level: the TS grey-box at −24 dBFS (2.171) is no better than the dry (2.166).
+  - The white-box has a lower MR-STFT than the grey-box at every sweep level.
+- *Descriptors, TS.* The descriptors agree with MR-STFT for the TS. White-box at −6 dBFS: |Δ centroid| 0.10 octave and |Δ odd/even| 2.2 dB, vs 0.38 octave and 10.4 dB for the default-knob grey-box.
+- *Descriptors, RAT.* For the RAT they do not agree. The grey-box centroid error grows with the input level (0.19, 0.17, 0.26, 0.35 octave from −24 to −6 dBFS). At −12 and −6 dBFS it is *worse* than the default-knob grey-box (0.21 octave at both levels). The odd/even error is about the same as default knobs (7.4–8.0 vs 7.4–9.9 dB).
+- *HNR.* The HNR errors (2–5 dB) are about the size of the dry-vs-wet HNR difference (3.7 dB TS, 5.5 dB RAT), so they say little.
 
 **Caveats.**
-- The best sweep level is -6 dBFS, the hottest level tried, for 100 % of TS items and 93 % of RAT items, and MR-STFT still falls as the level rises. The real pedals were probably driven harder than -6 dBFS peak at `physics.volts_per_full_scale` = 1 V. So the true minimum is likely outside the sweep, and "best" is both optimistic (chosen per item) and capped by the sweep range. A wider sweep (e.g. 0 / +6 dBFS) is a cheap follow-up.
-- MR-STFT magnitudes are not comparable across pedals: the RAT's dry reference is 5.19 against 2.17 for the TS, because the RAT changes the signal much more.
-- Dry and wet are assumed to be the same take, time-aligned (not verified). The metrics are magnitude-only, so a few ms of offset matters little, but a different take would inflate every number, the references included.
-- Per group, n = 100 items, chosen deterministically (`eval.sim_real.max_items_per_group`) out of about 690 per unit, with one setting per unit. The CIs are over notes, not over settings or pedal units.
+- **Input level.** The best sweep level is −6 dBFS, the hottest level tried, for 100 % of TS items and 93 % of RAT items, and MR-STFT is still falling at −6 dBFS. The real pedals were probably driven harder than −6 dBFS peak at `physics.volts_per_full_scale` = 1 V. So the true minimum is likely outside the sweep, and "best" is optimistic twice over: it is chosen per item on that item, and it is capped by the sweep range. A wider sweep (e.g. 0 / +6 dBFS) is a cheap follow-up.
+- **Cross-pedal comparison.** MR-STFT magnitudes are not comparable across pedals: the RAT's dry reference is 5.19 against 2.17 for the TS, because the RAT changes the signal much more.
+- **Alignment.** Dry and wet are assumed to be the same take, time-aligned (not verified). The metrics are magnitude-only, so a few ms of offset matters little, but a different take would inflate every number, the references included.
+- **Sample.** Per group, n = 100 items, chosen deterministically (`eval.sim_real.max_items_per_group`) out of 689–690 per unit, with one setting per unit. The CIs are over notes, not over settings or pedal units.
 
-**Family-level shifts (no KB entry; aggregate only).** The real EGFxSet distortion pedals are much more saturated than the synthetic v1 renders of their family. Crest-factor shift: BluesDriver -15.6 dB and RAT -16.6 dB, vs -5.5 dB (overdrive) and -6.1 dB (distortion) synthetic. Odd/even shift: +13 to +15 dB real vs +4 / +7 dB synthetic. The EGFxSet TubeScreamer matches the synthetic overdrive crest shift (-5.7 vs -5.5 dB) but is brighter (+0.46 vs +0.20 octave). The pOD-set pedals show small shifts and centroid *decreases* (-0.1 to -1.2 octave). Their input is ~6 min of mixed material (10 s analysed), not DI guitar, and the outputs are normalized per pedal, so these numbers are not comparable to the DI-note shifts. They mainly show that the v1 synthetic distribution (centroid +0.2 octave for overdrive) does not cover that input regime.
+**Family-level shifts (aggregate only).** The synthetic references are the v1 `train` KB renders of each family: overdrive = `ts808`, distortion = `ds1` (`rat` is held out, so it is not in `train`).
+- *EGFxSet BluesDriver and RAT* are much more saturated than the synthetic renders of their families. BluesDriver (overdrive) crest shift is −15.6 dB vs −5.5 dB synthetic; RAT (distortion) is −16.6 dB vs −6.1 dB. Both units were recorded at maximum gain/distortion, while v1 samples knobs across their range.
+- *Odd/even shift.* All three EGFxSet pedals have a far larger shift than the synthetic renders: +12.7 (TubeScreamer), +13.4 (RAT) and +15.1 dB (BluesDriver), vs +4.0 (overdrive) and +7.2 dB (distortion).
+- *EGFxSet TubeScreamer.* It matches the synthetic overdrive crest shift (−5.7 vs −5.5 dB) but is brighter (+0.46 vs +0.20 octave).
+- *pOD-set pedals.* They show small crest shifts (−1.7 to −4.0 dB). Four of five lower the centroid, with CIs excluding 0: kingoftone −1.08, ktr −0.80, ocd −1.17 and tubedreamer −0.62 octave. The bluesdriver's centroid shift is −0.11 [−0.26, 0.03], i.e. no clear change.
+- *pOD-set comparability.* Their input is ~6 min of mixed material (10 s analysed), not DI guitar, and the outputs are normalized per pedal. So these numbers are not comparable to the DI-note shifts. They mainly show that the v1 synthetic overdrive distribution (centroid +0.20 octave) does not cover that input regime.
 
 Text-driven methods are not evaluated on `test_real` (no instruction text, D11).
-
-## Discussion (written by hand for this run, 2026-10-14; re-check it if the report is regenerated)
-
-**Knob mapping.** EGFxSet `settings` are stored as KB pot rotations in [0, 1] at ingest (`data.test_real.map_settings`; config `test_real.egfxset.knob_map` renames the CSV's `overdrive` to the KB `drive`, and the names are checked against the KB pots). TubeScreamer = `{drive: 1.0, tone: 0.5, level: 0.5}`, RAT = `{distortion: 1.0, filter: 0.5, volume: 1.0}`. KB knobs are rotations too (`physics.kb.Pot` applies the taper), so the two use the same units. EGFxSet recorded **each unit at one setting**, so within the KB groups knob direction can't be checked across settings. What was checked instead:
-- KB grey-box sweeps (table above) move as the hardware is documented to: TS drive and RAT distortion up → lower crest factor and a brighter centroid; TS tone clockwise → brighter (+0.13 → +0.83 oct); RAT filter clockwise → darker (+2.01 → +0.45 oct).
-- Per item, the KB render shifts the crest factor relative to the dry in the same direction as the real pedal for every item and engine (1.00). It also shifts the centroid the same way for 0.97 of TS items (white-box, −6 dBFS) and 0.98 of RAT items. The dry reference scores about 0.5 on these columns (it does not shift at all, so sign agreement there is just noise).
-- On the pOD-set `tubedreamer` grid (a TS-derived pedal, not a TS808; gain → `drive` is an assumption), the `ts808` grey-box matches the real pedal on tone ~ centroid (real ρ +0.66, KB +0.57 to +0.63) and gain ~ crest (real −0.77, KB −0.71 to −0.95). Gain ~ centroid does not match: real −0.43, KB −0.24 at −24 dBFS and positive (+0.13 to +0.52) at higher input levels.
-
-**Sim-to-real gap (KB items).** Both KB pedals land well below the two references. TS white-box at −6 dBFS: MR-STFT 0.97 [0.95, 1.00], vs the derived grey-box 1.34, the grey-box at default knobs 1.86 and the dry note 2.17. Its centroid error is 0.10 octave and its odd/even error 2.2 dB. RAT (unseen pedal, grey-box only): 1.53, vs 2.00 at default knobs and 5.19 for the dry. The white-box is closer to the real TS than the grey-box at every sweep level, which matches the P2 finding that the grey-box approximates the white-box. These are distances after RMS matching: they say "closer than the references", not "indistinguishable".
-
-**Input level.** Best-of-sweep picks −6 dBFS, the top of the sweep, for every TS item and 93/100 RAT items, and error still falls monotonically towards −6. The real input level (or the `physics.volts_per_full_scale` = 1 V calibration) is probably hotter than the sweep covers. So "best" is a boundary value, not an estimate of the level. It is optimistic in two ways: it is chosen per item on that item, and the true optimum may lie beyond the sweep. Extending the sweep (e.g. to 0 dBFS) is a cheap follow-up. It would be a config change, not a protocol change.
-
-**Family-level shifts.** Measured from the dry, the real EGFxSet RAT and BluesDriver compress far more than the synthetic v1 renders of their families (crest −16.6 and −15.6 dB vs −6.1 and −5.5 dB). The real TubeScreamer matches the synthetic overdrive family on crest (−5.7 vs −5.5 dB) but is brighter (+0.46 vs +0.20 oct). All three real pedals have a much larger odd/even shift than the synthetic renders (+12.7 to +15.1 dB vs +4.0 / +7.2 dB). Part of the RAT/BD gap is that these units were recorded at max distortion/gain, while v1 samples knobs across their range. The pOD-set pedals (internal, aggregate only) shift the centroid **down** (−0.11 to −1.17 oct) and the crest only −1.7 to −4.0 dB. Their input is mixed material (not DI guitar), one 10 s segment, and per-pedal normalized outputs, so they are not comparable to the v1 DI renders. Read them as a coarse family check only.
-
-**Caveats.** EGFxSet dry/wet pairing assumes the same take (not verified). MR-STFT and the descriptors are magnitude-only, so small onset offsets matter little. The subsample is ≤ 100 items per group (lowest sha256 of the item id) out of 689–690. CIs are over items, so they do not cover the choice of notes or units. Harmonic terms were available for all evaluated EGFxSet items.
