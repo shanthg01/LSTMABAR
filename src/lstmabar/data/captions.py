@@ -967,8 +967,9 @@ class LedgerLocked(RuntimeError):
 class LedgerLock:
     """One paraphrase run at a time: an exclusive lock file next to the ledger."""
 
-    def __init__(self, ledger_path: Path) -> None:
+    def __init__(self, ledger_path: Path, label: str = "captions") -> None:
         self.path = Path(ledger_path).with_suffix(".lock")
+        self.label = label
 
     def __enter__(self) -> LedgerLock:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -976,7 +977,7 @@ class LedgerLock:
             fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
         except FileExistsError as e:
             raise LedgerLocked(
-                f"{self.path.name} exists: another captions run is active (or one crashed; "
+                f"{self.path.name} exists: another {self.label} run is active (or one crashed; "
                 "delete the lock file once no run is active)"
             ) from e
         with os.fdopen(fd, "w", encoding="utf-8") as f:
