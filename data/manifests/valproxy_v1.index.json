@@ -1,0 +1,81 @@
+{
+ "counts": {
+  "distractors": {
+   "brightness": 678,
+   "compression": 93,
+   "gain": 1317,
+   "mids": 140
+  },
+  "dropped_separation": {
+   "compression": 39
+  },
+  "engine": {
+   "greybox": 1918,
+   "whitebox": 310
+  },
+  "items_by_distractors": {
+   "1": 660,
+   "2": 784
+  }
+ },
+ "dataset_sha256": "c4987b4ab834d3f7b4da87fcfc72d42fd995ad634f1939c7dfb7635291c93cfa",
+ "dataset_version": "v1",
+ "files_sha256": "4d3f641ec65bb89562119021bc07ca2fd2224cfcd591982fa67fa7b07ae864f9",
+ "label_levels": {
+  "brightness": {
+   "bright": 132,
+   "dark": 128,
+   "neutral": 766,
+   "slightly_bright": 216,
+   "slightly_dark": 202
+  },
+  "compression": {
+   "heavy": 108,
+   "light": 118,
+   "none": 200
+  },
+  "gain": {
+   "extreme": 221,
+   "high": 362,
+   "low": 284,
+   "medium": 310,
+   "none": 267
+  },
+  "kind": {
+   "free": 426,
+   "pedal:big_muff": 193,
+   "pedal:ds1": 192,
+   "pedal:fuzz_face_ge": 207,
+   "pedal:fuzz_face_si": 217,
+   "pedal:ts808": 209
+  },
+  "mids": {
+   "neutral": 239,
+   "pushed": 94,
+   "scooped": 93
+  }
+ },
+ "manifest_sha256": "8938227fdcffe5e094e8b397062d5993f69a3794a3a916895458e902d77a5286",
+ "partial": false,
+ "renders": 2228,
+ "settings": {
+  "distractors_per_item": 2,
+  "gain_split_db": 32.0,
+  "min_gap": {
+   "brightness": 3.0,
+   "brightness_knob": 0.1,
+   "compression": 1.0,
+   "gain": 6.0,
+   "mids": 3.0
+  },
+  "seed": 0,
+  "whitebox_pedals": [
+   "ts808",
+   "ds1"
+  ]
+ },
+ "targets_tables_sha256": "884b74aa938013e6c02bce632bb3ac27d3b31e926701b52a9a4fab4d103c8277",
+ "val_items": 1444,
+ "val_items_sha256": "ff9959ea1d6ed8e9ce25e6d0cc83ba54a7295b817b18241c9cebb2b7a0ca2e6d",
+ "version": "valproxy_v1"
+}
