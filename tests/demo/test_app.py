@@ -45,7 +45,7 @@ def _render_fn(app):
 
 
 def _manual_controls(controls, n_dials=0):
-    return [MANUAL, False, None, *([None] * n_dials), *controls]
+    return [MANUAL, False, None, None, *([None] * n_dials), *controls]
 
 
 def test_build_app_with_fake_board():
@@ -230,7 +230,9 @@ def _pedal_render(app, kb, pedal_id, analyse=False):
     dials = _dials(kb)
     o = _pedal_outputs(app, kb, pedal_id, dials)
     controls = [*dials, *_values(o["checks"]), *_values(o["sliders"])]
-    return _render_fn(app)(None, "single_notes", True, pedal_id, analyse, o["state"], *controls)
+    return _render_fn(app)(
+        None, "single_notes", True, pedal_id, analyse, o["state"], None, *controls
+    )
 
 
 @pytest.mark.parametrize("registered", [False, True])
@@ -281,7 +283,7 @@ def _render_with(app, kb, dials_now, derived_dials, slider_edit=None):
         i, v = slider_edit
         sliders[i] = v
     controls = [*_dials(kb, ts808=dials_now), *_values(o["checks"]), *sliders]
-    return _render_fn(app)(None, "single_notes", False, "ts808", False, o["state"], *controls)
+    return _render_fn(app)(None, "single_notes", False, "ts808", False, o["state"], None, *controls)
 
 
 def _drive_gain(md):
@@ -326,7 +328,7 @@ def test_render_before_first_derive_is_not_custom(kb, monkeypatch):
     monkeypatch.delitem(WHITEBOX, "rat", raising=False)
     app = build_app(FakeBoard, kb=kb)
     controls = [*_dials(kb), True, True, True, None, None, None, None]
-    out = _render_fn(app)(None, "single_notes", False, "rat", False, None, *controls)
+    out = _render_fn(app)(None, "single_notes", False, "rat", False, None, None, *controls)
     assert "custom" not in out[5] and "ProCo RAT" in out[5]
 
 
@@ -349,3 +351,104 @@ def test_render_with_archetype_panel(kb, monkeypatch, numba_ok):
     assert "| | dry | grey-box | white-box |" in arche_md
     assert set(bars["signal"]) == {"dry", "grey-box", "white-box"}
     assert list(harms.columns) == ["signal", "harmonic", "dbc"] and len(harms) > 0
+
+
+# --- M3: text -> knobs ----------------------------------------------------------------------------
+
+
+def _text_app(fail=None, kb=None, uses_audio=False):
+    from omegaconf import OmegaConf
+
+    from lstmabar.demo.text import TextKnobSetter
+    from lstmabar.eval.baselines.base import Method, complete_board
+
+    class Fixed(Method):
+        name = "fake"
+
+        def __init__(self):
+            super().__init__(None)
+            self.uses_audio = uses_audio
+
+        def predict(self, queries):
+            if fail is not None:
+                raise fail
+            # real-board names: only drive.gain_db and the gates exist on FakeBoard
+            b = {"drive": {"gain_db": 0.75, "enabled": 1.0}, "eq": {"enabled": 0.0}}
+            return [complete_board(b, enabled=1.0) for _ in queries]
+
+        def info(self):
+            return {"name": self.name, "k": 3}
+
+    cfg = OmegaConf.create({"seed": 0, "audio": {"inference_peak_dbfs": -15.0}})
+    setter = TextKnobSetter(cfg, "mean", build=lambda n, c, seed=0: Fixed(), load_train=list)
+    return build_app(FakeBoard, kb={} if kb is None else kb, text_setter=setter)
+
+
+def _text_controls():
+    return [True, True, True, None, None, None, None]
+
+
+def test_text_sets_sliders_and_gates_through_the_generated_controls():
+    app = _text_app()
+    labels = {getattr(b, "label", None) for b in app.blocks.values()}
+    assert "Instruction" in labels
+    current = [True, True, False, 3.0, 0.25, 0.4, -6.0]
+    pedal, *rest = _fn(app, "on_text")("more crunch", None, "single_notes", *current)
+    checks, sliders = rest[:N_BLOCKS], rest[N_BLOCKS : N_BLOCKS + N_SLIDERS]
+    text_md, state = rest[N_BLOCKS + N_SLIDERS :]
+    assert pedal == MANUAL
+    assert checks == [True, False, False]  # level: not predicted by the method -> unchanged
+    assert sliders == [pytest.approx(12.0), 0.25, 0.4, -6.0]  # only drive.gain_db is shared
+    assert "`mean`" in text_md and "k: 3" in text_md and "compressor" in text_md
+    assert state["sliders"] == sliders and state["enabled"] == checks
+
+    # Render with those controls: the readout credits the text method.
+    controls = [*checks, *sliders]
+    out = _render_fn(app)(None, "single_notes", False, MANUAL, False, None, state, *controls)
+    assert out[4].startswith("**Knobs set from text** by `mean`")
+    assert "| drive | gain_db | 12 dB |" in out[4]
+    # After a hand edit the credit goes away.
+    edited = [*checks, 0.0, *sliders[1:]]
+    out = _render_fn(app)(None, "single_notes", False, MANUAL, False, None, state, *edited)
+    assert out[4].startswith("| Block |")
+
+
+def test_text_errors_keep_the_controls_and_hide_paths():
+    app = _text_app(fail=RuntimeError(r"cannot read C:\Users\me\secret\cache.npz"))
+    out = _fn(app, "on_text")("x", None, "single_notes", *_text_controls())
+    assert all(u == gr.update() for u in out[: 1 + N_BLOCKS + N_SLIDERS])
+    assert out[-1] == gr.update()
+    msg = out[-2]
+    assert "text method unavailable (mean)" in msg and "secret" not in msg
+    empty = _fn(app, "on_text")("  ", None, "single_notes", *_text_controls())
+    assert "Type an instruction" in empty[-2]
+
+
+def test_render_applies_the_inference_level():
+    """R3: the dry clip reaching the board is peak-normalized to -15 dBFS."""
+    app = _text_app()
+    loud = (np.random.default_rng(0).uniform(-1, 1, 4410) * 32000).astype(np.int16)
+    args = _manual_controls(_text_controls())
+    (_, dry), *_ = _render_fn(app)((44100, loud), "single_notes", False, *args)
+    peak = np.max(np.abs(dry.astype(np.float64))) / 32767.0
+    assert 20 * np.log10(peak) == pytest.approx(-15.0, abs=0.01)
+
+
+def test_text_switches_an_active_pedal_to_the_manual_board(kb):
+    app = _text_app(kb=kb)
+    pedal, *_ = _fn(app, "on_text")("darker", None, "single_notes", *_text_controls())
+    assert pedal == MANUAL
+
+
+def test_text_action_is_private_and_shows_decode_errors():
+    app = _text_app(uses_audio=True)
+    assert _deps(app, "on_text")[0].api_visibility == "private"
+    bad = (44100, np.zeros(0, np.int16))
+    out = _fn(app, "on_text")("x", bad, "single_notes", *_text_controls())
+    assert "empty" in out[-2] and "unavailable" not in out[-2]
+
+
+def test_default_app_reads_the_demo_config():
+    app = build_app(FakeBoard, kb={})
+    md = [b.value for b in app.blocks.values() if isinstance(b, gr.Markdown)]
+    assert any("Text method: `mean`" in str(v) for v in md)

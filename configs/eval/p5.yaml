@@ -16,11 +16,19 @@ eval:
   max_items: null                         # cap per split for smoke runs (--limit overrides)
   methods: [noop, mean, knn_clap, knn_bge, llm_zero_shot, text2fx]
   workers: 2                              # 16 GB machine
+  select_harmonic: false                  # val selection (and the val table) with
+                                          # metrics.harmonic_descriptors=false (~90 % of scoring
+                                          # time); reported splits keep metrics.* below. The
+                                          # report states where they were off (5.4)
 
   metrics:                                # D2
     gate_threshold: 0.5
     mrstft_fft_sizes: [512, 1024, 2048]   # dsp.losses.multi_resolution_stft_loss
     afc_distances: [mrstft, descriptor]   # primary, secondary
+    harmonic_descriptors: true            # harmonic analysis of predicted renders (~90 % of
+                                          # scoring time). false keeps the centroid; odd/even,
+                                          # HNR and archetype terms become NaN; reports must
+                                          # state it
     descriptor_keys: [centroid_hz, odd_even_db, hnr_db]   # source descriptor keys; the error
                                                           # terms are metrics.DESCRIPTOR_TERMS
 
@@ -35,22 +43,34 @@ eval:
     text_models: [bge-base-en-v1.5]
     batch_size: 32
     clap_sample_rate: 48000
+    save_every: 2000                      # rows between periodic saves (resumable build)
+    num_threads: 4                        # torch threads (shared machine)
 
   baselines:                              # D4
     knn:
       k_grid: [1, 3, 5, 10, 25, 50]       # tuned on val (D8)
       clap_model: clap-htsat-unfused      # knn_clap text backbone (the other CLAP: ablation)
       bge_model: bge-base-en-v1.5         # knn_bge
-    llm:
+    llm:                                  # eval/baselines/llm.py; model + prices checked with
+                                          # the claude-api skill 2026-10-14
       model: claude-haiku-5-5
-      max_usd: 1.0                        # hard cap (R1 ledger/guard pattern)
-      prompt_version: z1
-      price_per_mtok: {input: 0.05, output: 0.25}   # Batches API price (as captions)
+      max_usd: 1.0                        # hard cap (R1 ledger/guard pattern; own ledger
+                                          # data/cache/llm/zero_shot/ledger.jsonl)
+      prompt_version: z1                  # bump on any prompt/schema edit (test pins the hash)
+      price_per_mtok: {input: 0.05, output: 0.25}   # Batches API: 50 % of $0.10 / $0.50 per
+                                                    # MTok (prompts <= 100K tokens)
+      max_tokens: 400                     # per request; bounds the worst case for the cap
+      effort: low                         # thinking disabled (allowed at effort <= high)
+      allow_spend: false                  # opt-in: =true and ANTHROPIC_API_KEY to submit
+      poll_seconds: 30
+      max_resubmits: 2
     text2fx:
       clap_model: clap-htsat-unfused
       steps: 200
       lr: 0.05
-      max_items: 60                       # local subset per split (full run on Colab)
+      max_items: 4                        # distinct (text, audio) optimizations per split;
+                                          # ~26 min each locally (200 steps, measured), so
+                                          # cap with --limit; null on Colab (full run)
 
   proxy:                                  # D8: synthetic val 2AFC
     version: valproxy_v1                  # audio: data/rendered/valproxy_v1/ (gitignored)
@@ -68,3 +88,5 @@ eval:
   sim_real:                               # D11
     input_peak_sweep_dbfs: [-24.0, -18.0, -12.0, -6.0]
     resample_to: 44100
+    max_items_per_group: 100              # deterministic subsample per dataset:device (sha256
+                                          # of the item id); null = all (white-box is slow)
