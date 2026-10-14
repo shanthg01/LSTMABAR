@@ -1,0 +1,11 @@
+# P6 stage 1 (task 6.2): L_param on cached embeddings (CPU). Wave 0 stub; P6 wave fills it in.
+# Usage: lstmabar train stage1 [--config configs/train/stage1.yaml] [dotlist overrides]
+defaults:
+  - ../eval/p5.yaml
+
+name: train_stage1
+seed: 0
+
+model:
+  text_model: clap-htsat-unfused     # embed_cache model id (P5 D5; the other CLAP / bge: ablations)
+  audio_model: clap-htsat-unfused
