@@ -135,6 +135,11 @@ def test_descriptor_errors_nan_aware():
     assert M.descriptor_distance(a, b, harmonic=False) == pytest.approx(1.0)
     assert math.isnan(M.descriptor_distance({}, {}))
     assert M.descriptor_distance(a, a) == 0.0
+    # archetype L1 (0.5, unscaled) joins when both vectors are given
+    assert M.descriptor_distance(a, b, True, arch, arch2) == pytest.approx(
+        (1.0 + 2.0 / 6.0 + 0.5) / 3
+    )
+    assert M.descriptor_distance(a, b, False, arch, arch2) == pytest.approx(1.0)
 
 
 def test_analyse_render_signal_descriptors(tmp_path):

@@ -247,12 +247,16 @@ def descriptor_distance(
     pred_desc: Mapping[str, float | None],
     ref_desc: Mapping[str, float | None],
     harmonic: bool = True,
+    pred_arch: Mapping[str, float | None] | None = None,
+    ref_arch: Mapping[str, float | None] | None = None,
 ) -> float:
     """Scalar descriptor distance for the secondary 2AFC: the mean of the available
     :func:`descriptor_errors` terms after scaling each by a fixed unit (1 octave, 6 dB, 6 dB;
-    archetype L1 unscaled). NaN if no term is available."""
-    e = descriptor_errors(pred_desc, ref_desc, harmonic=harmonic)
-    terms = [e[k] / u for k, u in DESCRIPTOR_UNITS.items() if math.isfinite(e[k])]
+    archetype L1 unscaled, included when both archetype vectors are given). NaN if no term is
+    available."""
+    e = descriptor_errors(pred_desc, ref_desc, pred_arch, ref_arch, harmonic=harmonic)
+    units = {**DESCRIPTOR_UNITS, "archetype_l1": 1.0}
+    terms = [e[k] / u for k, u in units.items() if math.isfinite(e[k])]
     return float(np.mean(terms)) if terms else NAN
 
 

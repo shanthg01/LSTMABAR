@@ -11,6 +11,14 @@ units (``workers <= 1``: in-process). Predicted renders are cached per worker, k
 for several queries on one input (no-op, mean params, both captions of an item) renders and
 analyses it once. The cache is a small LRU, so memory stays bounded; target wets are read per
 unit and dropped.
+
+Threading: scoring runs with torch pinned to **one thread**, in-process (restored afterwards)
+as in the pool workers. Torch's default thread count on a loaded CPU made MR-STFT ~50x slower
+in the P5 smoke run, and one thread keeps in-process and pool numerics identical.
+
+Failed renders (non-finite or silent output): gold/proxy 2AFC scores count as a loss (0.0),
+so a method cannot gain by failing; synthetic audio metrics stay NaN. Either way the unit gets
+``meta["render_failed"]`` (number of failed queries) and the split ``extra["n_render_failed"]``.
 """
 
 from __future__ import annotations
@@ -248,8 +256,10 @@ def _synth_unit(ctx: _Ctx, item: SynthItem, boards: list[tuple[Query, FloatBoard
     harmonic, track = ctx.harmonic(it.voiced_fraction, it.clip_id)
     wet = item.load_wet()
     rows = []
+    failed = 0
     for q, board in boards:
         y, desc, arch = ctx.render(q, board, harmonic, track)
+        failed += y is None
         row = {
             "param_l1": M.param_l1(board, label)["mean"],
             "gate_acc": M.gate_correct(board, label, ctx.threshold),
@@ -266,6 +276,7 @@ def _synth_unit(ctx: _Ctx, item: SynthItem, boards: list[tuple[Query, FloatBoard
         **meta,
         "n_queries": len(rows),
         "harmonic": bool(harmonic),
+        "render_failed": failed,
     }
 
 
@@ -274,32 +285,52 @@ def _gold_unit(ctx: _Ctx, item: GoldItem, preds: dict[str, FloatBoard]):
     refs = [dict(c.target.render["board_params"]) for c in item.clips]
     rows = []
     axes: list[str] = []
+    failed = 0
+
+    def ddist(desc, arch, r, harmonic) -> float:
+        if not desc:
+            return NAN
+        return M.descriptor_distance(
+            desc, r.render["descriptors_wet"], harmonic, arch, r.render.get("archetype_wet")
+        )
+
     for q, clip in zip(item.queries(), item.clips, strict=True):
         board = preds[q.query_id]
         t = clip.target
         harmonic, track = ctx.harmonic(t.render.get("voiced_fraction"), clip.clip_id)
-        y, desc, _ = ctx.render(q, board, harmonic, track)
+        y, desc, arch = ctx.render(q, board, harmonic, track)
+        row: dict[str, float] = {"region_l1": M.region_distance(board, region, ctx.targets, refs)}
+        if y is None:  # failed render: a 2AFC loss, never an excluded item
+            failed += 1
+            row |= {"afc_mrstft": 0.0, "afc_descriptor": 0.0, "mrstft_target": NAN}
+            for d in clip.distractors:
+                if d.axis:
+                    row[f"afc_mrstft/{d.axis}"] = row[f"afc_descriptor/{d.axis}"] = 0.0
+                    if d.axis not in axes:
+                        axes.append(d.axis)
+            rows.append(row)
+            continue
         d_t = ctx.mrstft(y, load_render_audio(ctx.cfg, t))
-        dd_t = M.descriptor_distance(desc, t.render["descriptors_wet"], harmonic) if desc else NAN
+        dd_t = ddist(desc, arch, t, harmonic)
         d_ds, dd_ds = [], []
-        row: dict[str, float] = {}
         per_axis: dict[str, list[float]] = defaultdict(list)
+        per_axis_d: dict[str, list[float]] = defaultdict(list)
         for d in clip.distractors:
             dm = ctx.mrstft(y, load_render_audio(ctx.cfg, d))
+            dd = ddist(desc, arch, d, harmonic)
             d_ds.append(dm)
-            dd_ds.append(
-                M.descriptor_distance(desc, d.render["descriptors_wet"], harmonic) if desc else NAN
-            )
+            dd_ds.append(dd)
             if d.axis:
                 per_axis[d.axis].append(M.two_afc(d_t, [dm]))
+                per_axis_d[d.axis].append(M.two_afc(dd_t, [dd]))
                 if d.axis not in axes:
                     axes.append(d.axis)
         row["afc_mrstft"] = M.two_afc(d_t, d_ds)
         row["afc_descriptor"] = M.two_afc(dd_t, dd_ds)
-        row["region_l1"] = M.region_distance(board, region, ctx.targets, refs)
         row["mrstft_target"] = d_t
         for axis, v in per_axis.items():
             row[f"afc_mrstft/{axis}"] = _nanmean(v)
+            row[f"afc_descriptor/{axis}"] = _nanmean(per_axis_d[axis])
         rows.append(row)
     meta = {
         "gold_source": item.source,
@@ -310,6 +341,7 @@ def _gold_unit(ctx: _Ctx, item: GoldItem, preds: dict[str, FloatBoard]):
         "confidence": item.confidence,
         "axes": sorted(axes),
         "n_clips": len(rows),
+        "render_failed": failed,
     }
     return _mean_scores(rows, GOLD_SCORES), meta
 
@@ -384,6 +416,7 @@ def score_synthetic(
     extra = {
         "gate_f1": gate,
         "n_queries": len(queries),
+        "n_render_failed": sum(int(u.meta.get("render_failed", 0)) for u in units),
         "seconds": {"predict": t_pred, "total": time.perf_counter() - t0},
     }
     return SplitResult(split, method.name, seed, units, preds, extra)
@@ -411,6 +444,7 @@ def score_gold(method: Method, items: Sequence[GoldItem], cfg, seed: int = 0) ->
     units = [UnitScores(uid, split, method.name, seed, s, meta) for uid, s, meta in results]
     extra = {
         "n_queries": len(queries),
+        "n_render_failed": sum(int(u.meta.get("render_failed", 0)) for u in units),
         "seconds": {"predict": t_pred, "total": time.perf_counter() - t0},
     }
     return SplitResult(split, method.name, seed, units, preds, extra)
@@ -498,7 +532,8 @@ def select_hparams(method: Method, val: Sequence[SynthItem], cfg, seed: int = 0)
     """Try every ``method.hparam_grid()`` entry on val, keep the one minimizing
     ``proxy.selection_score`` (ties: first in grid order), apply it, and return
     ``{"chosen": {...}, "scores": [...]}``; falls back to ``method.select(val)`` when the grid
-    is empty. NaN scores never win."""
+    is empty. NaN scores never win; if every score is NaN the first grid entry is applied with
+    a warning and ``"fallback": True`` in the result."""
     grid = list(method.hparam_grid())
     if not grid:
         return {"chosen": method.select(val), "scores": []}
@@ -510,10 +545,16 @@ def select_hparams(method: Method, val: Sequence[SynthItem], cfg, seed: int = 0)
         scores.append({"hparams": dict(hp), "score": s})
         if math.isfinite(s) and s < best_s:
             best, best_s = dict(hp), s
+    out: dict[str, Any] = {"scores": scores}
     if best is None:
+        warnings.warn(
+            f"{method.name}: every val selection score is NaN; using the first grid entry",
+            stacklevel=2,
+        )
         best = dict(grid[0])
+        out["fallback"] = True
     method.set_hparams(best)
-    return {"chosen": best, "scores": scores}
+    return {"chosen": best, **out}
 
 
 __all__ = [

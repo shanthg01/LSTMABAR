@@ -8,7 +8,7 @@ import pytest
 
 from lstmabar.eval import data as D
 from lstmabar.eval import runner as R
-from lstmabar.eval.baselines.base import Method, default_board
+from lstmabar.eval.baselines.base import Method, board_vector, default_board
 
 
 class Const(Method):
@@ -109,15 +109,47 @@ def test_score_synthetic_oracle_is_perfect(fx):
     assert res.extra["n_queries"] == 2 * len(items)
 
 
-def test_score_synthetic_const_renders_once_per_input(fx):
+def _fresh_ctx(cfg):
+    ctx = R._context(cfg)
+    ctx._renders.clear()
+    ctx.n_renders = 0
+    return ctx
+
+
+def test_render_cache_one_render_per_unique_input_board(fx):
+    items = D.load_split(fx, "test")
+    ctx = _fresh_ctx(fx)
+    res = R.score_synthetic(Const(), items, fx, "test")
+    # one board for everything: one render per distinct input (item), not per caption
+    assert ctx.n_renders == len({q.audio_key for it in items for q in it.queries()})
+    assert res.extra["n_queries"] == 2 * len(items)
+    assert all(u.scores["mrstft"] >= 0 for u in res.units)
+    ctx = _fresh_ctx(fx)
+    boards = _synth_oracle(items)
+    R.score_synthetic(Oracle(boards), items, fx, "test")
+    unique = {
+        (q.audio_key, tuple(round(v, 6) for v in board_vector(boards[q.query_id])))
+        for it in items
+        for q in it.queries()
+    }
+    assert ctx.n_renders == len(unique)
+
+
+def test_failed_renders_are_flagged_and_lose_2afc(fx, monkeypatch):
+    monkeypatch.setattr(R._Ctx, "render", lambda self, q, b, h, t: (None, {}, {}))
     items = D.load_split(fx, "test")
     res = R.score_synthetic(Const(), items, fx, "test")
-    ctx = R._context(fx)
-    assert ctx.n_renders > 0
-    before = ctx.n_renders
-    R.score_synthetic(Const(), items, fx, "test")
-    assert ctx.n_renders == before  # every (input, board) pair was cached
-    assert all(u.scores["mrstft"] >= 0 for u in res.units)
+    assert res.extra["n_render_failed"] == 2 * len(items)
+    for u in res.units:
+        assert u.meta["render_failed"] == 2 and math.isnan(u.scores["mrstft"])
+        assert u.scores["gate_acc"] >= 0  # parameter scores are still defined
+    gold = D.load_gold_items(fx)
+    g = R.score_gold(Const(), gold, fx)
+    assert g.extra["n_render_failed"] == sum(len(x.clips) for x in gold)
+    for u in g.units:
+        assert u.scores["afc_mrstft"] == 0.0 and u.scores["afc_descriptor"] == 0.0
+        assert all(v == 0.0 for k, v in u.scores.items() if k.startswith("afc_"))
+        assert u.meta["render_failed"] == u.meta["n_clips"]
 
 
 def test_score_gold_oracle_wins_2afc(fx):
@@ -137,8 +169,11 @@ def test_score_gold_oracle_wins_2afc(fx):
         assert s["region_l1"] == pytest.approx(0.0, abs=1e-9)
         axes = {d.axis for c in g.clips for d in c.distractors}
         assert {f"afc_mrstft/{a}" for a in axes} <= set(s)
+        assert {f"afc_descriptor/{a}" for a in axes} <= set(s)
+        assert all(s[f"afc_mrstft/{a}"] == 1.0 for a in axes)
         assert u.meta["gold_source"] == g.source and u.meta["subsets"] == g.subsets()
-        assert u.meta["n_clips"] == len(g.clips)
+        assert u.meta["n_clips"] == len(g.clips) and u.meta["render_failed"] == 0
+    assert res.extra["n_render_failed"] == 0
 
 
 def test_score_gold_const(fx):
@@ -160,6 +195,50 @@ def test_score_val_without_proxy_and_select(fx):
     assert out["chosen"] == {"use_oracle": True} and m.use_oracle
     assert [s["hparams"] for s in out["scores"]] == m.hparam_grid()
     assert out["scores"][1]["score"] < out["scores"][0]["score"]
+
+
+def test_score_val_merges_proxy_afc(fx, monkeypatch):
+    import dataclasses
+    from pathlib import Path
+
+    from lstmabar.eval import proxy
+
+    val = D.load_split(fx, "val")
+    g0 = D.load_gold_items(fx)[0]
+    items = [
+        dataclasses.replace(
+            g0,
+            gold_id=v.item_id,
+            split="val",
+            source=proxy.PROXY_SOURCE,
+            text_key=v.captions[0].caption_id,
+            audio_key=v.item_id,
+            clips=g0.clips[:1],
+        )
+        for v in val[:1]
+    ]
+    manifest = Path(str(fx.data.manifests_dir)) / f"{fx.eval.proxy.version}.jsonl"
+    manifest.write_text("", encoding="utf-8")
+    monkeypatch.setattr(proxy, "load_proxy_items", lambda cfg, limit=None: items)
+    try:
+        res = R.score_val(Const(), val, fx)
+    finally:
+        manifest.unlink()
+    assert res.extra["proxy"] is True and res.extra["n_proxy"] == 1
+    by_id = {u.unit_id: u for u in res.units}
+    merged = by_id[val[0].item_id].scores
+    assert {"afc_mrstft", "afc_descriptor", "mrstft", "param_l1"} <= set(merged)
+    assert "region_l1" not in merged  # only afc_* keys join
+    assert all(not k.startswith("afc_") for u in res.units[1:] for k in u.scores)
+
+
+def test_select_hparams_all_nan_falls_back(fx, monkeypatch):
+    monkeypatch.setattr(R, "_selection_score", lambda result, cfg: float("nan"))
+    val = D.load_split(fx, "val")
+    m = Switch(_synth_oracle(val))
+    with pytest.warns(UserWarning, match="NaN"):
+        out = R.select_hparams(m, val, fx)
+    assert out["fallback"] is True and out["chosen"] == m.hparam_grid()[0]
 
 
 def test_select_hparams_empty_grid_uses_select(fx):

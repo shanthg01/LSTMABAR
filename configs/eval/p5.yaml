@@ -21,6 +21,10 @@ eval:
     gate_threshold: 0.5
     mrstft_fft_sizes: [512, 1024, 2048]   # dsp.losses.multi_resolution_stft_loss
     afc_distances: [mrstft, descriptor]   # primary, secondary
+    harmonic_descriptors: true            # harmonic analysis of predicted renders (~90 % of
+                                          # scoring time). false keeps the centroid; odd/even,
+                                          # HNR and archetype terms become NaN; reports must
+                                          # state it
     descriptor_keys: [centroid_hz, odd_even_db, hnr_db]   # source descriptor keys; the error
                                                           # terms are metrics.DESCRIPTOR_TERMS
 
