@@ -31,6 +31,12 @@ def _args(**kw) -> argparse.Namespace:
     return argparse.Namespace(**(base | kw))
 
 
+def _copy(cfg):
+    from omegaconf import OmegaConf
+
+    return OmegaConf.create(OmegaConf.to_container(cfg))
+
+
 def _assert_no_abs(text: str, *roots: Path) -> None:
     assert not ABS.search(text), ABS.search(text)
     for r in roots:
@@ -77,8 +83,8 @@ def test_fixtures_cli_end_to_end(tmp_path):
         ]
     )
     assert rc == 0
-    md = (out / "p5_baselines.md").read_text(encoding="utf-8")
-    rep = json.loads((out / "p5_baselines.json").read_text(encoding="utf-8"))
+    md = (out / "p5_baselines_smoke.md").read_text(encoding="utf-8")
+    rep = json.loads((out / "p5_baselines_smoke.json").read_text(encoding="utf-8"))
     assert rep["schema"] == REP.REPORT_SCHEMA
     for key in ("created", "git", "config", "hashes", "methods", "rows", "comparisons"):
         assert key in rep
@@ -119,7 +125,7 @@ def test_fixtures_cli_end_to_end(tmp_path):
 def test_resume_not_run_and_report(fx, tmp_path, monkeypatch):
     cfg, root = fx
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-    cfg = cfg.copy()
+    cfg = _copy(cfg)
     cfg.eval.report_dir = str(tmp_path / "rep")
     cfg.paths.runs = str(tmp_path / "runs")
     assert RUN.run(cfg, _args(methods=["noop"], splits=["val", "test", "gold"])) == 0
@@ -138,7 +144,7 @@ def test_resume_not_run_and_report(fx, tmp_path, monkeypatch):
     assert [m["name"] for m in rep["methods"]] == methods
     assert by["noop"]["status"] == by["mean"]["status"] == "ok"
     for name, frag in (
-        ("knn_clap", "embed"),
+        ("knn_clap", "embedding cache missing"),
         ("text2fx", "not implemented"),
         ("llm_zero_shot", "LlmCacheMiss"),
     ):
@@ -182,7 +188,7 @@ def test_multi_seed_method_reports_seed_sd(fx, tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, "lstmabar_fake.jitter", mod)
     monkeypatch.setitem(base.REGISTRY, "jitter", "lstmabar_fake.jitter:Jitter")
     cfg, _ = fx
-    cfg = cfg.copy()
+    cfg = _copy(cfg)
     cfg.eval.report_dir = str(tmp_path / "rep")
     cfg.paths.runs = str(tmp_path / "runs")
     cfg.eval.stats.min_seeds = 2
@@ -203,7 +209,7 @@ def test_estimate_mocked_sdk(fx, tmp_path, monkeypatch, capsys):
     client.messages.count_tokens.return_value = mock.Mock(input_tokens=321)
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-not-real")
     monkeypatch.setattr(llm, "default_client_factory", lambda: client)
-    cfg = cfg.copy()
+    cfg = _copy(cfg)
     cfg.paths.runs = str(tmp_path / "runs")
     assert RUN.run(cfg, _args(estimate=True, limit=2)) == 0
     out = capsys.readouterr().out
@@ -211,3 +217,144 @@ def test_estimate_mocked_sdk(fx, tmp_path, monkeypatch, capsys):
     assert client.messages.count_tokens.called
     assert not client.messages.batches.create.called
     assert not (tmp_path / "runs").exists()  # no run dir, no scoring
+
+
+def _base(fx, tmp_path):
+    cfg, root = fx
+    cfg = _copy(cfg)
+    cfg.eval.report_dir = str(tmp_path / "rep")
+    cfg.paths.runs = str(tmp_path / "runs")
+    return cfg, root
+
+
+def test_resume_refuses_config_change_and_rescores_leftovers(fx, tmp_path):
+    cfg, _ = _base(fx, tmp_path)
+    assert RUN.run(cfg, _args(methods=["noop"], splits=["val", "test"], limit=2)) == 0
+    run_dir = next((tmp_path / "runs").glob("*/*"))
+    # --limit run: written as a smoke report, never over the real report name
+    assert (tmp_path / "rep" / "p5_baselines_smoke.json").exists()
+    assert not (tmp_path / "rep" / "p5_baselines.json").exists()
+    assert json.loads((run_dir / "run.json").read_text(encoding="utf-8"))["limit"] == 2
+
+    # resume without --limit (or with any other scoring setting changed) is refused
+    with pytest.raises(SystemExit, match="max_items"):
+        RUN.run(cfg, _args(methods=["noop"], splits=["val", "test"], run_dir=str(run_dir)))
+    other = _copy(cfg)
+    other.eval.metrics.gate_threshold = 0.4
+    with pytest.raises(SystemExit, match="gate_threshold"):
+        RUN.run(other, _args(methods=["noop"], limit=2, run_dir=str(run_dir)))
+
+    # a crash left only a .jsonl.tmp for test: resume re-scores it; val is kept
+    seed_dir = run_dir / "scores" / "noop" / "seed0"
+    test_file = seed_dir / "test.jsonl"
+    test_file.replace(seed_dir / "test.jsonl.tmp")
+    val_mtime = (seed_dir / "val.jsonl").stat().st_mtime_ns
+    # a split file from another config (fingerprint mismatch) is not trusted either
+    meta = seed_dir / "val.meta.json"
+    m = json.loads(meta.read_text(encoding="utf-8"))
+    args = _args(methods=["noop"], splits=["val", "test"], limit=2, run_dir=str(run_dir))
+    assert RUN.run(cfg, args) == 0
+    assert test_file.exists() and (seed_dir / "val.jsonl").stat().st_mtime_ns == val_mtime
+    m["fingerprint"] = "stale"
+    meta.write_text(json.dumps(m), encoding="utf-8")
+    assert RUN.run(cfg, args) == 0
+    assert (seed_dir / "val.jsonl").stat().st_mtime_ns != val_mtime
+
+
+def test_no_scores_never_writes_a_report(fx, tmp_path, monkeypatch):
+    cfg, _ = _base(fx, tmp_path)
+    rep = tmp_path / "rep"
+    rep.mkdir()
+    (rep / "p5_baselines.md").write_text("real report", encoding="utf-8")
+    assert RUN.run(cfg, _args(methods=["text2fx"], splits=["test"])) == 1
+    assert (rep / "p5_baselines.md").read_text(encoding="utf-8") == "real report"
+
+
+def test_other_errors_propagate(fx, tmp_path, monkeypatch):
+    """Only not-implemented / embedding-cache / LLM-cache-miss failures become "not run"."""
+    from lstmabar.eval.baselines import trivial
+
+    def boom(self, train):
+        raise FileNotFoundError("some data file")
+
+    monkeypatch.setattr(trivial.MeanParams, "fit", boom)
+    cfg, _ = _base(fx, tmp_path)
+    with pytest.raises(FileNotFoundError):
+        RUN.run(cfg, _args(methods=["mean"], splits=["test"]))
+
+
+def test_test_real_section_and_notes(fx, tmp_path):
+    cfg, _ = _base(fx, tmp_path)
+    rep_dir = tmp_path / "rep"
+    rep_dir.mkdir()
+    cell = {"mean": 1.5, "lo": 1.0, "hi": 2.0, "n": 10}
+    sim = {
+        "protocol": {"sample_rate": 44100},
+        "groups": {
+            "egfx:RAT": {"n_total": 10, "n_evaluated": 10, "internal_only": False},
+            "pod:ocd": {"n_total": 5, "n_evaluated": 5, "internal_only": True},
+        },
+        "kb": {
+            "egfx:RAT": {
+                "kb_pedal": "rat",
+                "internal_only": False,
+                "cells": [{"engine": "greybox", "level": "-18", "mrstft": cell}],
+            }
+        },
+        "family_shifts": {
+            "pod:ocd": {
+                "family": "overdrive",
+                "internal_only": True,
+                "terms": {"centroid_oct": {"real": cell, "synthetic_family": cell}},
+                "rows": [
+                    {"item_id": "pod-secret-1", "x": 1.0},
+                    {"item_id": "e1", "x": 2.0, "internal_only": False},
+                ],
+            }
+        },
+        "per_item": [{"item_id": "pod-secret-2", "internal_only": True}],
+        "kb_knob_sweeps": [{"group": "pod:ocd"}],
+    }
+    (rep_dir / "sim_real.json").write_text(json.dumps(sim), encoding="utf-8")
+    assert RUN.run(cfg, _args(methods=["noop"], splits=["test", "gold"])) == 0
+    rep = json.loads((rep_dir / "p5_baselines.json").read_text(encoding="utf-8"))
+    text = json.dumps(rep["test_real"])
+    assert rep["test_real"]["status"] == "embedded"
+    assert "pod-secret" not in text and "per_item" not in rep["test_real"]
+    assert set(rep["test_real"]["omitted_sections"]) == {"per_item", "kb_knob_sweeps"}
+    assert "e1" in text and "1.5" in text
+    md = (rep_dir / "p5_baselines.md").read_text(encoding="utf-8")
+    assert "pod-secret" not in md and "1.500 [1.000, 2.000] (10)" in md
+    notes = " ".join(rep["notes"])
+    assert "No real human gold items" in notes and "LLM-written test instructions" in notes
+    assert "uncorrected for multiple comparisons" in notes
+    gate = next(r for r in rep["rows"] if r["metric"] == "gate_f1/macro")
+    assert gate["lo"] is None and gate["hi"] is None
+    assert "embeddings" in rep["hashes"]["missing"]
+
+
+def test_gold_note_with_human_items():
+    from lstmabar.eval.runner import SplitResult, UnitScores
+
+    units = [
+        UnitScores(
+            f"h{i}", "gold", "noop", 0, {}, {"gold_source": "human", "subsets": ["all", "headline"]}
+        )
+        for i in range(3)
+    ]
+    note = REP._gold_note([SplitResult("gold", "noop", 0, units, {})])
+    assert "real human set (n = 3" in note and "supplementary" in note and "< ~30" in note
+
+
+def test_estimate_without_key_never_builds_a_client(fx, tmp_path, monkeypatch, capsys):
+    from lstmabar.eval.baselines import llm
+
+    def factory():
+        raise AssertionError("client factory must not be called without a key")
+
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setattr(llm, "default_client_factory", factory)
+    cfg, _ = _base(fx, tmp_path)
+    assert RUN.run(cfg, _args(estimate=True, limit=2)) == 0
+    out = capsys.readouterr().out
+    assert "approx" in out and "within cap" in out

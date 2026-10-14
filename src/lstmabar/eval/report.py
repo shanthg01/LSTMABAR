@@ -138,36 +138,57 @@ def _sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
+def _resolve(p: str | Path) -> Path:
+    """A config path: absolute as is; relative against the CWD, else the repo root."""
+    p = Path(str(p))
+    if p.is_absolute() or p.exists():
+        return p
+    return REPO_ROOT / p
+
+
 def compute_hashes(cfg) -> dict[str, Any]:
     """Dataset sha256 (from the committed dataset index), the gold index file sha256 and the
-    sha256 of every embedding-cache file (keyed by path relative to the cache dir)."""
-    from lstmabar.data.layout import DataLayout
-
-    out: dict[str, Any] = {"dataset_sha256": None, "gold_index_sha256": None, "embeddings": {}}
+    sha256 of every embedding-cache file (keyed by path relative to the cache dir).
+    ``missing`` says why a hash is absent (never a path)."""
+    out: dict[str, Any] = {
+        "dataset_sha256": None,
+        "gold_index_sha256": None,
+        "embeddings": {},
+        "missing": {},
+    }
     try:
-        layout = DataLayout.from_config(cfg)
-        if layout.index.exists():
-            out["dataset_sha256"] = json.loads(layout.index.read_text("utf-8")).get(
-                "dataset_sha256"
+        index = _resolve(cfg.data.manifests_dir) / str(cfg.data.version) / "index.json"
+        if not index.exists():
+            out["missing"]["dataset_sha256"] = (
+                f"dataset index {cfg.data.version}/index.json not found"
             )
-    except (OSError, ValueError, KeyError, AttributeError):
-        pass
+        else:
+            sha = json.loads(index.read_text("utf-8")).get("dataset_sha256")
+            out["dataset_sha256"] = sha
+            if not sha:
+                out["missing"]["dataset_sha256"] = "dataset index has no dataset_sha256"
+    except (OSError, ValueError, AttributeError) as e:
+        out["missing"]["dataset_sha256"] = f"dataset index unreadable ({type(e).__name__})"
     try:
-        gidx = Path(str(cfg.eval.gold_index))
+        gidx = _resolve(cfg.eval.gold_index)
         out["gold_index_sha256"] = _sha256_text_file(gidx)
         if gidx.exists():
             out["gold_index_dataset_sha256"] = json.loads(gidx.read_text("utf-8")).get(
                 "dataset_sha256"
             )
-    except (OSError, ValueError, AttributeError):
-        pass
+        else:
+            out["missing"]["gold_index_sha256"] = f"gold index {gidx.name} not found"
+    except (OSError, ValueError, AttributeError) as e:
+        out["missing"]["gold_index_sha256"] = f"gold index unreadable ({type(e).__name__})"
     try:
-        edir = Path(str(cfg.eval.embeddings.dir))
+        edir = _resolve(cfg.eval.embeddings.dir)
         for fam in ("clap", "bge"):
             for p in sorted((edir / fam).glob("*/*.npz")):
                 out["embeddings"][p.relative_to(edir).as_posix()] = _sha256_file(p)
-    except (OSError, AttributeError):
-        pass
+        if not out["embeddings"]:
+            out["missing"]["embeddings"] = "no embedding-cache files (lstmabar eval embed)"
+    except (OSError, AttributeError) as e:
+        out["missing"]["embeddings"] = f"embedding cache unreadable ({type(e).__name__})"
     return out
 
 
@@ -328,8 +349,8 @@ def build_rows(results: Sequence[SplitResult], cfg) -> list[Row]:
                     "all",
                     NO_SOURCE,
                     mean,
-                    mean,
-                    mean,
+                    None,  # split-level statistic: no item CI
+                    None,
                     n,
                     sd,
                     len(vs),
@@ -382,28 +403,47 @@ def build_comparisons(results: Sequence[SplitResult], cfg) -> list[ComparisonRow
     return out
 
 
+TEST_REAL_SECTIONS = ("protocol", "groups", "kb", "family_shifts", "ts_grid_direction")
+"""Aggregate sections of ``reports/sim_real.json`` embedded in the report. Per-item sections
+(``per_item``, ``kb_knob_sweeps``) are never embedded."""
+
+
 def _sanitize_test_real(obj: Any) -> Any:
-    """Drop per-item rows of ``internal_only`` items (aggregate only, D6)."""
+    """Inside an aggregate section, list entries that are records (dicts) are kept only when
+    they are explicitly ``internal_only: false``; group-level aggregates (dict values) are
+    kept, including pooled internal_only groups (aggregate only, D6)."""
     if isinstance(obj, dict):
         return {k: _sanitize_test_real(v) for k, v in obj.items()}
     if isinstance(obj, list):
         return [
             _sanitize_test_real(v)
             for v in obj
-            if not (isinstance(v, dict) and v.get("internal_only") is True)
+            if not isinstance(v, dict) or v.get("internal_only") is False or _is_cell(v)
         ]
     return obj
 
 
+def _is_cell(v: dict) -> bool:
+    """An aggregate cell (e.g. a ``kb`` engine x level cell of CIs), not an item record."""
+    return "item_id" not in v and any(
+        isinstance(x, dict) and {"mean", "n"} <= set(x) for x in v.values()
+    )
+
+
 def load_test_real(cfg) -> dict[str, Any] | None:
-    path = Path(str(cfg.eval.report_dir)) / "sim_real.json"
+    path = _resolve(cfg.eval.report_dir) / "sim_real.json"
     if not path.exists():
         return None
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return {"error": "reports/sim_real.json could not be read"}
-    return _sanitize_test_real(data)
+        return {"status": "error", "error": "reports/sim_real.json could not be read"}
+    if not isinstance(data, dict):
+        return {"status": "error", "error": "reports/sim_real.json is not an object"}
+    out = {k: _sanitize_test_real(data[k]) for k in TEST_REAL_SECTIONS if k in data}
+    out["omitted_sections"] = sorted(k for k in data if k not in TEST_REAL_SECTIONS)
+    out["status"] = "embedded"
+    return out
 
 
 def _harmonic_by_split(results: Sequence[SplitResult], cfg) -> dict[str, bool]:
@@ -424,16 +464,54 @@ def _render_failed(results: Sequence[SplitResult]) -> dict[str, dict[str, int]]:
     return dict(out)
 
 
+def _n_human_headline(results: Sequence[SplitResult]) -> int:
+    return len(
+        {
+            u.unit_id
+            for r in results
+            if r.split == GOLD
+            for u in r.units
+            if u.meta.get("gold_source") == "human" and "headline" in (u.meta.get("subsets") or [])
+        }
+    )
+
+
+def _gold_note(results: Sequence[SplitResult]) -> str:
+    """D9 wording when there are no real human items; human-headline wording otherwise."""
+    n_h = _n_human_headline(results)
+    caveat = (
+        "The training paraphrases are also Claude-written (claude-haiku-5-5), so LLM-written "
+        "test instructions are closer in style to the training captions than real people's; "
+        "this weakens the template-circularity guard of design §5."
+    )
+    if n_h == 0:
+        return (
+            "No real human gold items yet (human column n/a). The gold headline is reported on "
+            "each LLM-written set (simulated_human, llm_persona, llm_draft) separately, never "
+            "pooled or relabeled, and claims are worded 'on LLM-written test instructions' "
+            f"(D9). {caveat}"
+        )
+    small = (
+        f" With only {n_h} headline items (< ~30) the human headline is weak; the LLM-written "
+        "sets are reported next to it."
+        if n_h < 30
+        else ""
+    )
+    return (
+        f"The gold headline is the real human set (n = {n_h} headline items); the LLM-written "
+        "sets (simulated_human, llm_persona, llm_draft) are supplementary, each reported "
+        f"separately and never pooled or relabeled (D9).{small} {caveat}"
+    )
+
+
 def _notes(cfg, results, harmonic, failed, methods, extras) -> list[str]:
     notes = [
         "v1 model (W266 submission, tag v1-w266): not comparable and not evaluated: it uses a "
         "different label scheme and the legacy DDSP engine, not the v2 free board (D4).",
-        "Gold instructions in this report are LLM-written (simulated_human, llm_persona, "
-        "llm_draft); each source is reported separately and never pooled or relabeled. Claims "
-        "on them are worded 'on LLM-written test instructions'. The training paraphrases are "
-        "also Claude-written (claude-haiku-5-5), so these instructions are closer in style to "
-        "the training captions than real people's; this weakens the template-circularity "
-        "guard of design §5 (D9).",
+        _gold_note(results),
+        "Paired comparisons: Wilcoxon p-values are uncorrected for multiple comparisons (many "
+        "method pairs x gold sources x splits); read them with the effect sizes and CIs, not "
+        "as a family of significance tests.",
         "Headline gold subset = in scope, not ambiguous and not unseen-pedal; ambiguous, "
         "out-of-scope and unseen-pedal items are reported separately. Gain distractors also "
         "change the drive voicing (gain + voicing), and light-compression vs off contrasts are "
@@ -775,23 +853,89 @@ def render_markdown(report: dict[str, Any]) -> str:
     # ---- test_real
     L += ["## test_real: sim-to-real gap (D11)", ""]
     tr = report.get("test_real") or {}
-    if tr.get("status") == "not run" or not tr:
-        L += ["Not run (`lstmabar eval sim-real` writes `reports/sim_real.json`).", ""]
-    else:
-        L += [
-            "Embedded from `reports/sim_real.json` (aggregates; no per-item rows of "
-            "internal_only items). Text-driven methods are not evaluated on test_real in P5.",
-            "",
-            "```json",
-            json.dumps(tr.get("aggregate", tr), indent=1, sort_keys=True)[:6000],
-            "```",
-            "",
-        ]
+    L += _test_real_md(tr)
 
     # ---- notes
     L += ["## Notes", ""]
     L += [f"- {n}" for n in report.get("notes", [])]
     return "\n".join(L).rstrip() + "\n"
+
+
+def _ci(c: Any) -> str:
+    if not isinstance(c, dict):
+        return _num(c)
+    return fmt_cell({"mean": c.get("mean"), "lo": c.get("lo"), "hi": c.get("hi"), "n": c.get("n")})
+
+
+def _test_real_md(tr: dict[str, Any]) -> list[str]:
+    if tr.get("status") != "embedded":
+        why = tr.get("error") or "`lstmabar eval sim-real` writes `reports/sim_real.json`"
+        return [f"Not run ({why}).", ""]
+    L = [
+        "From `reports/sim_real.json`, aggregate sections only (per-item sections omitted: "
+        + (", ".join(tr.get("omitted_sections") or []) or "none")
+        + "). internal_only groups appear only as group aggregates. Text-driven methods are "
+        "not evaluated on test_real in P5 (no instruction text, D11).",
+        "",
+    ]
+    groups = tr.get("groups") or {}
+    if groups:
+        L += ["### Groups", ""]
+        L += _table(
+            ["group", "items", "evaluated", "internal_only"],
+            [
+                [g, str(v.get("n_total")), str(v.get("n_evaluated")), str(v.get("internal_only"))]
+                for g, v in groups.items()
+            ],
+        )
+    kb = tr.get("kb") or {}
+    if kb:
+        L += ["### KB render vs real wet (loudness-matched)", ""]
+        body = []
+        for g, v in kb.items():
+            for c in v.get("cells") or []:
+                body.append(
+                    [
+                        g,
+                        str(v.get("kb_pedal")),
+                        str(c.get("engine")),
+                        str(c.get("level")),
+                        _ci(c.get("mrstft")),
+                        _ci(c.get("centroid_oct")),
+                        _ci(c.get("odd_even_db")),
+                        _ci(c.get("hnr_db")),
+                    ]
+                )
+        L += _table(
+            [
+                "group",
+                "KB pedal",
+                "engine",
+                "input dBFS",
+                "MR-STFT",
+                "|d centroid| oct",
+                "|d odd/even| dB",
+                "|d HNR| dB",
+            ],
+            body,
+        )
+    fam = tr.get("family_shifts") or {}
+    if fam:
+        L += ["### Family-level descriptor shifts (wet - dry): real vs synthetic family", ""]
+        body = []
+        for g, v in fam.items():
+            for term, t in (v.get("terms") or {}).items():
+                body.append(
+                    [
+                        g,
+                        str(v.get("family")),
+                        term,
+                        _ci(t.get("real")),
+                        _ci(t.get("synthetic_family")),
+                    ]
+                )
+        L += _table(["group", "family", "term", "real", "synthetic family"], body)
+    return L
 
 
 def _method_cells_by_source(report, metric, subset, idx) -> list[list[str]]:
