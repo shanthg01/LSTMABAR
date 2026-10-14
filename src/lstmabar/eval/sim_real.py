@@ -721,11 +721,12 @@ def run(cfg, args) -> int:
     res = evaluate(cfg, limit=limit, workers=workers)
     res["protocol"]["runtime_s"] = round(time.perf_counter() - t0, 1)
     run_dir = create_run_dir(cfg, cfg.paths.runs, "eval_sim_real")
-    (run_dir / "sim_real.json").write_text(_dumps(res), encoding="utf-8")
+    lf = {"encoding": "utf-8", "newline": "\n"}  # LF on Windows too
+    (run_dir / "sim_real.json").write_text(_dumps(res), **lf)
     out = Path(str(cfg.eval.report_dir))
     out.mkdir(parents=True, exist_ok=True)
-    (out / "sim_real.json").write_text(_dumps(res), encoding="utf-8")
-    (out / "sim_real.md").write_text(render_markdown(res), encoding="utf-8")
+    (out / "sim_real.json").write_text(_dumps(res), **lf)
+    (out / "sim_real.md").write_text(render_markdown(res), **lf)
     print(f"wrote {out.as_posix()}/sim_real.md and .json (run dir {run_dir.name})")
     return 0
 
