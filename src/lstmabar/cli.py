@@ -77,8 +77,9 @@ def cmd_demo(args: argparse.Namespace) -> int:
     """Launch the Gradio demo (needs the ``demo`` extra)."""
     from lstmabar.demo.app import build_app
 
+    cfg = load_config(args.config, args.overrides)
     try:
-        app = build_app()
+        app = build_app(cfg=cfg, warm_up=True)
     except ImportError as e:
         if (e.name or "").split(".")[0] != "gradio":
             raise
@@ -162,6 +163,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_demo.add_argument(
         "--auth", type=_auth_pair, default=None, metavar="USER:PASS", help="require a login"
     )
+    p_demo.add_argument(
+        "--config", default="configs/demo.yaml", help="demo config (demo.text_method, ...)"
+    )
+    p_demo.add_argument(
+        "overrides", nargs="*", help="dotlist overrides, e.g. demo.text_method=knn_clap"
+    )
     p_demo.set_defaults(func=cmd_demo)
 
     p_rec = sub.add_parser("recover", help="run the DSP parameter-recovery check (P1 exit gate)")
@@ -202,7 +209,7 @@ def main(argv: list[str] | None = None) -> int:
     # `lstmabar data <step> --flag a.b=1`: argparse cannot place positional dotlist overrides
     # after the optionals (subparsers rule out parse_intermixed_args), so collect them here.
     if extra:
-        if getattr(args, "command", None) in ("data", "eval", "train") and all(
+        if getattr(args, "command", None) in ("data", "eval", "train", "demo") and all(
             "=" in x and not x.startswith("-") for x in extra
         ):
             args.overrides = [*args.overrides, *extra]

@@ -13,6 +13,12 @@ panel also wants ``analysis``, and white-box renders are much faster with ``whit
 - **White-box A/B**: pedals with a registered circuit simulation get a third player.
 - **Archetype panel** (P3.5): before/after archetype readout and H1–H10 levels, see
   :mod:`lstmabar.demo.archetype_panel`.
+- **Text -> knobs** (M3, P5 D7): "Set knobs from text" runs ``demo.text_method`` (a P5
+  baseline or the P6 model, see :mod:`lstmabar.demo.text`) on the instruction and writes its
+  board into the generated sliders and on/off boxes (switching to the manual board).
+
+Inputs follow the inference level rule (R3): every clip is peak-normalized to
+``audio.inference_peak_dbfs`` (-15 dBFS) before the pedalboard or a text method sees it.
 """
 
 import inspect
@@ -52,13 +58,20 @@ from lstmabar.demo.render import (
     iter_specs,
     knobs_to_params,
     log_slider_info,
+    normalized_to_controls,
     physical_from_slider,
-    prepare_input,
+    prepare_inference_input,
     random_knobs,
     render,
     slider_config,
     slider_from_physical,
     to_int16,
+)
+from lstmabar.demo.text import (
+    DEFAULT_CONFIG,
+    TextKnobSetter,
+    TextMethodError,
+    controls_match,
 )
 
 log = logging.getLogger(__name__)
@@ -105,6 +118,17 @@ def _default_kb() -> dict:
         return {}
 
 
+def _default_config():
+    """``configs/demo.yaml``, or ``None`` (the text action then says it is unavailable)."""
+    from lstmabar.config import load_config
+
+    try:
+        return load_config(DEFAULT_CONFIG)
+    except Exception:
+        log.exception("could not load the demo config")
+        return None
+
+
 def _title(name: str) -> str:
     return name.replace("_", " ").title()
 
@@ -125,16 +149,31 @@ def _frame(rows: list[dict], columns: list[str]):
 def build_app(
     board_factory: Callable[[], Any] | None = None,
     kb: Mapping[str, Any] | None = None,
+    cfg: Any = None,
+    text_setter: TextKnobSetter | None = None,
+    warm_up: bool = False,
 ):
     """Build the Gradio Blocks app around a pedalboard (default: ``default_pedalboard()``)
-    and a pedal knowledge base (default: ``load_kb()``; ``{}`` gives the manual board only)."""
+    and a pedal knowledge base (default: ``load_kb()``; ``{}`` gives the manual board only).
+
+    ``cfg`` (default: ``configs/demo.yaml``) gives ``audio.inference_peak_dbfs`` and the
+    ``demo.*`` keys; ``text_setter`` (default: built from ``cfg``) runs the text method.
+    ``warm_up`` builds and fits the text method in the background right away."""
     gr = _import_gradio()
+    if cfg is None and text_setter is None:
+        cfg = _default_config()
+    if text_setter is None:
+        text_setter = TextKnobSetter(cfg)
+    if warm_up:
+        text_setter.warm_up()
+    peak_dbfs = text_setter.peak_dbfs
     board = (board_factory or _default_board_factory)()
     board.eval()
     sr = int(board.sample_rate)
     specs = list(iter_specs(board))  # flat (block, spec) list in board order
     n_blocks = len(board.block_names)
     n_sliders = len(specs)
+    steps = [slider_config(spec)["step"] for _, spec in specs]
     defaults = default_knobs(board)
     rng = np.random.default_rng()
     kb = dict(_default_kb() if kb is None else kb)
@@ -171,7 +210,14 @@ def build_app(
             for (name, _), s in zip(specs, sliders, strict=True)
         ]
 
-    def on_render(audio_value, riff_kind, match, pedal_id, analyse, derived, *controls):
+    def load_clip(audio_value, riff_kind):
+        """The input clip at the inference level (R3); decode errors become ``gr.Error``."""
+        try:
+            return prepare_inference_input(audio_value, riff_kind, sr, MAX_SECONDS, peak_dbfs)
+        except ValueError as e:
+            raise gr.Error(str(e)) from e
+
+    def on_render(audio_value, riff_kind, match, pedal_id, analyse, derived, text_state, *controls):
         dials = controls[:n_dials]
         enabled_vals = controls[n_dials : n_dials + n_blocks]
         slider_vals = controls[n_dials + n_blocks :]
@@ -196,10 +242,7 @@ def build_app(
             params = knobs_to_params(board, values, enabled)
         else:
             params = collect(enabled_vals, slider_vals)
-        try:
-            clip = prepare_input(audio_value, riff_kind, sr, MAX_SECONDS)
-        except ValueError as e:
-            raise gr.Error(str(e)) from e
+        clip = load_clip(audio_value, riff_kind)
         dry, wet = render(board, clip, params, match_loudness=bool(match))
 
         wb_audio = None
@@ -210,6 +253,13 @@ def build_app(
             value=None if wb_audio is None else (sr, to_int16(wb_audio)), visible=wb
         )
         preset_md = preset_readout(pedal, preset, wb, edited) if preset is not None else ""
+        readout_md = describe_text(board, params)
+        if pedal is None and isinstance(text_state, dict):  # credit the text method if the
+            # controls still hold what it set
+            if controls_match(
+                text_state["enabled"], text_state["sliders"], enabled_vals, slider_vals, steps
+            ):
+                readout_md = f"{text_state['summary']}\n\n{readout_md}"
 
         if analyse:
             wet_label = "wet" if preset is None else ("custom" if edited else "grey-box")
@@ -228,7 +278,7 @@ def build_app(
             (sr, to_int16(wet)),
             wb_update,
             wb_msg,
-            describe_text(board, params),
+            readout_md,
             preset_md,
             arche_md,
             bars,
@@ -298,6 +348,35 @@ def build_app(
         state = {"pedal": pedal.id, "dials": list(dial_vals)}
         return [*dial_updates, *board_updates(preset), md, state]
 
+    def on_text(text, audio_value, riff_kind, *controls):
+        """Instruction -> method board -> pedal picker (manual), on/off boxes and sliders."""
+        enabled_vals = list(controls[:n_blocks])
+        slider_vals = list(controls[n_blocks:])
+        try:
+            pred = text_setter.predict(
+                text, lambda: load_clip(audio_value, riff_kind), sample_rate=sr
+            )
+        except TextMethodError as e:
+            keep = [gr.update()] * (1 + n_blocks + n_sliders)
+            return [*keep, f"*{e}*", gr.update()]
+        new_enabled, new_sliders = normalized_to_controls(board, pred.board)
+        # Blocks/knobs the method does not predict keep their current control.
+        enabled = [
+            bool(old) if new is None else new
+            for new, old in zip(new_enabled, enabled_vals, strict=True)
+        ]
+        sliders = [
+            (slider_from_physical(spec, spec.default) if old is None else float(old))
+            if new is None
+            else new
+            for new, old, (_, spec) in zip(new_sliders, slider_vals, specs, strict=True)
+        ]
+        summary = pred.summary_md()
+        extra = [b for b in pred.board if b not in board.block_names]
+        note = f" Not on this board: {', '.join(extra)}." if extra else ""
+        state = {"summary": summary, "enabled": enabled, "sliders": sliders}
+        return [MANUAL, *enabled, *sliders, summary + note, state]
+
     def on_reset(pedal_id):
         pedal = active_pedal(pedal_id)
         if pedal is None:
@@ -317,9 +396,10 @@ def build_app(
 
     with gr.Blocks(title="LSTMABAR pedalboard") as app:
         gr.Markdown(
-            "# LSTMABAR — physics-grounded pedalboard (M2)\n"
+            "# LSTMABAR — physics-grounded pedalboard (M3)\n"
             "Upload or record a guitar clip (or pick an example riff), pick a pedal and set its "
-            "knobs (or use the manual board), and compare dry vs grey-box (vs white-box). "
+            "knobs (or use the manual board, or type an instruction and let the text method set "
+            "them), and compare dry vs grey-box (vs white-box). "
             f"Clips are trimmed to {MAX_SECONDS:.0f} s; white-box renders use the first "
             f"{wb_seconds:.0f} s."
         )
@@ -335,6 +415,18 @@ def build_app(
                     value="power_chords",
                     label="Example riff (used when no clip is given)",
                 )
+                instruction = gr.Textbox(
+                    label="Instruction",
+                    placeholder="Describe the tone change, e.g. more crunch but a bit darker",
+                    lines=2,
+                    max_lines=4,
+                )
+                text_btn = gr.Button("Set knobs from text")
+                text_md = gr.Markdown(
+                    f"*Text method: `{text_setter.method_name}` (sets the board knobs; then "
+                    "press Render).*"
+                )
+                text_state = gr.State(None)  # what the text action last set (readout credit)
                 match = gr.Checkbox(
                     value=True,
                     label="Loudness-match A/B (wet RMS = dry RMS; "
@@ -419,6 +511,7 @@ def build_app(
                 pedal_dd,
                 analyse,
                 derived,
+                text_state,
                 *dials,
                 *checkboxes,
                 *sliders,
@@ -466,6 +559,11 @@ def build_app(
                 **private,
             )
         board_outputs = [*dials, *checkboxes, *sliders, preset_md, derived]
+        text_btn.click(
+            on_text,
+            inputs=[instruction, audio_in, riff, *checkboxes, *sliders],
+            outputs=[pedal_dd, *checkboxes, *sliders, text_md, text_state],
+        )
         reset_btn.click(on_reset, inputs=pedal_dd, outputs=board_outputs, **private)
         random_btn.click(on_randomize, inputs=pedal_dd, outputs=board_outputs, **private)
 
