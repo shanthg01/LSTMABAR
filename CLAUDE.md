@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 LSTMABAR v2: text-driven guitar tone transformation grounded in pedal circuit physics. Guitar audio + instruction → parameters for a differentiable, physically grounded pedalboard → rendered audio + explanation. Solo side project; the main deliverable is a Gradio demo.
 
-**Status:** P0–P4 are done (M2 demo works; dataset v1 frozen, see [DATA_CARD.md](DATA_CARD.md); gold set paired with target/distractor renders, `data/manifests/gold_v1.jsonl`; real friend-written items still to collect via [docs/gold-collection.md](docs/gold-collection.md)). **Next: P5** (evaluation harness and baselines → M3): start from the P5 kickoff brief in [docs/execution-plan.md](docs/execution-plan.md) (P6 prep notes follow the P6 table). P5/P6 do not wait for real `human` gold items.
+**Status:** P0–P4 are done (M2 demo works; dataset v1 frozen, see [DATA_CARD.md](DATA_CARD.md); gold set paired with target/distractor renders, `data/manifests/gold_v1.jsonl`; real friend-written items still to collect via [docs/gold-collection.md](docs/gold-collection.md)). **P5 code is merged** (evaluation harness, all five baselines, val gold-proxy, `test_real` sim-to-real report, M3 demo text box; see "P5 code status" in [docs/execution-plan.md](docs/execution-plan.md)) and the P6 stage-1 code exists. **Next:** finish the embedding cache (`lstmabar eval embed`; slow on this machine, Colab recommended), run `lstmabar eval run` for the M3 baseline report, then P6 training (5 seeds, ablations) → M4. P5/P6 do not wait for real `human` gold items.
 
 Read [docs/design.md](docs/design.md) (architecture, data, evaluation; §4.3 describes the implemented DSP; §10 is the decisions log) and [docs/execution-plan.md](docs/execution-plan.md) (phases, exit gates, status) before substantial work.
 
@@ -23,7 +23,9 @@ uv run pytest tests/test_foundation.py::test_cli_smoke   # single test
 uv run pytest -m slow                    # slow checks only (P1.7 parameter recovery, ~7 min CPU)
 uv run pytest -m network                 # network checks only (Zenodo listings; skipped by default)
 uv run ruff check . && uv run ruff format --check .      # lint + format (CI enforces both)
-uv run lstmabar demo                     # M2 Gradio demo: pedal presets, white-box A/B, archetype panel (needs --extra demo; whitebox/analysis for A/B and panel)
+uv run lstmabar demo                     # Gradio demo: pedal presets, white-box A/B, archetype panel, text box → baseline knobs (needs --extra demo; whitebox/analysis for A/B and panel)
+uv run lstmabar eval <step>              # P5: embed | proxy | sim-real | run | report (configs/eval/p5.yaml; --limit/--fixtures for smoke runs)
+uv run lstmabar train stage1             # P6 stage 1 on cached embeddings (configs/train/stage1.yaml)
 uv run lstmabar recover                  # parameter-recovery run → reports/param_recovery.{md,json}
 uv run lstmabar fidelity                 # P2 grey-box vs white-box gate → reports/greybox_fidelity.{md,json} (~16–23 min CPU; --quick)
 uv run lstmabar info                     # versions, device, git state (CLI: src/lstmabar/cli.py)
