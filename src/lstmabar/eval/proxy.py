@@ -40,6 +40,7 @@ import hashlib
 import json
 import math
 import time
+import warnings
 from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -394,13 +395,27 @@ def load_proxy_items(cfg, limit: int | None = None):
 
     Reads the complete manifest (``data/manifests/<eval.proxy.version>.jsonl``). Val items
     without a kept distractor (all drafted ones failed separation) are not 2AFC units and
-    are left out; ``limit`` caps the val items considered, in ``item_id`` order."""
+    are left out; ``limit`` caps the val items considered, in ``item_id`` order.
+
+    The proxy 2AFC uses only the **first caption** of each item (one query per unit), while
+    the synthetic val scores average over all of an item's captions.
+
+    The manifest is committed but the distractor audio (``data/rendered/<version>/``) is
+    gitignored: a missing first distractor wet raises ``FileNotFoundError`` asking to run
+    ``lstmabar eval proxy`` (which re-renders it, resumably)."""
     from lstmabar.eval.data import GoldClip, GoldItem, load_split
 
     path, _ = manifest_paths(cfg)
     if not path.exists():
         raise FileNotFoundError(f"val proxy manifest not found ({path.name}): lstmabar eval proxy")
     renders = gold.read_manifest(path)
+    if renders:
+        first = DataLayout.from_config(cfg).resolve_rendered(renders[0].render["wet_path"])
+        if not first.exists():
+            raise FileNotFoundError(
+                f"val proxy audio missing ({renders[0].item_id}): the manifest is committed but "
+                "its renders are gitignored; run `lstmabar eval proxy` to render them"
+            )
     by_item: dict[str, list[GoldRender]] = defaultdict(list)
     for r in renders:
         if r.gold_source != PROXY_SOURCE or r.role != "distractor":
@@ -445,22 +460,38 @@ def load_proxy_items(cfg, limit: int | None = None):
 # ============================================================================ selection
 
 
-def _mean_score(result, key: str) -> float:
-    vals = [
-        float(u.scores[key])
-        for u in result.units
-        if key in u.scores and u.scores[key] is not None and math.isfinite(float(u.scores[key]))
-    ]
+def _finite(v) -> bool:
+    try:
+        return v is not None and math.isfinite(float(v))
+    except (TypeError, ValueError):
+        return False
+
+
+def _mean_score(result, key: str, penalize_failed: bool = False) -> float:
+    """Mean of ``key`` over units with a finite value (NaN if none). With ``penalize_failed``
+    a unit whose renders all failed (``meta["render_failed"] > 0`` and a non-finite value)
+    counts as the worst finite value observed, so failing to render can never help a
+    candidate. (Units where only some queries failed keep the mean of the others, as
+    ``runner`` averages them.)"""
+    vals = [float(u.scores[key]) for u in result.units if _finite(u.scores.get(key))]
     if not vals:
-        raise ValueError(f"selection_score: no finite {key!r} scores in the val result")
+        return float("nan")
+    if penalize_failed:
+        worst = max(vals)
+        vals += [
+            worst
+            for u in result.units
+            if not _finite(u.scores.get(key)) and int(u.meta.get("render_failed", 0) or 0) > 0
+        ]
     return float(np.mean(vals))
 
 
 def selection_terms(result) -> dict[str, float]:
-    """The unweighted terms of :func:`selection_score` (``afc`` as ``1 - mean 2AFC``)."""
+    """The unweighted terms of :func:`selection_score` (``afc`` as ``1 - mean 2AFC``; NaN
+    when the result has no proxy 2AFC scores)."""
     terms = {}
     for name, key in SCORE_KEYS.items():
-        m = _mean_score(result, key)
+        m = _mean_score(result, key, penalize_failed=name == "mrstft")
         terms[name] = 1.0 - m if name == "afc" else m
     return terms
 
@@ -469,7 +500,14 @@ def selection_score(result, cfg) -> float:
     """Scalar D8 selection objective of a ``runner.score_val`` result (lower is better):
     ``w_mrstft * mean MR-STFT to the target wet + w_param * mean masked param L1
     + w_afc * (1 - mean proxy 2AFC)`` with weights from ``eval.proxy.selection_weights``.
-    Means are over units with a finite score; a term with weight 0 is not required."""
+
+    Means are over units with a finite score. Failed renders: a unit whose renders all
+    failed counts as the worst observed MR-STFT; param L1 needs no render, so it is always
+    finite; ``runner.score_gold`` already scores a failed render as a 2AFC loss. Without
+    proxy 2AFC scores (no proxy manifest, ``--limit`` or fixture runs: ``extra["proxy"]``
+    not True) the 2AFC term is dropped with a warning, as ``runner``'s fallback does; it
+    raises only when the result claims proxy scores but none is finite. A term with weight
+    0 is skipped."""
     w = {k: float(v) for k, v in cfg.eval.proxy.selection_weights.items()}
     unknown = set(w) - set(SCORE_KEYS)
     if unknown:
@@ -479,7 +517,16 @@ def selection_score(result, cfg) -> float:
         wt = w.get(name, 0.0)
         if wt == 0.0:
             continue
-        m = _mean_score(result, key)
+        m = _mean_score(result, key, penalize_failed=name == "mrstft")
+        if not math.isfinite(m):
+            if name == "afc" and not (getattr(result, "extra", None) or {}).get("proxy"):
+                warnings.warn(
+                    "selection_score: no proxy 2AFC scores; selecting on MR-STFT + param L1 "
+                    "only (run `lstmabar eval proxy`)",
+                    stacklevel=2,
+                )
+                continue
+            raise ValueError(f"selection_score: no finite {key!r} scores in the val result")
         total += wt * (1.0 - m if name == "afc" else m)
     return float(total)
 

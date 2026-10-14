@@ -178,6 +178,30 @@ def test_selection_score_weights(fx):
     )
 
 
+def test_selection_score_without_proxy_and_failed_renders(fx):
+    w = {k: float(v) for k, v in fx.eval.proxy.selection_weights.items()}
+    units = [
+        UnitScores("a", "val", "m", 0, {"mrstft": 1.0, "param_l1": 0.2}),
+        UnitScores("b", "val", "m", 0, {"mrstft": 3.0, "param_l1": 0.4}),
+    ]
+    res = SplitResult("val", "m", 0, units, {}, {"proxy": False})
+    with pytest.warns(UserWarning, match="no proxy 2AFC"):
+        s = proxy.selection_score(res, fx)
+    assert s == pytest.approx(w["mrstft"] * 2.0 + w["param_l1"] * 0.3)
+    res.extra["proxy"] = True  # claims proxy scores but has none: an error
+    with pytest.raises(ValueError, match="afc_mrstft"):
+        proxy.selection_score(res, fx)
+
+    # a unit whose render failed counts as the worst MR-STFT, never as missing
+    failed = UnitScores(
+        "c", "val", "m", 0, {"mrstft": float("nan"), "param_l1": 0.3}, {"render_failed": 1}
+    )
+    res = SplitResult("val", "m", 0, [*units, failed], {}, {"proxy": False})
+    with pytest.warns(UserWarning):
+        s = proxy.selection_score(res, fx)
+    assert s == pytest.approx(w["mrstft"] * (1.0 + 3.0 + 3.0) / 3 + w["param_l1"] * 0.3)
+
+
 def test_proxy_cfg_refuses_dataset_and_gold_versions(fx):
     from omegaconf import OmegaConf
 
@@ -223,3 +247,10 @@ def test_run_and_load_proxy_items_end_to_end(fx, monkeypatch):
     before = manifest.read_text(encoding="utf-8")
     assert proxy.run(fx, args) == 0
     assert manifest.read_text(encoding="utf-8") == before
+
+    # committed manifest without its (gitignored) audio: a clear error
+    from omegaconf import OmegaConf
+
+    empty = OmegaConf.merge(fx, {"data": {"rendered_dir": str(manifest.parent / "no_audio")}})
+    with pytest.raises(FileNotFoundError, match="lstmabar eval proxy"):
+        proxy.load_proxy_items(empty)
