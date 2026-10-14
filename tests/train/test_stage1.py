@@ -218,10 +218,13 @@ def test_checkpoint_round_trip_through_model_method(fx, tmp_path):
     assert "sha" in payload["meta"]["git"]
 
     qs = _queries(cfg)
-    m = build_method(
-        "p6_model",
-        OmegaConf.merge(cfg, {"eval": {"model": {"checkpoint": str(tmp_path / "checkpoint.pt")}}}),
-    )
+    with pytest.warns(UserWarning, match="min_seeds"):
+        m = build_method(
+            "p6_model",
+            OmegaConf.merge(
+                cfg, {"eval": {"model": {"checkpoint": str(tmp_path / "checkpoint.pt")}}}
+            ),
+        )
     assert isinstance(m, ModelMethod) and m.uses_audio and m.deterministic
     boards = m.predict(qs)
     assert len(boards) == len(qs)
@@ -278,3 +281,13 @@ def test_seeded_checkpoint_template(fx, tmp_path):
         ModelMethod(cfg, seed=4, checkpoint=str(tmp_path / "s{seed}" / "checkpoint.pt"))
     with pytest.raises(ValueError):
         ModelMethod(None).predict([])
+    # a checkpoint without the stage-1 meta keys fails with a clear error
+    payload = torch.load(tmp_path / "s3" / "checkpoint.pt", weights_only=True)
+    payload["meta"] = {}
+    torch.save(payload, tmp_path / "bad.pt")
+    with pytest.raises(ValueError, match="text_model"):
+        ModelMethod(cfg, checkpoint=tmp_path / "bad.pt")
+    del payload["layout"]
+    torch.save(payload, tmp_path / "bad2.pt")
+    with pytest.raises(ValueError, match="lacks"):
+        load_checkpoint(tmp_path / "bad2.pt")

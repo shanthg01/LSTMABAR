@@ -244,8 +244,11 @@ def load_checkpoint(path: str | Path) -> tuple[ParamPredictor, dict[str, Any]]:
     """``(model in eval mode, payload)``; refuses a checkpoint whose board layout differs
     from the current ``default_pedalboard`` (the chain or knobs changed since training)."""
     payload = torch.load(Path(path), map_location="cpu", weights_only=True)
-    if payload.get("format") != CHECKPOINT_FORMAT:
+    if not isinstance(payload, dict) or payload.get("format") != CHECKPOINT_FORMAT:
         raise ValueError(f"not a P6 predictor checkpoint: {Path(path).name}")
+    missing = [k for k in ("predictor", "layout", "state_dict", "meta") if k not in payload]
+    if missing:
+        raise ValueError(f"{Path(path).name}: checkpoint lacks {missing}")
     model = ParamPredictor(PredictorConfig(**payload["predictor"]))
     if [tuple(p) for p in payload["layout"]] != list(model.heads_layout.layout):
         raise ValueError(

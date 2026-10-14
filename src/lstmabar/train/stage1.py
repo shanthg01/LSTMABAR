@@ -218,7 +218,11 @@ def train_model(
             (run_dir / "metrics.json").write_text(json.dumps(history, indent=2), encoding="utf-8")
         if bad >= patience:
             break
-    assert best_state is not None
+    if best_state is None:
+        raise RuntimeError(
+            f"stage1: no finite val score in {len(history)} epochs (NaN/inf loss?); "
+            "check the embeddings and train.lr"
+        )
     model.load_state_dict(best_state)
     model.eval()
     summary = {
@@ -316,18 +320,25 @@ def load_data(cfg, limit: int | None = None) -> tuple[Stage1Dataset, Stage1Datas
 
 
 def run(cfg, args) -> int:
-    limit = getattr(args, "limit", None)
-    if limit is None and cfg.eval.get("max_items") is not None:
-        limit = int(cfg.eval.max_items)
-    if getattr(args, "fixtures", False):
-        from lstmabar.eval.fixtures import make_eval_fixture
+    if not getattr(args, "fixtures", False):
+        return _run(cfg, args)
+    from lstmabar.eval.fixtures import make_eval_fixture
 
-        root = Path(tempfile.mkdtemp(prefix="lstmabar_stage1_fx_"))
+    # The fixture data (audio + fake embeddings) lives in a temp dir removed afterwards; the
+    # run dir (config, metrics, checkpoint) stays under paths.runs.
+    with tempfile.TemporaryDirectory(prefix="lstmabar_stage1_fx_") as root:
         runs_root = cfg.paths.runs
         cfg = fixture_config(cfg, root)
         cfg.paths.runs = runs_root
         make_eval_fixture(cfg, seconds=0.5)
         write_fixture_embeddings(cfg)
+        return _run(cfg, args)
+
+
+def _run(cfg, args) -> int:
+    limit = getattr(args, "limit", None)
+    if limit is None and cfg.eval.get("max_items") is not None:
+        limit = int(cfg.eval.max_items)
     seed_everything(int(cfg.seed))
     train_ds, val_ds = load_data(cfg, limit)
     run_dir = create_run_dir(cfg, root=str(cfg.paths.runs))

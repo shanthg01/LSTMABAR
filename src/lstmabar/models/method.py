@@ -10,10 +10,13 @@ Embeddings: looked up in the embedding cache (``cfg.eval.embeddings.dir``) by th
 ``text_key`` / ``audio_key`` and split. Queries missing from the cache (the demo), or whose
 cached text sha256 differs from the query text, are encoded on the fly with
 :mod:`lstmabar.models.encoders` when ``cfg.eval.model.encode_missing`` (default true).
+Audio-cache staleness is **not** checked here (it would mean loading and hashing every dry
+input), matching ``embed_cache.lookup_queries``; ``lstmabar eval embed`` owns audio freshness.
 """
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -89,8 +92,26 @@ class ModelMethod(Method):
         path = self.checkpoint_path
         if not path.exists():
             raise FileNotFoundError(f"p6_model checkpoint not found: {path.name}")
-        self.model, self.payload = load_checkpoint(path)
+        model, payload = load_checkpoint(path)
+        meta = payload.get("meta") or {}
+        need = [
+            k
+            for k, used in (
+                ("text_model", model.config.inputs != "audio"),
+                ("audio_model", model.config.inputs != "text"),
+            )
+            if used and not meta.get(k)
+        ]
+        if need:
+            raise ValueError(f"{path.name}: checkpoint meta lacks {need} (not a stage-1 run?)")
+        self.model, self.payload = model, payload
         self.uses_audio = self.model.config.inputs != "text"
+        if self.deterministic:
+            warnings.warn(
+                f"p6_model: fixed checkpoint {path.name} (no '{{seed}}' in the path) gives one "
+                "trained seed; D3 requires >= eval.stats.min_seeds seeds for trained methods",
+                stacklevel=2,
+            )
 
     @property
     def meta(self) -> dict[str, Any]:
