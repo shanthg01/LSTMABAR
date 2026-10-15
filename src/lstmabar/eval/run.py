@@ -17,10 +17,12 @@ Run dir layout (``runs/<name>/<stamp>/``)::
 A split's ``.jsonl`` appears only once the split is scored (written to a temp name and
 renamed), so a crash keeps the finished method x split files and ``run --run-dir <dir>`` resumes
 by skipping them (a finished selection is reused, not re-run). A resume is refused when the
-current settings differ from the run's saved ``config.yaml`` in anything scores depend on
-(:func:`fingerprint`: the eval block incl. ``max_items`` = ``--limit``, data / gold / audio /
-analysis / render, ``paths.data``); each ``.meta.json`` and ``selection.json`` also carries the
-fingerprint hash, and a file with a different hash is re-scored. Methods with
+current settings differ from the run's ``fingerprint.json`` (written at creation) in anything
+scores depend on (:func:`fingerprint`: the eval block incl. ``max_items`` = ``--limit``, data /
+gold / audio / analysis / render with ``paths.data`` as a placeholder, and the dataset and gold
+index hashes, so a run dir can be resumed on another machine); each ``.meta.json`` and
+``selection.json`` also carries its method's fingerprint hash, and a file with a different hash
+is re-scored. Run dirs created before ``fingerprint.json`` existed cannot be resumed. Methods with
 ``deterministic=False`` run for ``eval.stats.min_seeds`` seeds.
 
 Methods that cannot run are recorded per split as ``"not run: <reason>"``: only a method that
@@ -303,21 +305,81 @@ class _Data:
         return self._cache[split]
 
 
-_FP_EXCLUDE_EVAL = frozenset({"workers", "methods", "report_dir", "report_name"})
+_FP_EXCLUDE_EVAL = frozenset(
+    {"workers", "methods", "report_dir", "report_name", "baselines", "model"}
+)
+_FP_EXCLUDE_NESTED = (
+    ("embeddings", "batch_size"),
+    ("embeddings", "num_threads"),
+    ("embeddings", "save_every"),
+    ("proxy", "workers"),
+)
+"""Throughput settings that never change scores."""
+_METHOD_CFG = {"knn_clap": "knn", "knn_bge": "knn", "llm_zero_shot": "llm", "text2fx": "text2fx"}
+"""Method -> its ``eval.baselines.<key>`` block (``p6_model`` -> ``eval.model``). Only the scored
+method's own block enters its score files' fingerprint, so another method's settings (e.g. a
+Colab-only ``text2fx.max_items``) never invalidate or block a resume."""
 _FP_SECTIONS = ("data", "gold", "audio", "analysis", "render")
 
 
-def fingerprint(cfg) -> dict[str, Any]:
+DATA_PLACEHOLDER = "<paths.data>"
+
+
+def fingerprint(cfg, method: str | None = None) -> dict[str, Any]:
     """The settings scores depend on: the resolved ``eval`` block (minus workers, method list
     and report location; ``max_items`` = the ``--limit`` is included), the data / gold / audio /
-    analysis / render blocks and ``paths.data``. A resume must match it exactly."""
-    c = OmegaConf.to_container(cfg, resolve=True)
-    out: dict[str, Any] = {
-        "eval": {k: v for k, v in (c.get("eval") or {}).items() if k not in _FP_EXCLUDE_EVAL},
-        "paths.data": (c.get("paths") or {}).get("data"),
-    }
+    analysis / render blocks, and the **content** they point at (dataset sha256 from the
+    committed dataset index, gold index file sha256). A resume must match it exactly.
+    Method-specific blocks (``eval.baselines.*``, ``eval.model``) are left out of the run-level
+    fingerprint; with ``method`` set, that method's own block is added (score files and the
+    selection record of that method use this per-method fingerprint).
+
+    Paths are resolved with ``paths.data`` replaced by a placeholder, so the same dataset at a
+    different location (e.g. a Colab Drive copy) gives the same fingerprint and score files can
+    be merged across machines; the content hashes check that it really is the same dataset.
+    Data dirs set to absolute paths directly (not via ``paths.data``) stay path-dependent."""
+    c = OmegaConf.to_container(_portable(cfg), resolve=True)
+    ev = {k: v for k, v in (c.get("eval") or {}).items() if k not in _FP_EXCLUDE_EVAL}
+    for block, key in _FP_EXCLUDE_NESTED:
+        if isinstance(ev.get(block), dict):
+            ev[block] = {k: v for k, v in ev[block].items() if k != key}
+    out: dict[str, Any] = {"eval": ev, "content": _content_hashes(cfg)}
     for k in _FP_SECTIONS:
         out[k] = c.get(k)
+    if method is not None:
+        ev = c.get("eval") or {}
+        if method == "p6_model":
+            out["method"] = {"model": ev.get("model")}
+        elif method in _METHOD_CFG:
+            out["method"] = {
+                _METHOD_CFG[method]: (ev.get("baselines") or {}).get(_METHOD_CFG[method])
+            }
+    return out
+
+
+def _portable(cfg):
+    """``cfg`` (unresolved) with ``paths.data`` replaced by :data:`DATA_PLACEHOLDER`."""
+    c = OmegaConf.create(OmegaConf.to_container(cfg, resolve=False))
+    if c.get("paths") is not None and c.paths.get("data") is not None:
+        c.paths.data = DATA_PLACEHOLDER
+    return c
+
+
+def _content_hashes(cfg) -> dict[str, Any]:
+    """Dataset sha256 (committed dataset index) and gold index sha256 (``None`` if absent)."""
+    from lstmabar.eval.report import _resolve, _sha256_text_file
+
+    out: dict[str, Any] = {"dataset_sha256": None, "gold_index_sha256": None}
+    try:
+        index = _resolve(cfg.data.manifests_dir) / str(cfg.data.version) / "index.json"
+        if index.exists():
+            out["dataset_sha256"] = json.loads(index.read_text("utf-8")).get("dataset_sha256")
+    except (OSError, ValueError, AttributeError):
+        pass
+    try:
+        out["gold_index_sha256"] = _sha256_text_file(_resolve(cfg.eval.gold_index))
+    except (OSError, ValueError, AttributeError):
+        pass
     return out
 
 
@@ -346,16 +408,31 @@ def fingerprint_diff(saved: dict[str, Any], current: dict[str, Any]) -> list[str
     ]
 
 
+FINGERPRINT_FILE = "fingerprint.json"
+
+
+def _saved_fingerprint(run_dir: Path) -> dict[str, Any]:
+    """The run's fingerprint as recorded at creation (``fingerprint.json``, portable across
+    machines). A run dir without it (created before the file existed) cannot be resumed: its
+    saved config.yaml is fully resolved, so it can't be compared path-independently."""
+    path = run_dir / FINGERPRINT_FILE
+    if not path.exists():
+        raise SystemExit(
+            f"eval run --run-dir {run_dir.name}: no {FINGERPRINT_FILE} (run dir predates "
+            "portable resume); start a new run dir"
+        )
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 def _check_resume(run_dir: Path, cfg) -> None:
-    """Refuse to resume a run dir whose saved config differs in anything scores depend on."""
-    saved = OmegaConf.load(run_dir / "config.yaml")
-    diff = fingerprint_diff(fingerprint(saved), fingerprint(cfg))
+    """Refuse to resume a run dir whose saved settings differ in anything scores depend on."""
+    diff = fingerprint_diff(_saved_fingerprint(run_dir), fingerprint(cfg))
     if diff:
         shown = "\n  ".join(scrub(d) for d in diff[:20])
         more = f"\n  ... and {len(diff) - 20} more" if len(diff) > 20 else ""
         raise SystemExit(
             f"eval run --run-dir {run_dir.name}: the current settings differ from the run's "
-            f"saved config.yaml; refusing to mix scores. Differences:\n  {shown}{more}\n"
+            f"{FINGERPRINT_FILE}; refusing to mix scores. Differences:\n  {shown}{more}\n"
             "Re-run with the same settings (incl. --limit) or start a new run dir."
         )
 
@@ -451,7 +528,7 @@ def _score(method, split: str, data: _Data, cfg, sel_cfg, seed: int):
 
 def run_method(name: str, cfg, run_dir: Path, splits: list[str], data: _Data) -> dict[str, Any]:
     """Score one method on ``splits`` for every seed it needs; returns its status record."""
-    fp_hash = fingerprint_hash(fingerprint(cfg))
+    fp_hash = fingerprint_hash(fingerprint(cfg, name))
     cannot = _cannot_run_types()
     sel_cfg = _selection_cfg(cfg)
     rec: dict[str, Any] = {"name": name, "seeds": [], "splits": {}, "info": {}, "selection": {}}
@@ -600,6 +677,7 @@ def _run(cfg, args, fixtures: bool = False) -> int:
         print(f"[eval run] resuming {run_dir.name}", flush=True)
     else:
         run_dir = create_run_dir(cfg, root=str(cfg.paths.runs), name=str(cfg.name))
+        _json_dump(fingerprint(cfg), run_dir / FINGERPRINT_FILE)
     seed_everything(int(cfg.eval.seed))
     data = _Data(cfg, limit)
     for name in methods:
