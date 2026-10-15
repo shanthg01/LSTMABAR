@@ -48,7 +48,7 @@ Runtime → GPU. Run the bootstrap notebook's clone + mount cells, then:
 !tar -xzf {DRIVE_ROOT}/lstmabar_rendered.tgz -C /content/data/rendered
 !tar -xzf {DRIVE_ROOT}/lstmabar_rest.tgz -C /content   # creates /content/data/{manifests,...}
 # Gold instructions are committed in the repo; paths.data must contain them too.
-!cp -r /content/LSTMABAR/data/gold /content/data/
+!mkdir -p /content/data/gold && cp -r /content/LSTMABAR/data/gold/. /content/data/gold/
 DATA = "/content/data"
 ```
 
