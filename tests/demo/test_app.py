@@ -451,4 +451,8 @@ def test_text_action_is_private_and_shows_decode_errors():
 def test_default_app_reads_the_demo_config():
     app = build_app(FakeBoard, kb={})
     md = [b.value for b in app.blocks.values() if isinstance(b, gr.Markdown)]
-    assert any("Text method: `mean`" in str(v) for v in md)
+    from lstmabar.config import load_config
+    from lstmabar.demo.text import DEFAULT_CONFIG
+
+    want = str(load_config(DEFAULT_CONFIG).demo.text_method)
+    assert any(f"Text method: `{want}`" in str(v) for v in md)
