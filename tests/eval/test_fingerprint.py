@@ -71,3 +71,26 @@ def test_resume_check_uses_the_recorded_portable_fingerprint(tmp_path):
     _check_resume(run_dir, _cfg(b, "eval.baselines.text2fx.max_items=null"))  # method block
     with pytest.raises(SystemExit, match="eval.max_items"):
         _check_resume(run_dir, _cfg(b, "eval.max_items=3"))
+
+
+def test_old_run_dir_without_fingerprint_is_refused(tmp_path):
+    import pytest
+
+    from lstmabar.eval.run import _check_resume
+
+    run_dir = tmp_path / "old"
+    run_dir.mkdir()
+    (run_dir / "config.yaml").write_text("name: x\n", encoding="utf-8")
+    with pytest.raises(SystemExit, match="fingerprint.json"):
+        _check_resume(run_dir, _cfg(tmp_path / "a"))
+
+
+def test_throughput_settings_do_not_change_the_fingerprint(tmp_path):
+    a = tmp_path / "a"
+    base = fingerprint_hash(fingerprint(_cfg(a)))
+    for o in (
+        "eval.embeddings.num_threads=12",
+        "eval.embeddings.batch_size=8",
+        "eval.proxy.workers=1",
+    ):
+        assert base == fingerprint_hash(fingerprint(_cfg(a, o)))

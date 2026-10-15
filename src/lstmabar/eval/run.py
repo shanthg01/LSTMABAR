@@ -17,10 +17,12 @@ Run dir layout (``runs/<name>/<stamp>/``)::
 A split's ``.jsonl`` appears only once the split is scored (written to a temp name and
 renamed), so a crash keeps the finished method x split files and ``run --run-dir <dir>`` resumes
 by skipping them (a finished selection is reused, not re-run). A resume is refused when the
-current settings differ from the run's saved ``config.yaml`` in anything scores depend on
-(:func:`fingerprint`: the eval block incl. ``max_items`` = ``--limit``, data / gold / audio /
-analysis / render, ``paths.data``); each ``.meta.json`` and ``selection.json`` also carries the
-fingerprint hash, and a file with a different hash is re-scored. Methods with
+current settings differ from the run's ``fingerprint.json`` (written at creation) in anything
+scores depend on (:func:`fingerprint`: the eval block incl. ``max_items`` = ``--limit``, data /
+gold / audio / analysis / render with ``paths.data`` as a placeholder, and the dataset and gold
+index hashes, so a run dir can be resumed on another machine); each ``.meta.json`` and
+``selection.json`` also carries its method's fingerprint hash, and a file with a different hash
+is re-scored. Run dirs created before ``fingerprint.json`` existed cannot be resumed. Methods with
 ``deterministic=False`` run for ``eval.stats.min_seeds`` seeds.
 
 Methods that cannot run are recorded per split as ``"not run: <reason>"``: only a method that
@@ -306,6 +308,13 @@ class _Data:
 _FP_EXCLUDE_EVAL = frozenset(
     {"workers", "methods", "report_dir", "report_name", "baselines", "model"}
 )
+_FP_EXCLUDE_NESTED = (
+    ("embeddings", "batch_size"),
+    ("embeddings", "num_threads"),
+    ("embeddings", "save_every"),
+    ("proxy", "workers"),
+)
+"""Throughput settings that never change scores."""
 _METHOD_CFG = {"knn_clap": "knn", "knn_bge": "knn", "llm_zero_shot": "llm", "text2fx": "text2fx"}
 """Method -> its ``eval.baselines.<key>`` block (``p6_model`` -> ``eval.model``). Only the scored
 method's own block enters its score files' fingerprint, so another method's settings (e.g. a
@@ -330,10 +339,11 @@ def fingerprint(cfg, method: str | None = None) -> dict[str, Any]:
     be merged across machines; the content hashes check that it really is the same dataset.
     Data dirs set to absolute paths directly (not via ``paths.data``) stay path-dependent."""
     c = OmegaConf.to_container(_portable(cfg), resolve=True)
-    out: dict[str, Any] = {
-        "eval": {k: v for k, v in (c.get("eval") or {}).items() if k not in _FP_EXCLUDE_EVAL},
-        "content": _content_hashes(cfg),
-    }
+    ev = {k: v for k, v in (c.get("eval") or {}).items() if k not in _FP_EXCLUDE_EVAL}
+    for block, key in _FP_EXCLUDE_NESTED:
+        if isinstance(ev.get(block), dict):
+            ev[block] = {k: v for k, v in ev[block].items() if k != key}
+    out: dict[str, Any] = {"eval": ev, "content": _content_hashes(cfg)}
     for k in _FP_SECTIONS:
         out[k] = c.get(k)
     if method is not None:
@@ -364,6 +374,9 @@ def _content_hashes(cfg) -> dict[str, Any]:
         index = _resolve(cfg.data.manifests_dir) / str(cfg.data.version) / "index.json"
         if index.exists():
             out["dataset_sha256"] = json.loads(index.read_text("utf-8")).get("dataset_sha256")
+    except (OSError, ValueError, AttributeError):
+        pass
+    try:
         out["gold_index_sha256"] = _sha256_text_file(_resolve(cfg.eval.gold_index))
     except (OSError, ValueError, AttributeError):
         pass
@@ -399,13 +412,16 @@ FINGERPRINT_FILE = "fingerprint.json"
 
 
 def _saved_fingerprint(run_dir: Path) -> dict[str, Any]:
-    """The run's fingerprint as recorded at creation (``fingerprint.json``; portable across
-    machines). Older run dirs without it fall back to the saved, fully resolved config.yaml,
-    which only matches on the machine that created it."""
+    """The run's fingerprint as recorded at creation (``fingerprint.json``, portable across
+    machines). A run dir without it (created before the file existed) cannot be resumed: its
+    saved config.yaml is fully resolved, so it can't be compared path-independently."""
     path = run_dir / FINGERPRINT_FILE
-    if path.exists():
-        return json.loads(path.read_text(encoding="utf-8"))
-    return fingerprint(OmegaConf.load(run_dir / "config.yaml"))
+    if not path.exists():
+        raise SystemExit(
+            f"eval run --run-dir {run_dir.name}: no {FINGERPRINT_FILE} (run dir predates "
+            "portable resume); start a new run dir"
+        )
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def _check_resume(run_dir: Path, cfg) -> None:
@@ -416,7 +432,7 @@ def _check_resume(run_dir: Path, cfg) -> None:
         more = f"\n  ... and {len(diff) - 20} more" if len(diff) > 20 else ""
         raise SystemExit(
             f"eval run --run-dir {run_dir.name}: the current settings differ from the run's "
-            f"saved config.yaml; refusing to mix scores. Differences:\n  {shown}{more}\n"
+            f"{FINGERPRINT_FILE}; refusing to mix scores. Differences:\n  {shown}{more}\n"
             "Re-run with the same settings (incl. --limit) or start a new run dir."
         )
 

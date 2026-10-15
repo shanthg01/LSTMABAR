@@ -47,6 +47,8 @@ Runtime → GPU. Run the bootstrap notebook's clone + mount cells, then:
 !mkdir -p /content/data/rendered
 !tar -xzf {DRIVE_ROOT}/lstmabar_rendered.tgz -C /content/data/rendered
 !tar -xzf {DRIVE_ROOT}/lstmabar_rest.tgz -C /content   # creates /content/data/{manifests,...}
+# Gold instructions are committed in the repo; paths.data must contain them too.
+!cp -r /content/LSTMABAR/data/gold /content/data/
 DATA = "/content/data"
 ```
 
@@ -59,7 +61,8 @@ up in one report. Copy it to Drive first (from the local machine, e.g. zip
 `runs/eval_p5/<stamp>/` and unzip to `MyDrive/lstmabar/runs/eval_p5/<stamp>/`). Resuming on
 another machine works because the run's `fingerprint.json` is path-independent (it records the
 dataset and gold-index hashes, not `paths.data`); a different dataset or eval setting is
-refused with a diff.
+refused with a diff. Run dirs created before this (no `fingerprint.json`) cannot be resumed;
+score files written before it are re-scored.
 
 ```python
 RUN = f"{DRIVE_ROOT}/runs/eval_p5/<stamp>"
