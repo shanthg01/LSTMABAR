@@ -456,3 +456,4 @@ def test_default_app_reads_the_demo_config():
 
     want = str(load_config(DEFAULT_CONFIG).demo.text_method)
     assert any(f"Text method: `{want}`" in str(v) for v in md)
+    assert want == "knn_bge"  # the M3 pick (reports/p5_baselines.md); change deliberately
