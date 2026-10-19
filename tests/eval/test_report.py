@@ -358,3 +358,34 @@ def test_estimate_without_key_never_builds_a_client(fx, tmp_path, monkeypatch, c
     assert RUN.run(cfg, _args(estimate=True, limit=2)) == 0
     out = capsys.readouterr().out
     assert "approx" in out and "within cap" in out
+
+
+def test_write_includes_methods_missing_from_run_json(tmp_path, monkeypatch):
+    """Scores merged from another machine (or a crashed resume) appear in the report even if
+    run.json's requested_methods does not list them; `eval report --methods` restricts."""
+    from lstmabar.eval import run as R
+
+    seen = {}
+
+    def fake_build(results, cfg, extras):
+        seen["methods"] = sorted({r.method for r in results})
+        return {"rows": []}
+
+    monkeypatch.setattr(
+        R, "load_results", lambda d: [type("S", (), {"method": m})() for m in ("noop", "text2fx")]
+    )
+    monkeypatch.setattr(R, "load_method_records", lambda d: [{"name": "noop"}, {"name": "text2fx"}])
+    import lstmabar.eval.report as rep
+
+    monkeypatch.setattr(rep, "build_report", fake_build)
+    monkeypatch.setattr(rep, "render_markdown", lambda r: "")
+    monkeypatch.setattr(
+        rep, "write_report", lambda r, d, n: (tmp_path / "x.md", tmp_path / "x.json")
+    )
+    from omegaconf import OmegaConf
+
+    cfg = OmegaConf.create({"eval": {"report_dir": str(tmp_path), "report_name": "x"}})
+    R._write(cfg, tmp_path, {"requested_methods": ["noop"]})
+    assert seen["methods"] == ["noop", "text2fx"]
+    R._write(cfg, tmp_path, {"requested_methods": ["noop"], "restrict_methods": True})
+    assert seen["methods"] == ["noop"]

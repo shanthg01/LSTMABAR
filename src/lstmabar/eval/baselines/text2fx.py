@@ -47,6 +47,7 @@ DEFAULTS: dict[str, Any] = {
     "steps": 200,
     "lr": 0.05,
     "max_items": 4,
+    "device": "auto",
 }
 WET_PEAK_DBFS = -1.0  # fallback when the config has no render.wet_peak_dbfs
 LOGIT_EPS = 1e-3
@@ -78,6 +79,13 @@ def _logit(p: float) -> float:
     return math.log(p / (1.0 - p))
 
 
+def resolve_device(name: str) -> torch.device:
+    """``auto`` -> CUDA if available, else CPU; otherwise the named device."""
+    if name == "auto":
+        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    return torch.device(name)
+
+
 class LimitExceeded(RuntimeError):
     """More units than ``eval.baselines.text2fx.max_items`` were requested for one split."""
 
@@ -99,6 +107,7 @@ class Text2Fx(Method):
         self.steps = int(p["steps"])
         self.lr = float(p["lr"])
         self.max_items = None if p["max_items"] is None else int(p["max_items"])
+        self.device = resolve_device(str(p["device"]))
         self.cache_dir = _get(cfg, "eval.embeddings.dir", None)
         self.wet_peak = float(_get(cfg, "render.wet_peak_dbfs", WET_PEAK_DBFS))
         # Injectable for tests; loaded lazily from the local HF cache otherwise.
@@ -117,14 +126,15 @@ class Text2Fx(Method):
             from lstmabar.models.clap_diff import ClapAudioDiff
             from lstmabar.models.encoders import ClapEncoder
 
-            self.audio_embedder = ClapAudioDiff(ClapEncoder(self.clap_model, towers=("audio",)))
+            enc = ClapEncoder(self.clap_model, device=str(self.device), towers=("audio",))
+            self.audio_embedder = ClapAudioDiff(enc).to(self.device)
         return self.audio_embedder
 
     def _encode_texts(self, texts: Sequence[str]) -> np.ndarray:
         if self.text_embedder is None:
             from lstmabar.models.encoders import ClapEncoder
 
-            enc = ClapEncoder(self.clap_model, towers=("text",))
+            enc = ClapEncoder(self.clap_model, device=str(self.device), towers=("text",))
             self.text_embedder = enc.encode_text
         return np.asarray(self.text_embedder(list(texts)), dtype=np.float32)
 
@@ -184,11 +194,12 @@ class Text2Fx(Method):
         sr = int(sample_rate)
         board = self._board(sr)
         init = default_board(0.5)
+        dev = self.device
         logits = torch.tensor(
-            [_logit(init[b][k]) for b, k in BOARD_LAYOUT], dtype=torch.float32
+            [_logit(init[b][k]) for b, k in BOARD_LAYOUT], dtype=torch.float32, device=dev
         ).requires_grad_(True)
-        x = torch.from_numpy(np.asarray(dry, dtype=np.float32))[None]
-        t = torch.from_numpy(np.asarray(text_emb, dtype=np.float32))[None]
+        x = torch.from_numpy(np.asarray(dry, dtype=np.float32))[None].to(dev)
+        t = torch.from_numpy(np.asarray(text_emb, dtype=np.float32))[None].to(dev)
         opt = torch.optim.Adam([logits], lr=self.lr)
         best_sim, best = -math.inf, torch.sigmoid(logits.detach())
         first = math.nan
@@ -209,7 +220,9 @@ class Text2Fx(Method):
                 logits.grad.nan_to_num_(0.0, 0.0, 0.0)
             opt.step()
         # Discrete gates: score all 2^n combinations with the best soft step's knobs.
-        combos = torch.tensor(list(itertools.product((0.0, 1.0), repeat=len(_GATE_IDX))))
+        combos = torch.tensor(
+            list(itertools.product((0.0, 1.0), repeat=len(_GATE_IDX))), device=dev
+        )
         cand = best[None].repeat(combos.shape[0], 1)
         cand[:, _GATE_IDX] = combos
         sims = []
@@ -280,6 +293,7 @@ class Text2Fx(Method):
             "steps": self.steps,
             "lr": self.lr,
             "max_items": self.max_items,
+            "device": str(self.device),
             "n_optimized": len(st),
             "seconds_per_query": mean("seconds"),
             "mean_sim_init": mean("sim_init"),

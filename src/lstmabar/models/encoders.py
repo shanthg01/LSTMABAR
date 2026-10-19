@@ -1,5 +1,7 @@
 """Frozen text/audio encoders (CLAP checkpoints, bge-base). Loaders need the ``clap`` extra
-(transformers) and load offline from the local Hugging Face cache (``local_files_only``).
+(transformers). A checkpoint already in the local Hugging Face cache loads offline
+(``local_files_only``); one that is not (a fresh Colab VM) is downloaded, unless
+``HF_HUB_OFFLINE`` is set.
 
 Gotchas (P5 brief D5, verified with transformers 5.19): ``get_text_features`` /
 ``get_audio_features`` return an output object whose 512-d embedding is ``.pooler_output``;
@@ -54,6 +56,16 @@ def _features(out):
     return out if isinstance(out, torch.Tensor) else out.pooler_output
 
 
+def local_only(name: str) -> bool:
+    """Load from the local HF cache only: the model is cached, or ``HF_HUB_OFFLINE`` is
+    set. Otherwise ``from_pretrained`` may download it (needs network)."""
+    import os
+
+    if os.environ.get("HF_HUB_OFFLINE", "").strip().lower() in {"1", "true", "yes", "on"}:
+        return True
+    return is_cached(name)
+
+
 def is_cached(name: str) -> bool:
     """Whether the model's config is in the local HF cache (no network)."""
     try:
@@ -80,8 +92,9 @@ class ClapEncoder:
         self.name = name
         self.device = torch.device(device)
         hf = HF_IDS[name]
-        self.processor = ClapProcessor.from_pretrained(hf, local_files_only=True)
-        model = ClapModel.from_pretrained(hf, local_files_only=True).eval()
+        local = local_only(name)
+        self.processor = ClapProcessor.from_pretrained(hf, local_files_only=local)
+        model = ClapModel.from_pretrained(hf, local_files_only=local).eval()
         self.towers = tuple(towers)
         for tower in ("text", "audio"):
             if tower not in self.towers:
@@ -148,8 +161,9 @@ class BgeEncoder:
         self.name = name
         self.device = torch.device(device)
         hf = HF_IDS[name]
-        self.tokenizer = AutoTokenizer.from_pretrained(hf, local_files_only=True)
-        self.model = AutoModel.from_pretrained(hf, local_files_only=True).eval().to(self.device)
+        local = local_only(name)
+        self.tokenizer = AutoTokenizer.from_pretrained(hf, local_files_only=local)
+        self.model = AutoModel.from_pretrained(hf, local_files_only=local).eval().to(self.device)
         self.dim = int(self.model.config.hidden_size)
 
     def encode_text(self, texts: Sequence[str], batch_size: int = 32) -> np.ndarray:

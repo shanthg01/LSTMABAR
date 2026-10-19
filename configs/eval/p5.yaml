@@ -71,6 +71,7 @@ eval:
       max_items: 4                        # distinct (text, audio) optimizations per split;
                                           # ~26 min each locally (200 steps, measured), so
                                           # cap with --limit; null on Colab (full run)
+      device: auto                        # cuda if available (Colab GPU), else cpu
 
   proxy:                                  # D8: synthetic val 2AFC
     version: valproxy_v1                  # audio: data/rendered/valproxy_v1/ (gitignored)

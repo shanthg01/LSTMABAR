@@ -40,52 +40,80 @@ tar -czf "$O/lstmabar_rest.tgz" data/manifests data/calibration data/cache/f0 da
 ```
 
 Upload `lstmabar_rendered.tgz` and `lstmabar_rest.tgz` (from `../lstmabar_colab_upload/`) to
-`MyDrive/lstmabar/` (the Drive web UI is fine). Do **not** upload `data/test_real/`, `data/sources/` or `data/cache/llm/`.
+`MyDrive/lstmabar/` (the Drive web UI is fine).
 
-## 2. Notebook cells (after the bootstrap cells)
+Also upload the shared run dir's three top-level files (the scores stay local):
+create `MyDrive/lstmabar/runs/eval_p5/20261014-204858/` and upload `config.yaml`,
+`fingerprint.json` and `meta.json` from the local `runs/eval_p5/20261014-204858/`. Without
+them Cell C stops with `not a run dir (no config.yaml)`. Do **not** upload `data/test_real/`, `data/sources/` or `data/cache/llm/`.
 
-Runtime → GPU. Run the bootstrap notebook's clone + mount cells, then:
+## 2. Notebook cells
+
+Open `colab/bootstrap.ipynb` in Colab (File → Open notebook → GitHub → `shanthg01/LSTMABAR`),
+set Runtime → Change runtime type → **T4 GPU**, and run its cells (clone, install, mount
+Drive, info/smoke). Then add these cells below them (+ Code) and run them in order.
+File → Save a copy in Drive keeps the added cells.
+
+**Cell A: setup** (extras, data to the VM's local disk, gold instructions):
 
 ```python
 !pip install -q -e ".[dev,clap,dsp,analysis,whitebox]"
-# Extract to the VM's local disk (much faster than reading from Drive), keep outputs on Drive.
 !mkdir -p /content/data/rendered
 !tar -xzf {DRIVE_ROOT}/lstmabar_rendered.tgz -C /content/data/rendered
-!tar -xzf {DRIVE_ROOT}/lstmabar_rest.tgz -C /content   # creates /content/data/{manifests,...}
-# Gold instructions are committed in the repo; paths.data must contain them too.
+!tar -xzf {DRIVE_ROOT}/lstmabar_rest.tgz -C /content   # -> /content/data/{manifests,calibration,cache}
 !mkdir -p /content/data/gold && cp -r /content/LSTMABAR/data/gold/. /content/data/gold/
 DATA = "/content/data"
+RUN = f"{DRIVE_ROOT}/runs/eval_p5/20261014-204858"   # the shared local run dir, copied to Drive
+!ls {DATA} {RUN}
+!python -c "import torch; print('cuda', torch.cuda.is_available())"
 ```
 
-The HF checkpoints download on first use (Colab has network; no `HF_HUB_OFFLINE`).
+`cuda True` is required (Text2FX uses the GPU via `eval.baselines.text2fx.device: auto`). The
+CLAP checkpoint downloads from the Hugging Face Hub on first use (~0.7 GB).
 
 ## 3. Text2FX run
 
-The eval run dir must be the **same one** as the local no-op/mean/kNN run, so all methods end
-up in one report. Copy it to Drive first (from the local machine, e.g. zip
-`runs/eval_p5/<stamp>/` and unzip to `MyDrive/lstmabar/runs/eval_p5/<stamp>/`). Resuming on
-another machine works because the run's `fingerprint.json` is path-independent (it records the
-dataset and gold-index hashes, not `paths.data`); a different dataset or eval setting is
-refused with a diff. Run dirs created before this (no `fingerprint.json`) cannot be resumed;
-score files written before it are re-scored.
+The run dir is the **same one** as the local no-op/mean/kNN run, so every method ends up in one
+report. Resuming on another machine works because the run's `fingerprint.json` is
+path-independent (dataset and gold-index hashes, not `paths.data`); a different dataset or
+eval setting is refused with a diff. Run dirs created before this (no `fingerprint.json`)
+cannot be resumed; score files written before it are re-scored.
+
+Dotlist overrides go **before** `--methods` / `--splits` (those flags take a list and would
+swallow anything after them).
+
+**Cell B: timing smoke** (2 items per split, a throwaway run dir on the VM; note the time):
 
 ```python
-RUN = f"{DRIVE_ROOT}/runs/eval_p5/<stamp>"
-# 1) timing smoke (2 items per split, a throwaway run dir; writes p5_baselines_smoke.*)
-!lstmabar eval run --methods text2fx --splits test gold --limit 2 paths.data={DATA} paths.runs=/content/runs eval.report_dir=/content/reports eval.baselines.text2fx.max_items=null
-# 2) the real run into the shared run dir (resumable: re-run the same cell after a disconnect)
-!lstmabar eval run --run-dir {RUN} --methods text2fx --splits test test_unseen_pedal gold paths.data={DATA} eval.report_dir=/content/reports eval.baselines.text2fx.max_items=null
+%%time
+!lstmabar eval run paths.data={DATA} paths.runs=/content/runs eval.report_dir=/content/reports eval.baselines.text2fx.max_items=null --workers 1 --limit 2 --methods text2fx --splits test gold
 ```
 
-- Text2FX has no hyperparameter grid, so its selection step does no optimization; `--splits` leaves out the
-  val table (2,752 optimizations) on purpose.
-- Size: test 1,074 + unseen 531 + gold 1,350 = 2,955 optimizations. Decide from the smoke
-  timing: if it projects beyond a session (~10 h), run a deterministic subset with `--limit N`
-  in a **separate** run dir (the limit is part of the fingerprint) and report it as a subset.
-- `eval.baselines.text2fx.*` only enters Text2FX's own score fingerprint, so this override
-  does not invalidate the other methods' scores in the shared run dir.
-- Afterwards copy `RUN` back to the local `runs/eval_p5/<stamp>/` and rebuild the report
-  locally: `uv run lstmabar eval report --run-dir runs/eval_p5/<stamp>`.
+That is 10 optimizations (2 test items x 2 captions + 2 gold items x 3 clips); divide the wall
+time by 10 for seconds per optimization.
+
+**Cell C: the real run** into the shared run dir on Drive (resumable: re-run the same cell
+after a disconnect; finished splits are kept):
+
+```python
+!lstmabar eval run paths.data={DATA} eval.report_dir=/content/reports eval.baselines.text2fx.max_items=null --run-dir {RUN} --workers 1 --methods text2fx --splits test test_unseen_pedal gold
+```
+
+- Text2FX has no hyperparameter grid, so its selection step does no optimization; `--splits`
+  leaves out the val table (2,752 optimizations) on purpose.
+- Size: test 1,074 + unseen 531 + gold 1,350 = 2,955 optimizations. If the smoke timing
+  projects beyond a session (~10 h on the free tier), run a deterministic subset with
+  `--limit N` in a **separate** run dir (the limit is part of the fingerprint) and report it
+  as a subset.
+- `eval.baselines.text2fx.*` only enters Text2FX's own score fingerprint, so these overrides
+  do not invalidate the other methods' scores in the shared run dir.
+- Afterwards download `RUN/scores/text2fx/` and `RUN/methods/text2fx.json` into the local
+  `runs/eval_p5/20261014-204858/` (do **not** copy Colab's `run.json` over the local one)
+  and rebuild the report locally:
+  `uv run lstmabar eval report --run-dir runs/eval_p5/20261014-204858`. The report includes
+  every method that has scores in the run dir.
+- GPU scores are not bitwise reproducible (CUDA atomic adds in the backward pass);
+  `methods/text2fx.json` records the device that produced them.
 
 ## 4. P6 stage 2 (later)
 

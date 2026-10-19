@@ -71,6 +71,12 @@ def _poly_plan(n_in: int, up: int, down: int) -> tuple[Tensor, Tensor, Tensor]:
     )
 
 
+@lru_cache(maxsize=8)
+def _poly_plan_on(n_in: int, up: int, down: int, device: str):
+    """:func:`_poly_plan` moved to ``device`` once (not on every forward pass)."""
+    return tuple(t.to(device) for t in _poly_plan(n_in, up, down))
+
+
 def resample_poly(x: Tensor, orig_sr: int, target_sr: int) -> Tensor:
     """``(B, T)`` -> ``(B, T')``: differentiable ``scipy.signal.resample_poly`` (default
     Kaiser window, zero padding), as in :func:`lstmabar.audio.resample`."""
@@ -78,7 +84,7 @@ def resample_poly(x: Tensor, orig_sr: int, target_sr: int) -> Tensor:
         return x
     g = gcd(int(orig_sr), int(target_sr))
     up, down = int(target_sr) // g, int(orig_sr) // g
-    idx, phase, bank = _poly_plan(int(x.shape[-1]), up, down)
+    idx, phase, bank = _poly_plan_on(int(x.shape[-1]), up, down, str(x.device))
     xp = torch.nn.functional.pad(x, (1, 0))  # zero at index 0 for out-of-range taps
     taps = bank.to(x.dtype)[phase]  # (n_out, L)
     return (xp[:, idx] * taps).sum(-1)
