@@ -66,7 +66,8 @@ File → Save a copy in Drive keeps the added cells.
 !mkdir -p /content/data/gold && cp -r /content/LSTMABAR/data/gold/. /content/data/gold/
 DATA = "/content/data"
 RUN = f"{DRIVE_ROOT}/runs/eval_p5/20261014-204858"   # the shared local run dir, copied to Drive
-!ls {DATA} {RUN} {DATA}/manifests/v1/dry_clips.jsonl   # all three must exist
+!ls -d {RUN} {DATA}/manifests/v1/dry_clips.jsonl {DATA}/rendered/v1/dry {DATA}/rendered/gold_v1   # all must exist
+# A failed ! command does not stop the cell: read the output for "No such file" / "Error".
 !python -c "import torch; print('cuda', torch.cuda.is_available())"
 ```
 
