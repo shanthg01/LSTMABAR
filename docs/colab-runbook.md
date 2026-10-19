@@ -60,11 +60,14 @@ File → Save a copy in Drive keeps the added cells.
 !pip install -q -e ".[dev,clap,dsp,analysis,whitebox]"
 !mkdir -p /content/data/rendered
 !tar -xzf {DRIVE_ROOT}/lstmabar_rendered.tgz -C /content/data/rendered
-!tar -xzf {DRIVE_ROOT}/lstmabar_rest.tgz -C /content   # -> /content/data/{manifests,calibration,cache}
+!tar -xzf {DRIVE_ROOT}/lstmabar_rest.tgz -C /content
+# (rest.tgz extracts to /content/data/manifests, calibration and cache. No braces in comments on
+# `!` lines: IPython then skips expanding {DRIVE_ROOT} on that line.)
 !mkdir -p /content/data/gold && cp -r /content/LSTMABAR/data/gold/. /content/data/gold/
 DATA = "/content/data"
 RUN = f"{DRIVE_ROOT}/runs/eval_p5/20261014-204858"   # the shared local run dir, copied to Drive
-!ls {DATA} {RUN}
+!ls -d {RUN} {DATA}/manifests/v1/dry_clips.jsonl {DATA}/rendered/v1/dry {DATA}/rendered/gold_v1   # all must exist
+# A failed ! command does not stop the cell: read the output for "No such file" / "Error".
 !python -c "import torch; print('cuda', torch.cuda.is_available())"
 ```
 
