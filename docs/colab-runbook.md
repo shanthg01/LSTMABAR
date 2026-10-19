@@ -24,7 +24,7 @@ each file name):
 ```bash
 set -o pipefail
 O=../lstmabar_colab_upload && mkdir -p "$O"
-uv run python - <<'EOF' | tr -d '\r' > $O/colab_wets.txt
+uv run python - <<'EOF' | tr -d '\r' > "$O/colab_wets.txt"
 from lstmabar.config import load_config
 from lstmabar.eval.data import load_split
 cfg = load_config("configs/eval/p5.yaml")
@@ -34,8 +34,8 @@ for split in ("test", "test_unseen_pedal"):
 EOF
 O=$(cd "$O" && pwd)
 wc -l < "$O/colab_wets.txt"   # expect 840 (560 test + 280 unseen wets)
-(cd data/rendered && ls v1/wet/*/items.jsonl v1/wet/*/captions.jsonl v1/wet/*/DONE v1/wet/plan.json > $O/colab_meta.txt \
-  && tar -czf $O/lstmabar_rendered.tgz v1/dry gold_v1 -T $O/colab_meta.txt -T $O/colab_wets.txt)
+(cd data/rendered && ls v1/wet/*/items.jsonl v1/wet/*/captions.jsonl v1/wet/*/DONE v1/wet/plan.json > "$O/colab_meta.txt" \
+  && tar -czf "$O/lstmabar_rendered.tgz" v1/dry gold_v1 -T "$O/colab_meta.txt" -T "$O/colab_wets.txt")
 tar -czf "$O/lstmabar_rest.tgz" data/manifests data/calibration data/cache/f0 data/cache/clap data/cache/bge
 ```
 
