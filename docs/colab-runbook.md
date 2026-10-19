@@ -16,10 +16,15 @@ Colab uses the same CLI as local runs (`colab/bootstrap.ipynb`); no project logi
 
 Text2FX scores `test`, `test_unseen_pedal` and gold, so it needs the dry clips, the shard
 metadata, the test/unseen wets, the gold renders, the manifests, the pYIN track cache and the
-CLAP text tables. From the repo root in Git Bash on the local machine:
+CLAP text tables. From the repo root in Git Bash on the local machine (the archives go to a
+folder **outside** the repo, so they can't be committed by accident; the `tr -d '\r'` strips
+the CRLF line endings Windows Python prints, which `tar -T` would otherwise treat as part of
+each file name):
 
 ```bash
-uv run python - <<'EOF' > colab_wets.txt
+set -o pipefail
+O=../lstmabar_colab_upload && mkdir -p "$O"
+uv run python - <<'EOF' | tr -d '\r' > "$O/colab_wets.txt"
 from lstmabar.config import load_config
 from lstmabar.eval.data import load_split
 cfg = load_config("configs/eval/p5.yaml")
@@ -27,15 +32,15 @@ for split in ("test", "test_unseen_pedal"):
     for it in load_split(cfg, split):
         print(it.item.wet_path)  # relative to data/rendered
 EOF
-cd data/rendered
-ls v1/wet/*/items.jsonl v1/wet/*/captions.jsonl v1/wet/*/DONE v1/wet/plan.json > ../../colab_meta.txt
-tar -czf ../../lstmabar_rendered.tgz v1/dry gold_v1 -T ../../colab_meta.txt -T ../../colab_wets.txt
-cd ../..
-tar -czf lstmabar_rest.tgz data/manifests data/calibration data/cache/f0 data/cache/clap data/cache/bge
+O=$(cd "$O" && pwd)
+wc -l < "$O/colab_wets.txt"   # expect 840 (560 test + 280 unseen wets)
+(cd data/rendered && ls v1/wet/*/items.jsonl v1/wet/*/captions.jsonl v1/wet/*/DONE v1/wet/plan.json > "$O/colab_meta.txt" \
+  && tar -czf "$O/lstmabar_rendered.tgz" v1/dry gold_v1 -T "$O/colab_meta.txt" -T "$O/colab_wets.txt")
+tar -czf "$O/lstmabar_rest.tgz" data/manifests data/calibration data/cache/f0 data/cache/clap data/cache/bge
 ```
 
-Upload `lstmabar_rendered.tgz` and `lstmabar_rest.tgz` to `MyDrive/lstmabar/` (the Drive web
-UI is fine). Do **not** upload `data/test_real/`, `data/sources/` or `data/cache/llm/`.
+Upload `lstmabar_rendered.tgz` and `lstmabar_rest.tgz` (from `../lstmabar_colab_upload/`) to
+`MyDrive/lstmabar/` (the Drive web UI is fine). Do **not** upload `data/test_real/`, `data/sources/` or `data/cache/llm/`.
 
 ## 2. Notebook cells (after the bootstrap cells)
 
