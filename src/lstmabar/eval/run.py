@@ -709,7 +709,12 @@ def _write(cfg, run_dir: Path, extras: dict[str, Any], print_md: bool = False) -
         )
         return 1
     records = load_method_records(run_dir)
-    names = extras.get("requested_methods") or [r["name"] for r in records]
+    requested = list(extras.get("requested_methods") or [])
+    if extras.get("restrict_methods"):  # `eval report --methods ...`: only those
+        names = requested
+    else:  # every method with a record (scores merged from another machine, a crashed
+        # resume that never rewrote run.json), requested ones first
+        names = list(dict.fromkeys([*requested, *(r["name"] for r in records)]))
     order = {n: i for i, n in enumerate(names)}
     records = sorted(
         [r for r in records if r["name"] in order] or records,
@@ -769,6 +774,7 @@ def report(cfg, args) -> int:
     extras.setdefault("limit", rcfg.eval.get("max_items"))
     if getattr(args, "methods", None):
         extras["requested_methods"] = list(args.methods)
+        extras["restrict_methods"] = True
     return _write(rcfg, run_dir, extras)
 
 

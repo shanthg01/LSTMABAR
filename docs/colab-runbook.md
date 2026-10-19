@@ -40,7 +40,12 @@ tar -czf "$O/lstmabar_rest.tgz" data/manifests data/calibration data/cache/f0 da
 ```
 
 Upload `lstmabar_rendered.tgz` and `lstmabar_rest.tgz` (from `../lstmabar_colab_upload/`) to
-`MyDrive/lstmabar/` (the Drive web UI is fine). Do **not** upload `data/test_real/`, `data/sources/` or `data/cache/llm/`.
+`MyDrive/lstmabar/` (the Drive web UI is fine).
+
+Also upload the shared run dir's three top-level files (the scores stay local):
+create `MyDrive/lstmabar/runs/eval_p5/20261014-204858/` and upload `config.yaml`,
+`fingerprint.json` and `meta.json` from the local `runs/eval_p5/20261014-204858/`. Without
+them Cell C stops with `not a run dir (no config.yaml)`. Do **not** upload `data/test_real/`, `data/sources/` or `data/cache/llm/`.
 
 ## 2. Notebook cells
 
@@ -103,8 +108,12 @@ after a disconnect; finished splits are kept):
 - `eval.baselines.text2fx.*` only enters Text2FX's own score fingerprint, so these overrides
   do not invalidate the other methods' scores in the shared run dir.
 - Afterwards download `RUN/scores/text2fx/` and `RUN/methods/text2fx.json` into the local
-  `runs/eval_p5/20261014-204858/` and rebuild the report locally:
-  `uv run lstmabar eval report --run-dir runs/eval_p5/20261014-204858`.
+  `runs/eval_p5/20261014-204858/` (do **not** copy Colab's `run.json` over the local one)
+  and rebuild the report locally:
+  `uv run lstmabar eval report --run-dir runs/eval_p5/20261014-204858`. The report includes
+  every method that has scores in the run dir.
+- GPU scores are not bitwise reproducible (CUDA atomic adds in the backward pass);
+  `methods/text2fx.json` records the device that produced them.
 
 ## 4. P6 stage 2 (later)
 
