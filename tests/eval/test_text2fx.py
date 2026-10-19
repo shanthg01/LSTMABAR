@@ -188,3 +188,25 @@ def test_clap_diff_train_is_noop():
     m.model = torch.nn.Dropout(0.5)
     m.train()
     assert not m.training and not m.model.training
+
+
+def test_resolve_device_auto_and_explicit():
+    import torch
+
+    from lstmabar.eval.baselines.text2fx import resolve_device
+
+    assert resolve_device("cpu") == torch.device("cpu")
+    want = "cuda" if torch.cuda.is_available() else "cpu"
+    assert resolve_device("auto").type == want
+
+
+def test_local_only_respects_offline_env(monkeypatch):
+    from lstmabar.models import encoders
+
+    monkeypatch.setattr(encoders, "is_cached", lambda name: False)
+    monkeypatch.setenv("HF_HUB_OFFLINE", "1")
+    assert encoders.local_only("clap-htsat-unfused") is True
+    monkeypatch.delenv("HF_HUB_OFFLINE")
+    assert encoders.local_only("clap-htsat-unfused") is False  # not cached: may download
+    monkeypatch.setattr(encoders, "is_cached", lambda name: True)
+    assert encoders.local_only("clap-htsat-unfused") is True

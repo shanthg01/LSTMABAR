@@ -79,6 +79,7 @@ def resample_poly(x: Tensor, orig_sr: int, target_sr: int) -> Tensor:
     g = gcd(int(orig_sr), int(target_sr))
     up, down = int(target_sr) // g, int(orig_sr) // g
     idx, phase, bank = _poly_plan(int(x.shape[-1]), up, down)
+    idx, phase, bank = idx.to(x.device), phase.to(x.device), bank.to(x.device)
     xp = torch.nn.functional.pad(x, (1, 0))  # zero at index 0 for out-of-range taps
     taps = bank.to(x.dtype)[phase]  # (n_out, L)
     return (xp[:, idx] * taps).sum(-1)
