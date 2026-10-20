@@ -185,6 +185,6 @@ def test_cli_registers_eval_and_train():
     p = build_parser()
     a = p.parse_args(["eval", "run", "eval.workers=1", "--limit", "2"])
     assert a.step == "run" and a.overrides == ["eval.workers=1"]
-    assert set(STEPS) == {"embed", "proxy", "sim-real", "run", "report"}
+    assert set(STEPS) == {"embed", "proxy", "sim-real", "run", "report", "results"}
     assert set(TRAIN_STEPS) == {"stage1", "stage2"}
     assert p.parse_args(["train", "stage1"]).step == "stage1"

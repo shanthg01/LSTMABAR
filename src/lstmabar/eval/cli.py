@@ -20,6 +20,7 @@ STEPS: dict[str, tuple[str, str, str]] = {
     "sim-real": ("sim_real", "run", "test_real sim-to-real gap (D11)"),
     "run": ("run", "run", "score every method on val/test/gold and write the report (5.4)"),
     "report": ("run", "report", "re-render the report from a run dir's scores (no scoring)"),
+    "results": ("results", "run", "P6 results report from finished run dirs (6.7)"),
 }
 
 

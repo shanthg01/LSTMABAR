@@ -1,6 +1,6 @@
 # P5 baselines
 
-Generated 2026-10-15T18:37:58 at commit `e68770d9b87dd2f0a68b89aa1a3dc229604bab34`; run `eval_p5/20261014-204858`; config `configs/eval/p5.yaml`.
+Generated 2026-10-19T11:23:25 at commit `69037b49126be541ecebee6c1ca42cec664bf79c`; run `eval_p5/20261014-204858`; config `configs/eval/p5.yaml`.
 
 - dataset sha256: `c4987b4ab834d3f7b4da87fcfc72d42fd995ad634f1939c7dfb7635291c93cfa`
 - gold index sha256 (LF-normalized): `2fa0cfe5277523a26ac7dbb52a6c5b773c845bb3493f2f81caf314cdd5524e51`
@@ -16,6 +16,7 @@ Every cell: mean [95 % bootstrap CI] (n items). Higher is better for 2AFC (chanc
 | mean | ok | 1 | - | none (no hyperparameters); harmonic descriptors off |
 | knn_clap | ok | 1 | k=25 | runner.select_hparams: proxy.selection_score on val (with the val gold-proxy 2AFC); harmonic descriptors off |
 | knn_bge | ok | 1 | k=25 | runner.select_hparams: proxy.selection_score on val (with the val gold-proxy 2AFC); harmonic descriptors off |
+| p6_model | ok | 5 | - | none (no hyperparameters); harmonic descriptors off |
 
 ## Gold 2AFC, headline subset (per gold source)
 
@@ -29,6 +30,7 @@ Primary distance MR-STFT; LLM-written sources are reported separately ('on LLM-w
 | mean | n/a, 0 items | 0.630 [0.557, 0.703] (91) | 0.565 [0.497, 0.634] (111) | 0.631 [0.565, 0.696] (107) |
 | knn_clap | n/a, 0 items | 0.645 [0.571, 0.716] (91) | 0.545 [0.474, 0.616] (111) | 0.688 [0.620, 0.755] (107) |
 | knn_bge | n/a, 0 items | 0.690 [0.619, 0.760] (91) | 0.646 [0.581, 0.707] (111) | 0.699 [0.637, 0.760] (107) |
+| p6_model | n/a, 0 items | 0.655 [0.582, 0.722] (91); seed SD 0.020 (5 seeds) | 0.596 [0.531, 0.661] (111); seed SD 0.008 (5 seeds) | 0.592 [0.524, 0.658] (107); seed SD 0.005 (5 seeds) |
 
 ### descriptor 2AFC (headline)
 
@@ -38,6 +40,7 @@ Primary distance MR-STFT; LLM-written sources are reported separately ('on LLM-w
 | mean | n/a, 0 items | 0.540 [0.480, 0.601] (91) | 0.520 [0.459, 0.581] (111) | 0.505 [0.447, 0.562] (107) |
 | knn_clap | n/a, 0 items | 0.590 [0.527, 0.652] (91) | 0.495 [0.432, 0.559] (111) | 0.534 [0.472, 0.597] (107) |
 | knn_bge | n/a, 0 items | 0.592 [0.527, 0.654] (91) | 0.590 [0.529, 0.649] (111) | 0.592 [0.530, 0.653] (107) |
+| p6_model | n/a, 0 items | 0.571 [0.505, 0.635] (91); seed SD 0.007 (5 seeds) | 0.535 [0.477, 0.592] (111); seed SD 0.004 (5 seeds) | 0.514 [0.455, 0.570] (107); seed SD 0.013 (5 seeds) |
 
 ### MR-STFT 2AFC by subset
 
@@ -49,6 +52,7 @@ Primary distance MR-STFT; LLM-written sources are reported separately ('on LLM-w
 | mean | n/a, 0 items | 0.572 [0.510, 0.634] (150) | 0.530 [0.468, 0.592] (150) | 0.634 [0.577, 0.690] (150) |
 | knn_clap | n/a, 0 items | 0.642 [0.581, 0.702] (150) | 0.539 [0.476, 0.603] (150) | 0.652 [0.592, 0.711] (150) |
 | knn_bge | n/a, 0 items | 0.630 [0.569, 0.690] (150) | 0.621 [0.563, 0.678] (150) | 0.700 [0.647, 0.752] (150) |
+| p6_model | n/a, 0 items | 0.664 [0.607, 0.720] (150); seed SD 0.018 (5 seeds) | 0.602 [0.545, 0.660] (150); seed SD 0.009 (5 seeds) | 0.613 [0.555, 0.669] (150); seed SD 0.004 (5 seeds) |
 
 **ambiguous**
 
@@ -58,6 +62,7 @@ Primary distance MR-STFT; LLM-written sources are reported separately ('on LLM-w
 | mean | n/a, 0 items | 0.578 [0.428, 0.722] (30) | 0.533 [0.367, 0.700] (25) | 0.659 [0.493, 0.812] (23) |
 | knn_clap | n/a, 0 items | 0.628 [0.478, 0.772] (30) | 0.653 [0.487, 0.807] (25) | 0.536 [0.370, 0.703] (23) |
 | knn_bge | n/a, 0 items | 0.511 [0.367, 0.656] (30) | 0.560 [0.400, 0.713] (25) | 0.703 [0.551, 0.841] (23) |
+| p6_model | n/a, 0 items | 0.621 [0.479, 0.766] (30); seed SD 0.014 (5 seeds) | 0.645 [0.500, 0.779] (25); seed SD 0.011 (5 seeds) | 0.649 [0.487, 0.799] (23); seed SD 0.019 (5 seeds) |
 
 **out_of_scope**
 
@@ -67,6 +72,7 @@ Primary distance MR-STFT; LLM-written sources are reported separately ('on LLM-w
 | mean | n/a, 0 items | 0.227 [0.091, 0.379] (22) | 0.192 [0.000, 0.397] (13) | 0.562 [0.396, 0.729] (16) |
 | knn_clap | n/a, 0 items | 0.606 [0.417, 0.788] (22) | 0.231 [0.051, 0.462] (13) | 0.604 [0.427, 0.781] (16) |
 | knn_bge | n/a, 0 items | 0.515 [0.333, 0.689] (22) | 0.500 [0.231, 0.756] (13) | 0.698 [0.521, 0.865] (16) |
+| p6_model | n/a, 0 items | 0.786 [0.642, 0.920] (22); seed SD 0.035 (5 seeds) | 0.605 [0.395, 0.805] (13); seed SD 0.053 (5 seeds) | 0.694 [0.548, 0.829] (16); seed SD 0.028 (5 seeds) |
 
 **unseen_pedal**
 
@@ -76,6 +82,7 @@ Primary distance MR-STFT; LLM-written sources are reported separately ('on LLM-w
 | mean | n/a, 0 items | 0.875 [0.729, 0.979] (8) | 1.000 [1.000, 1.000] (1) | 0.900 [0.700, 1.000] (5) |
 | knn_clap | n/a, 0 items | 0.750 [0.500, 0.958] (8) | 1.000 [1.000, 1.000] (1) | 0.633 [0.300, 0.933] (5) |
 | knn_bge | n/a, 0 items | 0.750 [0.500, 0.938] (8) | 1.000 [1.000, 1.000] (1) | 0.767 [0.367, 1.000] (5) |
+| p6_model | n/a, 0 items | 0.629 [0.342, 0.887] (8); seed SD 0.034 (5 seeds) | 0.200 [0.200, 0.200] (1); seed SD 0.298 (5 seeds) | 0.660 [0.307, 0.953] (5); seed SD 0.060 (5 seeds) |
 
 ### MR-STFT 2AFC per distractor axis (headline)
 
@@ -93,6 +100,9 @@ Primary distance MR-STFT; LLM-written sources are reported separately ('on LLM-w
 | knn_bge | simulated_human | 0.715 [0.585, 0.837] (41) | 0.426 [0.259, 0.593] (18) | 0.732 [0.632, 0.823] (77) | 0.544 [0.351, 0.737] (19) |
 | knn_bge | llm_persona | 0.547 [0.448, 0.647] (67) | 0.583 [0.333, 0.792] (8) | 0.698 [0.616, 0.777] (106) | 0.595 [0.452, 0.738] (14) |
 | knn_bge | llm_draft | 0.627 [0.514, 0.734] (59) | 0.381 [0.238, 0.524] (7) | 0.769 [0.686, 0.845] (101) | 0.583 [0.431, 0.736] (24) |
+| p6_model | simulated_human | 0.789 [0.693, 0.876] (41); seed SD 0.027 (5 seeds) | 0.415 [0.248, 0.589] (18); seed SD 0.028 (5 seeds) | 0.692 [0.598, 0.780] (77); seed SD 0.033 (5 seeds) | 0.418 [0.256, 0.586] (19); seed SD 0.040 (5 seeds) |
+| p6_model | llm_persona | 0.545 [0.445, 0.644] (67); seed SD 0.008 (5 seeds) | 0.508 [0.217, 0.792] (8); seed SD 0.046 (5 seeds) | 0.638 [0.558, 0.717] (106); seed SD 0.010 (5 seeds) | 0.605 [0.462, 0.748] (14); seed SD 0.040 (5 seeds) |
+| p6_model | llm_draft | 0.522 [0.416, 0.629] (59); seed SD 0.012 (5 seeds) | 0.286 [0.076, 0.533] (7); seed SD 0.048 (5 seeds) | 0.637 [0.548, 0.723] (101); seed SD 0.014 (5 seeds) | 0.572 [0.433, 0.711] (24); seed SD 0.025 (5 seeds) |
 
 ### Other gold metrics (headline)
 
@@ -114,6 +124,10 @@ Primary distance MR-STFT; LLM-written sources are reported separately ('on LLM-w
 | knn_bge | simulated_human | 0.124 [0.107, 0.143] (91) | 2.092 [1.774, 2.440] (91) |
 | knn_bge | llm_persona | 0.112 [0.099, 0.126] (111) | 2.407 [2.126, 2.707] (111) |
 | knn_bge | llm_draft | 0.106 [0.093, 0.121] (107) | 2.119 [1.896, 2.344] (107) |
+| p6_model | human | n/a, 0 items | n/a, 0 items |
+| p6_model | simulated_human | 0.133 [0.116, 0.152] (91); seed SD 0.001 (5 seeds) | 2.056 [1.823, 2.315] (91); seed SD 0.019 (5 seeds) |
+| p6_model | llm_persona | 0.142 [0.128, 0.156] (111); seed SD 0.002 (5 seeds) | 2.276 [2.052, 2.511] (111); seed SD 0.025 (5 seeds) |
+| p6_model | llm_draft | 0.128 [0.115, 0.141] (107); seed SD 0.003 (5 seeds) | 2.304 [2.109, 2.516] (107); seed SD 0.021 (5 seeds) |
 
 ## Synthetic `test`
 
@@ -123,6 +137,7 @@ Primary distance MR-STFT; LLM-written sources are reported separately ('on LLM-w
 | mean | 0.186 [0.180, 0.192] (553) | 0.860 [0.838, 0.880] (560) | 2.779 [2.631, 2.932] (560) | 0.629 [0.586, 0.676] (560) | 3.452 [3.095, 3.837] (560) | 1.877 [1.697, 2.068] (560) | 0.290 [0.265, 0.317] (560) |
 | knn_clap | 0.133 [0.125, 0.141] (553) | 0.917 [0.901, 0.931] (560) | 1.546 [1.453, 1.642] (560) | 0.487 [0.456, 0.520] (560) | 2.175 [1.962, 2.404] (560) | 1.414 [1.277, 1.560] (560) | 0.214 [0.194, 0.235] (560) |
 | knn_bge | 0.121 [0.112, 0.129] (553) | 0.943 [0.931, 0.955] (560) | 1.263 [1.185, 1.344] (560) | 0.457 [0.424, 0.491] (560) | 1.975 [1.770, 2.197] (560) | 1.338 [1.212, 1.477] (560) | 0.201 [0.181, 0.222] (560) |
+| p6_model | 0.132 [0.124, 0.141] (553); seed SD 5.49e-04 (5 seeds) | 0.932 [0.919, 0.943] (560); seed SD 9.32e-04 (5 seeds) | 1.463 [1.375, 1.556] (560); seed SD 0.017 (5 seeds) | 0.497 [0.464, 0.533] (560); seed SD 0.005 (5 seeds) | 2.176 [1.978, 2.393] (560); seed SD 0.025 (5 seeds) | 1.478 [1.334, 1.635] (560); seed SD 0.007 (5 seeds) | 0.210 [0.190, 0.232] (560); seed SD 0.003 (5 seeds) |
 
 Gate F1 (`test`, over queries)
 
@@ -132,6 +147,7 @@ Gate F1 (`test`, over queries)
 | mean | 0.000 (1074) | 0.911 (1074) | 0.940 (1074) | 0.617 (1074) |
 | knn_clap | 0.396 (1074) | 0.981 (1074) | 0.948 (1074) | 0.775 (1074) |
 | knn_bge | 0.602 (1074) | 0.997 (1074) | 0.960 (1074) | 0.853 (1074) |
+| p6_model | 0.531 (1074); seed SD 0.005 | 0.995 (1074); seed SD 7.47e-04 | 0.952 (1074); seed SD 0.002 | 0.826 (1074); seed SD 0.002 |
 
 ## Synthetic `test_unseen_pedal`
 
@@ -141,6 +157,7 @@ Gate F1 (`test`, over queries)
 | mean | 0.193 [0.190, 0.196] (280) | 1.000 [1.000, 1.000] (280) | 1.850 [1.754, 1.957] (280) | 0.585 [0.535, 0.638] (280) | 2.461 [2.217, 2.734] (280) | 2.154 [1.941, 2.376] (280) | 0.305 [0.276, 0.336] (280) |
 | knn_clap | 0.202 [0.198, 0.206] (280) | 0.997 [0.993, 0.999] (280) | 1.825 [1.737, 1.921] (280) | 0.691 [0.638, 0.747] (280) | 2.634 [2.370, 2.921] (280) | 2.007 [1.817, 2.210] (280) | 0.324 [0.292, 0.358] (280) |
 | knn_bge | 0.209 [0.206, 0.213] (280) | 0.991 [0.983, 0.998] (280) | 1.904 [1.819, 1.995] (280) | 0.740 [0.683, 0.798] (280) | 2.870 [2.589, 3.180] (280) | 2.021 [1.828, 2.232] (280) | 0.342 [0.309, 0.377] (280) |
+| p6_model | 0.197 [0.193, 0.200] (280); seed SD 0.001 (5 seeds) | 0.980 [0.972, 0.987] (280); seed SD 0.003 (5 seeds) | 1.971 [1.872, 2.077] (280); seed SD 0.024 (5 seeds) | 0.779 [0.725, 0.836] (280); seed SD 0.029 (5 seeds) | 2.585 [2.320, 2.872] (280); seed SD 0.068 (5 seeds) | 2.025 [1.847, 2.217] (280); seed SD 0.066 (5 seeds) | 0.303 [0.274, 0.335] (280); seed SD 0.009 (5 seeds) |
 
 Gate F1 (`test_unseen_pedal`, over queries)
 
@@ -150,6 +167,7 @@ Gate F1 (`test_unseen_pedal`, over queries)
 | mean | n/a | 1.000 (531) | 1.000 (531) | 1.000 (531) |
 | knn_clap | 0.000 (531) | 0.999 (531) | 0.999 (531) | 0.666 (531) |
 | knn_bge | 0.000 (531) | 0.996 (531) | 0.992 (531) | 0.663 (531) |
+| p6_model | 0.000 (531); seed SD 0.000 | 0.996 (531); seed SD 7.94e-04 | 0.992 (531); seed SD 0.002 | 0.663 (531); seed SD 8.71e-04 |
 
 ## Val selection table (`val`; selection only, D8)
 
@@ -159,6 +177,7 @@ Gate F1 (`test_unseen_pedal`, over queries)
 | mean | 0.182 [0.179, 0.186] (1424) | 0.849 [0.835, 0.864] (1444) | 3.177 [3.052, 3.307] (1444) | 0.736 [0.710, 0.761] (1444) | n/a, 0 items | n/a, 0 items | n/a, 0 items | 0.589 [0.566, 0.611] (1444) | 0.482 [0.445, 0.519] (678) | 0.538 [0.441, 0.645] (93) | 0.620 [0.595, 0.646] (1317) | 0.321 [0.250, 0.400] (140) | 0.617 [0.596, 0.639] (1444) | 0.493 [0.454, 0.531] (678) | 0.419 [0.323, 0.516] (93) | 0.678 [0.653, 0.704] (1317) | 0.464 [0.379, 0.550] (140) |
 | knn_clap | 0.130 [0.125, 0.136] (1424) | 0.916 [0.906, 0.925] (1444) | 1.591 [1.526, 1.657] (1444) | 0.449 [0.430, 0.467] (1444) | n/a, 0 items | n/a, 0 items | n/a, 0 items | 0.749 [0.730, 0.767] (1444) | 0.600 [0.563, 0.637] (678) | 0.495 [0.398, 0.591] (93) | 0.817 [0.796, 0.838] (1317) | 0.486 [0.407, 0.571] (140) | 0.817 [0.801, 0.832] (1444) | 0.593 [0.556, 0.630] (678) | 0.398 [0.301, 0.495] (93) | 0.923 [0.908, 0.937] (1317) | 0.557 [0.479, 0.636] (140) |
 | knn_bge | 0.112 [0.107, 0.117] (1424) | 0.944 [0.937, 0.951] (1444) | 1.249 [1.205, 1.293] (1444) | 0.391 [0.373, 0.410] (1444) | n/a, 0 items | n/a, 0 items | n/a, 0 items | 0.783 [0.765, 0.801] (1444) | 0.664 [0.628, 0.699] (678) | 0.495 [0.387, 0.591] (93) | 0.845 [0.825, 0.864] (1317) | 0.536 [0.457, 0.621] (140) | 0.868 [0.854, 0.881] (1444) | 0.661 [0.625, 0.696] (678) | 0.570 [0.473, 0.667] (93) | 0.961 [0.951, 0.971] (1317) | 0.700 [0.621, 0.771] (140) |
+| p6_model | 0.124 [0.119, 0.129] (1424); seed SD 5.21e-04 (5 seeds) | 0.935 [0.927, 0.942] (1444); seed SD 9.12e-04 (5 seeds) | 1.452 [1.401, 1.504] (1444); seed SD 0.022 (5 seeds) | 0.434 [0.415, 0.453] (1444); seed SD 0.007 (5 seeds) | n/a, 0 items | n/a, 0 items | n/a, 0 items | 0.753 [0.735, 0.771] (1444); seed SD 0.003 (5 seeds) | 0.648 [0.613, 0.681] (678); seed SD 0.009 (5 seeds) | 0.497 [0.404, 0.591] (93); seed SD 0.028 (5 seeds) | 0.811 [0.791, 0.831] (1317); seed SD 0.004 (5 seeds) | 0.503 [0.424, 0.583] (140); seed SD 0.018 (5 seeds) | 0.829 [0.815, 0.843] (1444); seed SD 0.008 (5 seeds) | 0.614 [0.580, 0.647] (678); seed SD 0.005 (5 seeds) | 0.497 [0.406, 0.587] (93); seed SD 0.014 (5 seeds) | 0.933 [0.920, 0.945] (1317); seed SD 0.008 (5 seeds) | 0.617 [0.540, 0.693] (140); seed SD 0.011 (5 seeds) |
 
 ## Paired comparisons
 
@@ -181,6 +200,11 @@ diff = A - B on paired items: mean [95 % paired bootstrap CI] (n); Wilcoxon sign
 | mean | noop | gold headline llm_draft | afc_mrstft | 0.268 [0.151, 0.383] (107) | 9.87e-05 | 0.409 | 0.426 |
 | mean | noop | test all | mrstft | 0.206 [0.002, 0.414] (560) | 0.766 | -0.013 | 0.083 |
 | mean | noop | test_unseen_pedal all | mrstft | -1.488 [-1.624, -1.346] (280) | 2.46e-35 | -0.743 | -1.242 |
+| p6_model | noop | gold headline simulated_human | afc_mrstft | 0.242 [0.142, 0.338] (91) | 4.83e-06 | 0.390 | 0.510 |
+| p6_model | noop | gold headline llm_persona | afc_mrstft | 0.131 [0.044, 0.215] (111) | 9.52e-04 | 0.207 | 0.282 |
+| p6_model | noop | gold headline llm_draft | afc_mrstft | 0.229 [0.137, 0.323] (107) | 3.75e-06 | 0.370 | 0.459 |
+| p6_model | noop | test all | mrstft | -1.109 [-1.226, -0.993] (560) | 5.12e-54 | -0.528 | -0.780 |
+| p6_model | noop | test_unseen_pedal all | mrstft | -1.368 [-1.537, -1.196] (280) | 7.35e-31 | -0.716 | -0.939 |
 | knn_bge | mean | gold headline simulated_human | afc_mrstft | 0.060 [-0.024, 0.145] (91) | 0.171 | 0.100 | 0.147 |
 | knn_bge | mean | gold headline llm_persona | afc_mrstft | 0.081 [7.20e-18, 0.161] (111) | 0.051 | 0.117 | 0.185 |
 | knn_bge | mean | gold headline llm_draft | afc_mrstft | 0.069 [-0.002, 0.139] (107) | 0.097 | 0.112 | 0.185 |
@@ -191,6 +215,21 @@ diff = A - B on paired items: mean [95 % paired bootstrap CI] (n); Wilcoxon sign
 | knn_clap | mean | gold headline llm_draft | afc_mrstft | 0.058 [-0.009, 0.123] (107) | 0.094 | 0.112 | 0.165 |
 | knn_clap | mean | test all | mrstft | -1.233 [-1.366, -1.105] (560) | 8.95e-63 | -0.450 | -0.781 |
 | knn_clap | mean | test_unseen_pedal all | mrstft | -0.025 [-0.103, 0.052] (280) | 0.493 | 0.014 | -0.039 |
+| p6_model | mean | gold headline simulated_human | afc_mrstft | 0.025 [-0.068, 0.114] (91) | 0.392 | 0.023 | 0.056 |
+| p6_model | mean | gold headline llm_persona | afc_mrstft | 0.032 [-0.062, 0.125] (111) | 0.461 | 0.040 | 0.062 |
+| p6_model | mean | gold headline llm_draft | afc_mrstft | -0.039 [-0.116, 0.038] (107) | 0.267 | -0.061 | -0.095 |
+| p6_model | mean | test all | mrstft | -1.316 [-1.460, -1.177] (560) | 2.74e-62 | -0.494 | -0.770 |
+| p6_model | mean | test_unseen_pedal all | mrstft | 0.120 [0.029, 0.215] (280) | 0.011 | 0.120 | 0.153 |
+| p6_model | knn_bge | gold headline simulated_human | afc_mrstft | -0.036 [-0.120, 0.049] (91) | 0.354 | -0.092 | -0.086 |
+| p6_model | knn_bge | gold headline llm_persona | afc_mrstft | -0.050 [-0.125, 0.026] (111) | 0.305 | -0.083 | -0.121 |
+| p6_model | knn_bge | gold headline llm_draft | afc_mrstft | -0.107 [-0.179, -0.039] (107) | 0.005 | -0.173 | -0.292 |
+| p6_model | knn_bge | test all | mrstft | 0.200 [0.147, 0.255] (560) | 7.08e-14 | 0.112 | 0.307 |
+| p6_model | knn_bge | test_unseen_pedal all | mrstft | 0.067 [-0.018, 0.154] (280) | 0.605 | 0.007 | 0.090 |
+| p6_model | knn_clap | gold headline simulated_human | afc_mrstft | 0.010 [-0.064, 0.081] (91) | 0.411 | -8.45e-04 | 0.028 |
+| p6_model | knn_clap | gold headline llm_persona | afc_mrstft | 0.051 [-0.016, 0.115] (111) | 0.098 | 0.073 | 0.146 |
+| p6_model | knn_clap | gold headline llm_draft | afc_mrstft | -0.097 [-0.166, -0.026] (107) | 0.002 | -0.168 | -0.261 |
+| p6_model | knn_clap | test all | mrstft | -0.083 [-0.140, -0.026] (560) | 0.110 | -0.039 | -0.120 |
+| p6_model | knn_clap | test_unseen_pedal all | mrstft | 0.146 [0.079, 0.212] (280) | 6.69e-05 | 0.112 | 0.254 |
 
 ## test_real: sim-to-real gap (D11)
 
