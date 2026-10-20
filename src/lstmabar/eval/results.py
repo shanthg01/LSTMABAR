@@ -47,6 +47,9 @@ def unit_scores(run_dir: Path, method: str, split: str, key: str, keep=None):
         for s in _seeds(run_dir, method)
     ]
     ids = sorted(i for i in per[0] if keep is None or keep(per[0][i]))
+    for s, p in zip(_seeds(run_dir, method), per, strict=True):
+        missing = [i for i in ids if i not in p]
+        assert not missing, f"{method} seed {s} {split}: {len(missing)} units missing"
     vals = np.array([np.nanmean([p[i]["scores"].get(key, np.nan) for p in per]) for i in ids])
     seed_means = [float(np.nanmean([p[i]["scores"].get(key, np.nan) for i in ids])) for p in per]
     return ids, vals, seed_means
