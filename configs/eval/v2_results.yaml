@@ -1,0 +1,28 @@
+# P6 results report (task 6.7): `lstmabar eval results --config configs/eval/v2_results.yaml`.
+# Reads finished run dirs only (no scoring); paths are relative to the repo root.
+defaults:
+  - p5.yaml
+
+name: eval_v2_results
+
+results:
+  report_dir: reports
+  discussion: reports/v2_results_discussion.md
+  main_run: runs/eval_p5/20261014-204858          # baselines + p6_model (CLAP text+audio, 5 seeds)
+  main_methods: [noop, mean, knn_clap, knn_bge, p6_model]
+  extra_models:                                   # scored as p6_model in their own run dirs
+    p6_bge_text:
+      run_dir: runs/eval_p6_bge/20261019-120227
+      method: p6_model
+  reference: knn_bge                              # the best baseline (M3, val-selected)
+  compare: [p6_model, p6_bge_text]
+  synthetic_metrics: [mrstft, param_l1, gate_acc, centroid_oct]
+  subset_run: runs/eval_t2fx_l100/20261019-172245 # Text2FX (Colab) + every method, --limit 100
+  ablations:                                      # stage-1 val summaries (glob, one per seed)
+    main (CLAP text + audio): runs/stage1_main_s*/*/summary.json
+    text only: runs/stage1_ab_text_only_s*/*/summary.json
+    audio only: runs/stage1_ab_audio_only_s*/*/summary.json
+    shuffled audio: runs/stage1_ab_shuffled_audio_s*/*/summary.json
+    unconstrained mapping: runs/stage1_ab_unconstrained_s*/*/summary.json
+    bge text (+ CLAP audio): runs/stage1_ab_bge_text_s*/*/summary.json
+    larger_clap_general: runs/stage1_ab_lcg_s*/*/summary.json

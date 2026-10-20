@@ -478,6 +478,10 @@ Prepared 2026-10-14 for a fresh session. Read this, CLAUDE.md, design §6–7, [
 
 **Exit gate:** the model beats the baselines on `test_gold` with non-overlapping 95% CIs, **or** a documented negative result. Either way, the M4 demo ships. If no real `human` gold items exist by then, the `test_gold` headline follows the [P5 kickoff brief](#p5-kickoff-brief) fallback (D9: each LLM-written set separately, worded as such).
 
+### P6 status (2026-10-20)
+
+Stage 1 (6.1–6.2, 6.4 for stage 1, 6.5 stage-1 ablations, 6.7) done: [reports/v2_results.md](../reports/v2_results.md) (`lstmabar eval results`). **The exit gate is not met (documented negative result for stage 1):** on the LLM-written gold sets neither the main model (CLAP text + audio) nor the best variant (bge text) beats kNN-bge (bge variant: paired 2AFC differences −0.024 / +0.001 / −0.012, all CIs include 0; main model worse on `llm_draft`). In distribution (synthetic `test`) the bge variant beats kNN-bge on MR-STFT (paired −0.130 [−0.173, −0.085]). Ablations: the text encoder dominates (bge ≫ CLAP text), the CLAP audio input adds nothing (text-only = shuffled audio = main), physics vs unconstrained mapping indistinguishable. Text2FX ran on Colab on a 100-item subset ([reports/text2fx_subset100.md](../reports/text2fx_subset100.md)). Not done: LLM zero-shot (owner key), stage 2 (6.3, Colab), listening test (6.6), M4 demo (6.8).
+
 ### P6 prep notes
 
 For the P6 kickoff (after the M3 gate). Confirm with the owner then; they build on the P5 decisions above.
