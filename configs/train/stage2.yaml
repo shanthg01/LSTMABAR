@@ -1,0 +1,52 @@
+# P6 stage 2 (task 6.3): L_param + L_audio (MR-STFT through default_pedalboard, oversampled
+# Drive), initialised from a stage-1 checkpoint. Colab GPU (docs/colab-runbook.md section 4).
+# Usage: lstmabar train stage2 [--config configs/train/stage2.yaml] [--limit N] [--fixtures]
+#        [dotlist overrides, e.g. seed=1 paths.data=... stage2.init_checkpoint=...]
+defaults:
+  - stage1.yaml
+
+name: train_stage2
+seed: 0
+
+model:                               # used only when stage2.init_checkpoint is null (from
+  text_model: bge-base-en-v1.5       # scratch, and --fixtures' throwaway stage-1 run); with a
+  audio_model: clap-htsat-unfused    # checkpoint, model.* is taken from the checkpoint's run
+  inputs: both                       # config so the embedding inputs cannot drift
+
+stage2:
+  # Stage-1 checkpoint to start from ("{seed}" is formatted with the run's seed; relative to
+  # the CWD, i.e. the repo root). Default: the bge-text variant, the best stage-1 model
+  # (reports/v2_results.md). null: train from scratch with model.* (not the curriculum).
+  init_checkpoint: runs/stage1_ab_bge_text/seed{seed}/checkpoint.pt
+  device: auto                       # cuda if available, else cpu
+  crop_seconds: [1.0, 1.5]           # random crop length per batch, uniform in [min, max]
+  pre_roll_seconds: 0.1              # dry rendered before the crop and discarded (filter /
+                                     # envelope state); zero-padded at the clip start
+  num_workers: 2                     # DataLoader workers decoding FLAC crops (0: main process)
+  max_steps: null                    # cap on optimizer steps (smoke runs); null: epochs x steps
+  eval_every: null                   # steps between val evaluations; null: once per epoch
+  audio_ramp_steps: 0                # curriculum: L_audio weight ramps linearly 0 -> 1 over N
+  export_checkpoint: null            # also copy the best checkpoint here ("{seed}" formatted)
+  select:                            # early stopping on val (never gold, D8)
+    mrstft_items: 128                # fixed val subset: first N val items by item_id, first
+                                     # caption, full clip rendered as eval does
+    mrstft_weight: 1.0               # score = param part (as stage 1) + weight x val MR-STFT
+    batch_size: 16                   # renders per batch for the val MR-STFT
+
+train:
+  epochs: 8
+  batch_size: 32
+  lr: 1.0e-4                         # fine-tuning from stage 1
+  warmup_frac: 0.02
+  patience: 4                        # in evaluations (see stage2.eval_every)
+  loss:
+    param_weight: 1.0                # L_param as stage 1 (masked L1 + gate BCE)
+    gate_weight: 1.0
+    audio_weight: 1.0                # L_audio: MR-STFT of peak-normalized crops
+    clap_weight: 0.0                 # L_clap (drive-amount contrast, spike A): not implemented,
+                                     # must stay 0 (TODO in train/stage2.py)
+
+eval:
+  model:
+    checkpoint: null                 # score a stage-2 run as p6_model: e.g.
+                                     # runs/<stage-2 runs>/seed{seed}/checkpoint.pt
