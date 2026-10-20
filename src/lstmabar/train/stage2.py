@@ -10,8 +10,14 @@ checkpoint. ``lstmabar train stage2 [--limit N] [--fixtures] [dotlist overrides]
   sampled per item per epoch) joined with :class:`AudioCrops` (dry clip at the item's
   ``input_peak_dbfs``, stored wet). One random crop length per batch
   (``stage2.crop_seconds``) and a random crop start per item; ``stage2.pre_roll_seconds`` of
-  dry before the crop is rendered and discarded (filter and envelope state; zero-padded at the
-  clip start, where the stored render also started from rest). Crop starts, lengths and
+  dry before the crop is rendered and discarded (zero-padded at the clip start, where the
+  stored render also started from rest). The pre-roll settles the FFT filters and the
+  compressor: its gain smoother starts at no reduction and approaches the true state at the
+  attack rate (attack <= 100 ms) wherever the true reduction is larger, so 0.5 s covers >= 5
+  attack time constants; where the true state is in a long release (up to 1 s) some start-up
+  error can remain at the crop start. Crop start, crop length and pre-roll are multiples of the
+  compressor's ``CONTROL_HOP``, so its control-rate frames fall on the same grid as in the
+  stored full-clip render. Crop starts, lengths and
   captions are drawn in the main process from the seeded generator, so DataLoader workers do
   no random draws and CPU runs are deterministic.
 - **Loss**: ``L_param`` exactly as stage 1 (``train.loss.param_weight`` / ``gate_weight``,
@@ -29,11 +35,15 @@ checkpoint. ``lstmabar train stage2 [--limit N] [--fixtures] [dotlist overrides]
   tower on every render with gradients (``models/clap_diff.py`` has the differentiable
   resampler) and a drive-direction target; ``train.loss.clap_weight`` must stay 0.
 - **Selection** (never gold, D8): evaluated at step 0 (the init checkpoint is a candidate) and
-  every ``stage2.eval_every`` steps (default once per epoch). Score = the stage-1 parameter
-  criterion on every (val item, caption) pair + ``stage2.select.mrstft_weight x`` val MR-STFT on
-  a fixed subset (the first ``stage2.select.mrstft_items`` val items by id, first caption, the
-  full clip rendered and compared as ``eval.metrics.mrstft`` does). Early stopping after
-  ``train.patience`` evaluations without improvement.
+  every ``stage2.eval_every`` steps (default once per epoch). Score =
+  ``stage2.select.param_weight x`` the stage-1 parameter criterion (masked L1 + gate BCE) on
+  every (val item, caption) pair ``+ stage2.select.mrstft_weight x`` val MR-STFT on a fixed
+  subset (``stage2.select.mrstft_items`` val items at an even stride over the sorted ids, so
+  different clips; first caption; the full clip rendered and compared as
+  ``eval.metrics.mrstft`` does). Magnitudes for the bge stage-1 checkpoints: parameter
+  criterion ~0.18-0.2, MR-STFT ~1.2-1.4; the defaults (2.5, 0.33; the MR-STFT weight as in
+  ``eval.proxy.selection_weights``) give both terms ~0.4-0.5, so neither dominates. Early
+  stopping after ``train.patience`` evaluations without improvement.
 - **Outputs** (``runs/<name>/<stamp>/``): ``config.yaml``, ``meta.json``, ``metrics.json``,
   ``checkpoint.pt`` (same format and meta keys as stage 1, so ``eval run`` scores it as
   ``p6_model`` unchanged) and ``summary.json``. ``stage2.export_checkpoint`` (optional,
@@ -61,6 +71,7 @@ from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
 from lstmabar.data import levels
+from lstmabar.dsp.compressor import CONTROL_HOP
 from lstmabar.dsp.losses import multi_resolution_stft_loss
 from lstmabar.dsp.pedalboard import Pedalboard, default_pedalboard
 from lstmabar.eval.baselines.text2fx import resolve_device
@@ -74,26 +85,52 @@ from lstmabar.train.dataset import Batch, Stage1Dataset, load_tables
 # ============================================================================ audio data
 
 
+def crop_window(n: int, n_crop: int, u: float, hop: int = CONTROL_HOP) -> tuple[int, int]:
+    """``(start, length)`` of a crop in a clip of ``n`` samples: ``length = min(n_crop, n)``,
+    start ``~ u x (n - length)``; both rounded **down** to multiples of ``hop`` (the length
+    only when it is at least ``hop``), so the compressor's control frames align with the
+    stored render's."""
+    length = min(int(n_crop), int(n))
+    if length >= hop:
+        length -= length % hop
+    start = int(math.floor(float(u) * (n - length)))
+    return start - start % hop, length
+
+
+def align_pre_roll(n_pre: int, hop: int = CONTROL_HOP) -> int:
+    """``n_pre`` rounded **up** to a multiple of ``hop``."""
+    return -(-int(n_pre) // hop) * hop
+
+
 class AudioCrops(Dataset):
-    """Dry/wet crops of synthetic items. Indexed by a key ``(item, u, n_crop, n_pre)``: crop
-    length ``min(n_crop, clip length)``, start ``floor(u x (n - length))``, plus ``n_pre``
-    samples of dry before it (zero-padded at the clip start). Returns float32
-    ``(dry (n_pre + length,), wet (length,))``; no random draws here.
+    """Dry/wet crops of synthetic items. Indexed by a key ``(item, u, n_crop, n_pre)``: the
+    crop is :func:`crop_window` ``(n, n_crop, u)`` plus ``n_pre`` samples of dry before it
+    (zero-padded at the clip start; pass a multiple of ``CONTROL_HOP``, see
+    :func:`align_pre_roll`). Returns float32 ``(dry (n_pre + length,), wet (length,))``; no
+    random draws here.
 
-    Only the crop is decoded (FLAC seek); the input-level gain needs the stored dry clip's
-    full peak, which is computed once per clip and cached (per worker process)."""
+    Only the crop is decoded (FLAC seek). The input-level gains (from each stored dry clip's
+    full peak) are computed once, here in the main process, so DataLoader workers (which get
+    a fresh copy of the dataset every epoch) never re-read whole clips."""
 
-    def __init__(self, items: Sequence[SynthItem]) -> None:
+    def __init__(self, items: Sequence[SynthItem], precompute_gains: bool = True) -> None:
         self.dry_paths = [str(i.dry_path) for i in items]
         self.wet_paths = [str(i.wet_path) for i in items]
         self.peaks = [float(i.item.input_peak_dbfs) for i in items]
         self.sample_rates = [int(i.sample_rate) for i in items]
         self._dry_peak: dict[str, float] = {}
+        self.gains: list[float] | None = None
+        if precompute_gains:
+            self.gains = [self._compute_gain(i) for i in range(len(self.dry_paths))]
+            self._dry_peak = {}
 
     def __len__(self) -> int:
         return len(self.dry_paths)
 
     def _gain(self, i: int) -> float:
+        return self.gains[i] if self.gains is not None else self._compute_gain(i)
+
+    def _compute_gain(self, i: int) -> float:
         """Linear gain taking the stored dry clip to the item's input peak (as
         ``levels.apply_input_level``)."""
         path = self.dry_paths[i]
@@ -130,8 +167,7 @@ class AudioCrops(Dataset):
         i, u, n_crop, n_pre = key
         i = int(i)
         n = self._frames(i)
-        length = min(int(n_crop), n)
-        start = int(math.floor(float(u) * (n - length)))
+        start, length = crop_window(n, int(n_crop), float(u))
         lo = start - int(n_pre)
         seg = self._read(self.dry_paths[i], max(lo, 0), start + length) * self._gain(i)
         if lo < 0:
@@ -213,13 +249,16 @@ def resolve_init(cfg) -> tuple[ParamPredictor | None, dict[str, Any] | None]:
 
 
 class ValAudio:
-    """The fixed val subset for the selection MR-STFT: the first ``n`` items by id (first
-    caption each), full clips held in memory."""
+    """The fixed val subset for the selection MR-STFT: ``n`` items at an even stride over the
+    items sorted by id (first caption each), full clips held in memory. Renders of one clip
+    have adjacent ids, so the stride spreads the subset over clips."""
 
     def __init__(self, ds: Stage1Dataset, n: int) -> None:
-        order = sorted(range(len(ds)), key=lambda i: ds.item_ids[i])[: max(0, int(n))]
+        ids = sorted(range(len(ds)), key=lambda i: ds.item_ids[i])
+        n = max(0, min(int(n), len(ids)))
+        order = [ids[(k * len(ids)) // n] for k in range(n)]
         self.index = torch.tensor(order, dtype=torch.long)
-        crops = AudioCrops([ds.items[i] for i in order])
+        crops = AudioCrops([ds.items[i] for i in order], precompute_gains=False)
         self.audio = [crops.load(j) for j in range(len(order))]
 
     def __len__(self) -> int:
@@ -271,9 +310,10 @@ def evaluate(model, board, ds, va, cfg, device) -> dict[str, Any]:
     val["param_score"] = val.pop("score")
     val["mrstft"] = val_mrstft(model, board, ds, va, cfg, device)
     val["n_mrstft_items"] = len(va)
-    w = float(cfg.stage2.select.mrstft_weight)
+    sel = cfg.stage2.select
+    w = float(sel.mrstft_weight)
     m = val["mrstft"] if math.isfinite(val["mrstft"]) else math.inf
-    val["score"] = val["param_score"] + (w * m if w else 0.0)
+    val["score"] = float(sel.param_weight) * val["param_score"] + (w * m if w else 0.0)
     return val
 
 
@@ -356,7 +396,7 @@ def train_model(
     ramp = int(s2.get("audio_ramp_steps") or 0)
     w_audio = float(tc.loss.audio_weight)
     grad_clip = float(tc.grad_clip) if tc.get("grad_clip") else 0.0
-    n_pre = int(round(float(s2.pre_roll_seconds) * sr))
+    n_pre = align_pre_roll(int(round(float(s2.pre_roll_seconds) * sr)))
     crops = AudioCrops(train_ds.items)
     va = ValAudio(val_ds, int(s2.select.mrstft_items))
     gen = torch.Generator().manual_seed(seed)
@@ -568,6 +608,8 @@ def _run(cfg, args) -> int:
 
 __all__ = [
     "AudioCrops",
+    "align_pre_roll",
+    "crop_window",
     "ValAudio",
     "audio_loss",
     "collate_crops",

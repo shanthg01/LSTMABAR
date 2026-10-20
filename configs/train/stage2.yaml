@@ -20,17 +20,26 @@ stage2:
   init_checkpoint: runs/stage1_ab_bge_text/seed{seed}/checkpoint.pt
   device: auto                       # cuda if available, else cpu
   crop_seconds: [1.0, 1.5]           # random crop length per batch, uniform in [min, max]
-  pre_roll_seconds: 0.1              # dry rendered before the crop and discarded (filter /
-                                     # envelope state); zero-padded at the clip start
+  pre_roll_seconds: 0.5              # dry rendered before the crop and discarded (filters;
+                                     # >= 5 compressor attack constants, attack <= 100 ms;
+                                     # long releases, up to 1 s, may not fully settle);
+                                     # zero-padded at the clip start. Rounded up, and the crop
+                                     # start/length down, to multiples of the compressor's
+                                     # CONTROL_HOP (control grid as in the stored render)
   num_workers: 2                     # DataLoader workers decoding FLAC crops (0: main process)
   max_steps: null                    # cap on optimizer steps (smoke runs); null: epochs x steps
   eval_every: null                   # steps between val evaluations; null: once per epoch
   audio_ramp_steps: 0                # curriculum: L_audio weight ramps linearly 0 -> 1 over N
   export_checkpoint: null            # also copy the best checkpoint here ("{seed}" formatted)
   select:                            # early stopping on val (never gold, D8)
-    mrstft_items: 128                # fixed val subset: first N val items by item_id, first
-                                     # caption, full clip rendered as eval does
-    mrstft_weight: 1.0               # score = param part (as stage 1) + weight x val MR-STFT
+    mrstft_items: 128                # fixed val subset: N val items at an even stride over the
+                                     # sorted ids (spread over clips), first caption, full clip
+                                     # rendered as eval does
+    # score = param_weight x (masked L1 + gate BCE, as stage 1) + mrstft_weight x val MR-STFT.
+    # Magnitudes (bge stage-1): param part ~0.18-0.2, MR-STFT ~1.2-1.4: both terms ~0.4-0.5
+    # (the MR-STFT weight is eval.proxy.selection_weights.mrstft)
+    param_weight: 2.5
+    mrstft_weight: 0.33
     batch_size: 16                   # renders per batch for the val MR-STFT
 
 train:

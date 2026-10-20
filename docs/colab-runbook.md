@@ -125,10 +125,10 @@ the best stage-1 variant) with `L_param + L_audio` through the oversampled pedal
 (`configs/train/stage2.yaml`, `src/lstmabar/train/stage2.py`). It reads the dry clips and
 **every** train wet, so it needs the full `data/rendered/v1/`, not the section 1 bundle.
 
-**Cost.** Measured on the local CPU (4 threads, busy machine), batch 32 with 1–1.5 s crops:
-**7.8 s/step** end to end (render + MR-STFT + backward ≈ 7–12 s/step in isolation; decoding a
-crop ≈ 14 ms/item). One seed is 8 epochs × 767 steps = 6,136 steps (fewer if early stopping
-fires): ~13 h per seed on this CPU, so local training is out. GPU speed is **not measured
+**Cost.** Measured on the local CPU (4 threads, busy machine), batch 32 with 1–1.5 s crops
+and the default 0.5 s pre-roll: **10.1 s/step** end to end (7.8 s/step with a 0.1 s pre-roll;
+decoding a crop ≈ 14 ms/item). One seed is 8 epochs × 767 steps = 6,136 steps (fewer if early
+stopping fires): ~17 h per seed on this CPU, so local training is out. GPU speed is **not measured
 yet**. The filters and the oversampler are FFT/conv ops, and the compressor's smoothing loop
 runs in NumPy on the host. Run Cell E first and extrapolate from its s/step:
 `hours per seed ≈ s/step × 6,136 / 3,600`, plus the val evaluations (step 0 and one per epoch).
@@ -206,7 +206,8 @@ for s in range(5):
 
 - The default `stage2.init_checkpoint` is `runs/stage1_ab_bge_text/seed{seed}/checkpoint.pt`
   relative to the clone (`/content/LSTMABAR`), which Cell D fills.
-- Selection is on val only (stage-1 parameter criterion + MR-STFT on 128 fixed val items);
+- Selection is on val only (2.5 × the stage-1 parameter criterion + 0.33 × MR-STFT on 128
+  fixed val items spread over clips; both terms ≈ 0.4–0.5 for the stage-1 checkpoints);
   step 0, i.e. the stage-1 checkpoint itself, is a candidate, so `best_step: 0` in
   `summary.json` means stage 2 did not improve on stage 1.
 - GPU runs are not bitwise reproducible (CUDA atomic adds); `summary.json` records the
@@ -216,7 +217,7 @@ for s in range(5):
 `--methods`):
 
 ```python
-!lstmabar eval run paths.data={DATA} paths.runs={OUT} name=eval_p6_stage2 eval.report_dir=/content/reports eval.report_name=p6_stage2 eval.model.checkpoint={S2} --workers 2 --methods p6_model
+!lstmabar eval run paths.data={DATA} paths.runs={OUT} name=eval_p6_stage2 eval.report_dir={OUT}/eval_p6_stage2_report eval.report_name=p6_stage2 eval.model.checkpoint={S2} --workers 2 --methods p6_model
 ```
 
 - This scores val, `test`, `test_unseen_pedal` and gold for the 5 seeds, like the local
@@ -224,6 +225,10 @@ for s in range(5):
   It can equally run locally: download `MyDrive/lstmabar/runs/stage2_bge/` into the local
   `runs/stage2_bge/` and run the same command there without `paths.data` / `paths.runs` and
   with `eval.model.checkpoint=runs/stage2_bge/seed{seed}/checkpoint.pt`.
+- The scores and the report (`runs/eval_p6_stage2_report/p6_stage2.{md,json}`) are both
+  written to Drive, so a VM recycle loses nothing; a resumed run continues in the same run
+  dir with `--run-dir`. The report can also be rebuilt locally from the scores:
+  `uv run lstmabar eval report --run-dir runs/eval_p6_stage2/<stamp>`.
 - Afterwards download `runs/eval_p6_stage2/` and `runs/stage2_bge_s*/` (configs, metrics,
   summaries) into the local `runs/`, and add the run to `results.extra_models` in
   `configs/eval/v2_results.yaml` for `lstmabar eval results`.

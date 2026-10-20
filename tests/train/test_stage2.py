@@ -15,6 +15,7 @@ from omegaconf import OmegaConf
 
 from lstmabar.config import load_config
 from lstmabar.data import levels
+from lstmabar.dsp.compressor import CONTROL_HOP
 from lstmabar.dsp.pedalboard import default_pedalboard
 from lstmabar.eval.baselines.base import board_vector, build_method
 from lstmabar.eval.data import load_split
@@ -70,19 +71,61 @@ def test_crops_align_with_stored_audio(fx):
     assert levels.peak_dbfs(dry_full) == pytest.approx(items[0].item.input_peak_dbfs, abs=1e-6)
     n = dry_full.size
     # start of the clip: the pre-roll is zero padding
-    d, w = crops[(0, 0.0, 4000, 100)]
-    assert d.shape == (4100,) and w.shape == (4000,)
-    assert torch.all(d[:100] == 0)
-    np.testing.assert_allclose(d[100:].numpy(), dry_full[:4000], atol=1e-6)
-    # end of the clip: the pre-roll is real dry
-    d, w = crops[(0, 1.0, 4000, 100)]
-    np.testing.assert_allclose(d.numpy(), dry_full[n - 4100 :], atol=1e-6)
-    np.testing.assert_allclose(w.numpy(), wet_full[n - 4000 :], atol=1e-6)
-    # crops longer than the clip are cut to the clip
+    assert crops.gains is not None  # computed once, in the main process
+    d, w = crops[(0, 0.0, 4000, 128)]
+    assert d.shape == (4128,) and w.shape == (4000,)
+    assert torch.all(d[:128] == 0)
+    np.testing.assert_allclose(d[128:].numpy(), dry_full[:4000], atol=1e-6)
+    # end of the clip: the pre-roll is real dry; start and length on the control grid
+    start, length = stage2.crop_window(n, 4010, 1.0)
+    assert start % CONTROL_HOP == 0 and length % CONTROL_HOP == 0 and length == 4000
+    assert n - CONTROL_HOP < start + length <= n
+    d, w = crops[(0, 1.0, 4010, 128)]
+    np.testing.assert_allclose(d.numpy(), dry_full[start - 128 : start + length], atol=1e-6)
+    np.testing.assert_allclose(w.numpy(), wet_full[start : start + length], atol=1e-6)
+    # crops longer than the clip are cut to the clip (and to the grid)
     d, w = crops[(0, 0.5, 10 * n, 0)]
-    assert w.shape == (n,)
+    assert w.shape == (n - n % CONTROL_HOP,)
+    assert stage2.align_pre_roll(4410) % CONTROL_HOP == 0 and stage2.align_pre_roll(4410) >= 4410
     dry, wet = stage2.collate_crops([(torch.ones(110), torch.ones(100)), (d, w)])
     assert dry.shape == (2, 110) and wet.shape == (2, 100)
+
+
+def test_aligned_crop_render_matches_full_render():
+    """With the control grid aligned and a settled pre-roll, a crop rendered on its own
+    matches the same span of the full-clip render (compressor on, fast attack/release);
+    an off-grid crop does not."""
+    sr = 44100
+    board = default_pedalboard(sr)
+    g = torch.Generator().manual_seed(0)
+    t = torch.arange(2 * sr) / sr
+    env = 0.05 + 0.9 * (torch.sin(2 * torch.pi * 3 * t) > 0).float()
+    x = (env * torch.randn(2 * sr, generator=g))[None]
+    p = {
+        "compressor": {
+            "threshold_db": torch.tensor([0.3]),
+            "ratio": torch.tensor([0.8]),
+            "attack_ms": torch.tensor([0.0]),
+            "release_ms": torch.tensor([0.0]),
+            "enabled": torch.tensor([1.0]),
+        },
+        "drive": {"enabled": torch.tensor([0.0])},
+        "eq": {"enabled": torch.tensor([0.0])},
+    }
+    with torch.no_grad():
+        full = board(x, p)[0]
+        n_pre = stage2.align_pre_roll(int(0.2 * sr))
+        start, length = stage2.crop_window(x.shape[1], sr // 2, 0.61)
+        crop = board(x[:, start - n_pre : start + length], p)[0, n_pre:]
+        # all but the last control frame (gain interpolation past the crop end differs)
+        keep = length - CONTROL_HOP
+        err = float((crop - full[start : start + length])[:keep].abs().max())
+        off = start + 7  # off the control grid
+        crop_off = board(x[:, off - n_pre : off + length], p)[0, n_pre:]
+        err_off = float((crop_off - full[off : off + length])[:keep].abs().max())
+    peak = float(full.abs().max())
+    assert err < 1e-6 * peak
+    assert err_off > 1e-3 * peak
 
 
 def test_epoch_batches_are_seeded():
@@ -159,12 +202,31 @@ def _train(cfg, run_dir=None, **over):
     return cfg, s
 
 
+def test_training_lowers_audio_loss_and_selects_a_later_step(fx):
+    """Overfit check (val = train): stage 2 lowers the selection MR-STFT, so a step after
+    the init checkpoint (step 0) is selected."""
+    over = {
+        "stage2.max_steps": 16,
+        "stage2.eval_every": 4,
+        "stage2.select.param_weight": 0.0,
+        "stage2.select.mrstft_weight": 1.0,
+        "train.lr": 3e-3,
+        "train.warmup_frac": 0.0,
+        "train.loss.param_weight": 0.0,
+        "train.loss.gate_weight": 0.0,
+    }
+    cfg, init, payload, tr, _ = _setup(_cfg(fx, **over))
+    s = stage2.train_model(cfg, tr, tr, init=init, init_payload=payload)
+    assert s["best_step"] > 0
+    assert s["val"]["mrstft"] < s["val_init"]["mrstft"]
+
+
 def test_train_writes_checkpoint_scored_by_model_method(fx, tmp_path):
     cfg, s = _train(fx, run_dir=tmp_path / "seed0", **{"train.lr": 1e-3})
     for f in ("metrics.json", "summary.json", "checkpoint.pt"):
         assert (tmp_path / "seed0" / f).exists()
     assert s["steps_run"] == 3 and np.isfinite(s["val"]["mrstft"])
-    assert s["val"]["score"] <= s["val_init"]["score"]
+    assert s["best_step"] in (0, 1, 2, 3)
     _, payload = load_checkpoint(tmp_path / "seed0" / "checkpoint.pt")
     assert payload["meta"]["stage"] == 2 and payload["meta"]["text_model"]
 
@@ -213,3 +275,17 @@ def test_cli_fixtures_smoke(tmp_path):
     cfg = load_config(STAGE2, [f"paths.runs={tmp_path.as_posix()}"])
     assert stage2.run(cfg, argparse.Namespace(fixtures=True, limit=None)) == 0
     assert list((tmp_path / "train_stage2").glob("*/checkpoint.pt"))
+
+
+def test_train_cli_default_config_per_step():
+    import argparse
+
+    from lstmabar.train.cli import STEP_CONFIGS, add_train_parser
+
+    p = argparse.ArgumentParser()
+    add_train_parser(p.add_subparsers())
+    args = p.parse_args(["train", "stage2", "seed=1"])
+    assert args.config is None and STEP_CONFIGS["stage2"] == "configs/train/stage2.yaml"
+    root = Path(__file__).resolve().parents[2]
+    for path in STEP_CONFIGS.values():
+        assert (root / path).exists()

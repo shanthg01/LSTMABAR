@@ -13,6 +13,11 @@ from lstmabar.config import load_config
 from lstmabar.seed import seed_everything
 
 DEFAULT_CONFIG = "configs/train/stage1.yaml"
+STEP_CONFIGS: dict[str, str] = {
+    # default --config per step
+    "stage1": DEFAULT_CONFIG,
+    "stage2": "configs/train/stage2.yaml",
+}
 
 STEPS: dict[str, tuple[str, str, str]] = {
     # step: (module under lstmabar.train, function, help)
@@ -23,7 +28,7 @@ STEPS: dict[str, tuple[str, str, str]] = {
 
 def cmd_train(args: argparse.Namespace) -> int:
     module, func, _ = STEPS[args.step]
-    cfg = load_config(args.config, args.overrides)
+    cfg = load_config(args.config or STEP_CONFIGS[args.step], args.overrides)
     seed_everything(int(cfg.seed))
     fn = getattr(importlib.import_module(f"lstmabar.train.{module}"), func)
     return int(fn(cfg, args) or 0)
@@ -32,11 +37,11 @@ def cmd_train(args: argparse.Namespace) -> int:
 def add_train_parser(sub) -> None:
     p = sub.add_parser("train", help="P6 training: " + ", ".join(STEPS))
     p.add_argument("step", choices=list(STEPS))
-    p.add_argument("--config", default=DEFAULT_CONFIG)
+    p.add_argument("--config", default=None, help="default: configs/train/<step>.yaml")
     p.add_argument("--limit", type=int, default=None, help="cap items per split (smoke runs)")
     p.add_argument("--fixtures", action="store_true", help="run on the synthetic eval fixture")
     p.add_argument("overrides", nargs="*", help="dotlist overrides, e.g. seed=1")
     p.set_defaults(func=cmd_train)
 
 
-__all__ = ["DEFAULT_CONFIG", "STEPS", "add_train_parser", "cmd_train"]
+__all__ = ["DEFAULT_CONFIG", "STEPS", "STEP_CONFIGS", "add_train_parser", "cmd_train"]
