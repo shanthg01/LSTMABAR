@@ -527,3 +527,5 @@ def test_compare_without_model_still_renders_the_baseline():
     assert base is not None and model is None
     assert MODEL_MISSING in md
     assert "C:" not in md and "runs/" not in md
+    out = _fn(app, "on_compare")("  ", None, "single_notes", False, *_text_controls())
+    assert out == [None, None, "*Type an instruction first.*"]

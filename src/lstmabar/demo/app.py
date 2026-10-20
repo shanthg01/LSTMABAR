@@ -436,6 +436,8 @@ def build_app(
         from the current manual controls."""
         enabled_vals = list(controls[:n_blocks])
         slider_vals = list(controls[n_blocks:])
+        if not (text or "").strip():
+            return [None, None, "*Type an instruction first.*"]
         clip = load_clip(audio_value, riff_kind)
         outs, lines = [], []
         for choice in (BASELINE, MODEL):

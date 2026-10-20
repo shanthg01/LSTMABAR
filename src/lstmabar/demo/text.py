@@ -369,11 +369,13 @@ MODEL_MISSING = (
     "deployment (checkpoints are trained locally and not shipped). The baseline still works."
 )
 MODEL_NOTE = (
-    "*Baseline vs model: on the LLM-written gold sets the P6 model (bge-text variant) ties "
-    "the kNN-bge baseline (paired 2AFC differences -0.024 / +0.001 / -0.012, every 95 % CI "
-    "includes 0); in distribution (synthetic test split) it is better (MR-STFT -0.130 "
+    "*Baseline vs model: on the LLM-written gold sets the P6 model (bge-text variant) is not "
+    "distinguishable from the kNN-bge baseline (paired 2AFC differences -0.024 / +0.001 / "
+    "-0.012, every 95 % CI includes 0), nor on the unseen pedal (MR-STFT -0.021, CI includes "
+    "0); in distribution (synthetic test split) it is better (MR-STFT -0.130 "
     "[-0.173, -0.085]). Those are 5-seed results; the demo runs one trained seed. No real "
-    "human test items yet. Details: reports/v2_results.md in the repository.*"
+    "human test items yet. Details: reports/v2_results.md in the repository. The nearest "
+    "pedal describes the predicted settings (a lookup), not an independent judgement.*"
 )
 
 

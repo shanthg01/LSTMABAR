@@ -19,6 +19,10 @@ knob, the space the methods predict in):
   EQ off reads as a flat EQ. Every pedal preset has the drive on; when the prediction has it
   off, the explanation says so (no pedal is then really close).
 
+The nearest pedal describes the predicted settings, not an independent judgement of
+the method: kNN-bge, for one, predicts the mean label of renders that are often of a single
+pedal, so its nearest pedal is close to circular.
+
 The held-out pedal (``render.holdout_pedal``, the Rat in data v1: never in the training
 split) is not excluded, since this is a demo lookup, not an evaluation, but it is labelled.
 """
@@ -53,8 +57,9 @@ GROUPS: dict[str, tuple[tuple[str, str], ...]] = {
 """Knob groups scored by :func:`board_distance` (normalized knobs)."""
 
 GROUP_LABELS = {"gain": "drive gain", "clipping": "clipping shape", "tone": "tone / EQ"}
-DIAL_GRID: tuple[float, ...] = (0.0, 0.25, 0.5, 0.75, 1.0)
-"""Pot rotations tried per pedal knob in :func:`pedal_atlas` (every combination)."""
+DIAL_GRID: tuple[float, ...] = (0.0, 0.25, 0.5, 0.75, 0.875, 1.0)
+"""Pot rotations tried per pedal knob in :func:`pedal_atlas` (every combination): steps of
+2.5 on the 0-10 dials, plus 8.75, where high-gain settings sit (156 derives for the v1 KB)."""
 LEVEL_POTS = frozenset({"level", "volume"})
 """Output-level pots: they only move ``drive.level_db``, which the distance ignores, so the
 atlas holds them at their default (a derive takes ~0.1-0.5 s; this keeps the atlas small)."""
