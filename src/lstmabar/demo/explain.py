@@ -20,7 +20,7 @@ knob, the space the methods predict in):
   off, the explanation says so (no pedal is then really close).
 
 The nearest pedal describes the predicted settings, not an independent judgement of
-the method: kNN-bge, for one, predicts the mean label of renders that are often of a single
+the method: kNN-bge, for one, predicts the median label (majority vote for gates) of renders that are often of a single
 pedal, so its nearest pedal is close to circular.
 
 The held-out pedal (``render.holdout_pedal``, the Rat in data v1: never in the training
