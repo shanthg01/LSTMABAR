@@ -7,7 +7,7 @@ Where work runs (decided 2026-10-14):
 | Embedding cache (`lstmabar eval embed`) | local | text tables are done; audio runs at ~2 clips/s on the quieter machine (val/test/unseen ≈ 1–2 h, train ≈ 3–4 h per CLAP checkpoint). Move to Colab only if it stalls |
 | No-op / mean / kNN / P6 stage 1 scoring and training | local | CPU-bound, cheap once the machine is not overloaded |
 | **Text2FX** (`--methods text2fx`) | **Colab GPU** | ~26 min per optimization at 200 steps on the local CPU |
-| P6 stage 2 + seeds | Colab GPU | `L_audio` through the oversampled pedalboard (`lstmabar train stage2`, not implemented yet) |
+| P6 stage 2 + seeds | Colab GPU | `L_audio` through the oversampled pedalboard (`lstmabar train stage2`, section 4) |
 | pOD-set (`internal_only`) audio | local only | licence (CC BY-NC, internal); nothing on Colab needs it |
 
 Colab uses the same CLI as local runs (`colab/bootstrap.ipynb`); no project logic in the notebook.
@@ -118,7 +118,117 @@ after a disconnect; finished splits are kept):
 - GPU scores are not bitwise reproducible (CUDA atomic adds in the backward pass);
   `methods/text2fx.json` records the device that produced them.
 
-## 4. P6 stage 2 (later)
+## 4. P6 stage 2 (`lstmabar train stage2`)
 
-Needs the full `data/rendered/v1/` (7.1 GB: add the train wets) plus `data/cache/clap/` and a
-stage-1 checkpoint; commands land with `lstmabar train stage2` (P6 prep notes, "Colab data").
+Stage 2 fine-tunes the stage-1 **bge-text** checkpoints (`runs/stage1_ab_bge_text/seed{seed}/`,
+the best stage-1 variant) with `L_param + L_audio` through the oversampled pedalboard
+(`configs/train/stage2.yaml`, `src/lstmabar/train/stage2.py`). It reads the dry clips and
+**every** train wet, so it needs the full `data/rendered/v1/`, not the section 1 bundle.
+
+**Cost.** Measured on the local CPU (4 threads, busy machine), batch 32 with 1–1.5 s crops
+and the default 0.5 s pre-roll: **10.1 s/step** end to end (7.8 s/step with a 0.1 s pre-roll;
+decoding a crop ≈ 14 ms/item). One seed is 8 epochs × 767 steps = 6,136 steps (fewer if early
+stopping fires): ~17 h per seed on this CPU, so local training is out. GPU speed is **not measured
+yet**. The filters and the oversampler are FFT/conv ops, and the compressor's smoothing loop
+runs in NumPy on the host. Run Cell E first and extrapolate from its s/step:
+`hours per seed ≈ s/step × 6,136 / 3,600`, plus the val evaluations (step 0 and one per epoch).
+
+### Upload bundle (~9 GB)
+
+From the **main checkout's** repo root in Git Bash (archives go **outside** the repo). No file
+lists are built with Python here, so the CRLF issue from section 1 does not arise. FLAC is
+already compressed, so the rendered audio goes into a plain `.tar`:
+
+```bash
+set -o pipefail
+O=../lstmabar_colab_upload && mkdir -p "$O" && O=$(cd "$O" && pwd)
+(cd data/rendered && tar -cf "$O/lstmabar_rendered_full.tar" v1 gold_v1 valproxy_v1)
+tar -czf "$O/lstmabar_rest.tgz" data/manifests data/calibration data/cache/f0 data/cache/clap data/cache/bge
+tar -czf "$O/lstmabar_stage1_bge.tgz" runs/stage1_ab_bge_text/seed*/checkpoint.pt
+tar -tf "$O/lstmabar_rendered_full.tar" | grep -c '\.flac$'   # dry clips + all wets + gold + val-proxy renders
+tar -tzf "$O/lstmabar_stage1_bge.tgz"                        # expect 5 checkpoint.pt files
+```
+
+- `lstmabar_rendered_full.tar` (~8.6 GB: 7.1 + 0.98 + 0.54): `v1/` (dry + all 108 wet shards with their
+  `items.jsonl` / `captions.jsonl` / `DONE` and `plan.json`), `gold_v1/` (gold scoring) and
+  `valproxy_v1/` (the val 2AFC table in `eval run`). It replaces section 1's
+  `lstmabar_rendered.tgz`; delete that one from Drive if space is tight (free tier: 15 GB).
+- `lstmabar_rest.tgz` is section 1's command, re-run so the caches are current (it holds the
+  CLAP and bge tables of every split, train included).
+- `lstmabar_stage1_bge.tgz`: the five stage-1 bge checkpoints (~4 MB each).
+
+Upload the three files to `MyDrive/lstmabar/`. Nothing `internal_only` is included.
+
+### Cells
+
+Run the bootstrap cells (T4 GPU runtime) as in section 2, then add these.
+
+**Cell D: setup** (data to the VM's disk, checkpoints into the clone):
+
+```python
+!pip install -q -e ".[dev,clap,dsp,analysis,whitebox]"
+!mkdir -p /content/data/rendered
+!tar -xf {DRIVE_ROOT}/lstmabar_rendered_full.tar -C /content/data/rendered
+!tar -xzf {DRIVE_ROOT}/lstmabar_rest.tgz -C /content
+!tar -xzf {DRIVE_ROOT}/lstmabar_stage1_bge.tgz -C /content/LSTMABAR
+!mkdir -p /content/data/gold && cp -r /content/LSTMABAR/data/gold/. /content/data/gold/
+DATA = "/content/data"
+OUT = DRIVE_ROOT + "/runs"
+S2 = DRIVE_ROOT + "/runs/stage2_bge/seed{seed}/checkpoint.pt"  # literal "{seed}": a template
+!ls -d {DATA}/rendered/v1/dry {DATA}/rendered/v1/wet/plan.json {DATA}/rendered/gold_v1 {DATA}/rendered/valproxy_v1 {DATA}/manifests/v1/dry_clips.jsonl {DATA}/cache/bge runs/stage1_ab_bge_text/seed4/checkpoint.pt
+# A failed ! command does not stop the cell: read the output for "No such file" / "Error".
+!python -c "import torch; print('cuda', torch.cuda.is_available())"
+```
+
+`cuda True` is required. `S2` is a plain string (not an f-string), so `{seed}` stays literal;
+IPython expands `{S2}` on a `!` line once and does not re-expand the inserted text.
+
+**Cell E: timing smoke** (50 steps, a throwaway run dir on the VM; read `s/step` from the
+last printed line):
+
+```python
+!lstmabar train stage2 --config configs/train/stage2.yaml paths.data={DATA} paths.runs=/content/runs stage2.max_steps=50 stage2.eval_every=25
+```
+
+**Cell F: train 5 seeds** (each seed's run dir goes to Drive under `runs/stage2_bge_s<N>/`, and
+the best checkpoint is copied to the `S2` template; after a disconnect re-run the cell: seeds
+whose checkpoint exists are skipped, and an interrupted seed restarts from its stage-1
+checkpoint):
+
+```python
+import os
+for s in range(5):
+    if os.path.exists(S2.replace("{seed}", str(s))):
+        print("seed", s, "done")
+        continue
+    !lstmabar train stage2 --config configs/train/stage2.yaml paths.data={DATA} paths.runs={OUT} seed={s} name=stage2_bge_s{s} stage2.export_checkpoint={S2}
+```
+
+- The default `stage2.init_checkpoint` is `runs/stage1_ab_bge_text/seed{seed}/checkpoint.pt`
+  relative to the clone (`/content/LSTMABAR`), which Cell D fills.
+- Selection is on val only (2.5 × the stage-1 parameter criterion + 0.33 × MR-STFT on 128
+  fixed val items spread over clips; both terms ≈ 0.4–0.5 for the stage-1 checkpoints);
+  step 0, i.e. the stage-1 checkpoint itself, is a candidate, so `best_step: 0` in
+  `summary.json` means stage 2 did not improve on stage 1.
+- GPU runs are not bitwise reproducible (CUDA atomic adds); `summary.json` records the
+  device and `seconds_per_step`.
+
+**Cell G: score** as `p6_model` in its own run dir (dotlist overrides **before**
+`--methods`):
+
+```python
+!lstmabar eval run paths.data={DATA} paths.runs={OUT} name=eval_p6_stage2 eval.report_dir={OUT}/eval_p6_stage2_report eval.report_name=p6_stage2 eval.model.checkpoint={S2} --workers 2 --methods p6_model
+```
+
+- This scores val, `test`, `test_unseen_pedal` and gold for the 5 seeds, like the local
+  `eval_p6_bge` run. Scoring is CPU-bound (renders + harmonic analysis), and Colab has 2 vCPUs.
+  It can equally run locally: download `MyDrive/lstmabar/runs/stage2_bge/` into the local
+  `runs/stage2_bge/` and run the same command there without `paths.data` / `paths.runs` and
+  with `eval.model.checkpoint=runs/stage2_bge/seed{seed}/checkpoint.pt`.
+- The scores and the report (`runs/eval_p6_stage2_report/p6_stage2.{md,json}`) are both
+  written to Drive, so a VM recycle loses nothing; a resumed run continues in the same run
+  dir with `--run-dir`. The report can also be rebuilt locally from the scores:
+  `uv run lstmabar eval report --run-dir runs/eval_p6_stage2/<stamp>`.
+- Afterwards download `runs/eval_p6_stage2/` and `runs/stage2_bge_s*/` (configs, metrics,
+  summaries) into the local `runs/`, and add the run to `results.extra_models` in
+  `configs/eval/v2_results.yaml` for `lstmabar eval results`.
