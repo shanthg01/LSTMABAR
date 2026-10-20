@@ -312,6 +312,9 @@ def test_scrub_paths(text):
 def test_scrub_keeps_model_ids():
     s = "model laion/clap-htsat-unfused, run `lstmabar eval embed` first"
     assert scrub_paths(s) == s
+    s = "hf_id: BAAI/bge-base-en-v1.5, k: 25"  # a version number is not a file extension
+    assert scrub_paths(s) == s
+    assert scrub_paths("missing runs/x.pt") == "missing <path>"
 
 
 def test_info_summary_flattens_scalars_only():
@@ -400,3 +403,82 @@ def test_decode_errors_show_the_decode_message():
     with pytest.raises(TextMethodError) as e:
         s.predict("x", bad_clip)
     assert str(e.value) == "The uploaded clip is empty."
+
+
+# --- M4: baseline vs model routing (P6 6.8) -----------------------------------------------------
+
+
+def test_text_methods_route_by_choice():
+    from lstmabar.demo.text import BASELINE, MODEL, TextMethods
+
+    base, _ = _setter(FakeMethod(), name="knn_bge")
+    model, _ = _setter(FakeMethod({"drive": {"gain_db": 0.1}}), name="p6_model")
+    methods = TextMethods(base, model)
+    assert methods.choices() == [
+        ("kNN-bge (baseline)", BASELINE),
+        ("P6 model (bge-text variant, stage 1)", MODEL),
+    ]
+    assert methods.predict(BASELINE, "x").method == "knn_bge"
+    assert methods.predict(None, "x").method == "knn_bge"
+    pred = methods.predict(MODEL, "x")
+    assert pred.method == "p6_model" and pred.board["drive"]["gain_db"] == pytest.approx(0.1)
+    with pytest.raises(TextMethodError, match="unknown text method choice"):
+        methods.predict("llm", "x")
+
+
+def test_missing_model_gives_a_clear_message_and_keeps_the_baseline(tmp_path):
+    from lstmabar.demo.text import (
+        MODEL,
+        MODEL_MISSING,
+        TextMethods,
+        default_model_setter,
+        resolve_checkpoint,
+    )
+
+    cfg = OmegaConf.merge(
+        CFG, {"demo": {"model_checkpoint": str(tmp_path / "runs" / "nope" / "checkpoint.pt")}}
+    )
+    assert resolve_checkpoint(cfg.demo.model_checkpoint) is None
+    assert resolve_checkpoint(None) is None and resolve_checkpoint("  ") is None
+    assert default_model_setter(cfg) is None
+    assert default_model_setter(None) is None
+    base, _ = _setter(FakeMethod())
+    methods = TextMethods(base, None)
+    assert not methods.model_available
+    assert ("P6 model (bge-text variant, stage 1)", MODEL) in methods.choices()
+    with pytest.raises(TextMethodError) as e:
+        methods.predict(MODEL, "x")
+    assert str(e.value) == MODEL_MISSING
+    assert scrub_paths(MODEL_MISSING) == MODEL_MISSING and "runs" not in MODEL_MISSING
+    assert methods.predict("baseline", "x").method == "mean"
+
+
+def test_model_setter_points_p6_model_at_the_checkpoint(tmp_path, monkeypatch):
+    from lstmabar.demo.text import default_model_setter, model_config, resolve_checkpoint
+
+    ckpt = tmp_path / "runs" / "m" / "checkpoint.pt"
+    ckpt.parent.mkdir(parents=True)
+    ckpt.write_bytes(b"")
+    monkeypatch.chdir(tmp_path)
+    rel = "runs/m/checkpoint.pt"
+    assert resolve_checkpoint(rel) == tmp_path / rel  # relative: working directory first
+    cfg = OmegaConf.merge(
+        CFG,
+        {"demo": {"model_checkpoint": rel, "model_encode_missing": True}, "eval": {"x": 1}},
+    )
+    s = default_model_setter(cfg)
+    assert s is not None and s.method_name == "p6_model"
+    assert s.cfg.eval.model.checkpoint == str(tmp_path / rel)
+    assert s.cfg.eval.model.encode_missing is True and s.cfg.eval.x == 1
+    assert "model" not in cfg.eval  # the demo config is not mutated
+    assert model_config(None, ckpt).eval.model.checkpoint == str(ckpt)
+
+
+def test_demo_config_offers_the_bge_text_model_without_making_it_default():
+    from lstmabar.config import load_config
+    from lstmabar.demo.text import DEFAULT_CONFIG
+
+    cfg = load_config(DEFAULT_CONFIG)
+    assert cfg.demo.text_method == "knn_bge"
+    assert cfg.demo.model_checkpoint == "runs/stage1_ab_bge_text/seed0/checkpoint.pt"
+    assert cfg.demo.model_encode_missing is True

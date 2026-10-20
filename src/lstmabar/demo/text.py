@@ -20,6 +20,7 @@ from __future__ import annotations
 import logging
 import re
 import threading
+import warnings
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -67,9 +68,10 @@ _PATH_RE = re.compile(
     # any token with a backslash (relative Windows paths)
     r"|[^\s'\"`]*\\[^\s'\"`]*"
     # absolute or relative POSIX-style paths: two or more separators, or one separator
-    # and a file extension (keeps one-slash model ids such as laion/clap-htsat-unfused)
+    # and a file extension starting with a letter (keeps one-slash model ids such as
+    # laion/clap-htsat-unfused and BAAI/bge-base-en-v1.5)
     r"|[^\s'\"`/]*(?:/[^\s'\"`/]+){2,}/?"
-    r"|[^\s'\"`/]*/[^\s'\"`/]+\.[A-Za-z0-9]{1,5}\b"
+    r"|[^\s'\"`/]*/[^\s'\"`/]+\.[A-Za-z][A-Za-z0-9]{0,4}\b"
 )
 
 
@@ -248,7 +250,10 @@ class TextKnobSetter:
         if self.cfg is None:
             raise self.unavailable("no demo config was loaded")
         try:
-            m = self._build(name, self.cfg, seed=int(_select(self.cfg, "seed", 0)))
+            with warnings.catch_warnings():
+                # the demo runs one fixed P6 checkpoint on purpose (not a D3 evaluation)
+                warnings.filterwarnings("ignore", message="p6_model: fixed checkpoint")
+                m = self._build(name, self.cfg, seed=int(_select(self.cfg, "seed", 0)))
             hparams = _select(self.cfg, "demo.text_hparams", None)
             if hparams:
                 if isinstance(hparams, DictConfig):
@@ -345,6 +350,116 @@ class TextKnobSetter:
             raise self.unavailable(_reason(e)) from e
 
 
+# ============================================================================ baseline vs model
+
+BASELINE = "baseline"
+MODEL = "model"
+MODEL_METHOD = "p6_model"
+DEFAULT_MODEL_CHECKPOINT = "runs/stage1_ab_bge_text/seed0/checkpoint.pt"
+METHOD_LABELS = {
+    "mean": "mean",
+    "noop": "no-op",
+    "knn_clap": "kNN-CLAP",
+    "knn_bge": "kNN-bge",
+    "p6_model": "P6 model",
+}
+MODEL_LABEL = "P6 model (bge-text variant, stage 1)"
+MODEL_MISSING = (
+    "The P6 model is not available here: its trained checkpoint is not part of this "
+    "deployment (checkpoints are trained locally and not shipped). The baseline still works."
+)
+MODEL_NOTE = (
+    "*Baseline vs model: on the LLM-written gold sets the P6 model (bge-text variant) ties "
+    "the kNN-bge baseline (paired 2AFC differences -0.024 / +0.001 / -0.012, every 95 % CI "
+    "includes 0); in distribution (synthetic test split) it is better (MR-STFT -0.130 "
+    "[-0.173, -0.085]). Those are 5-seed results; the demo runs one trained seed. No real "
+    "human test items yet. Details: reports/v2_results.md in the repository.*"
+)
+
+
+def resolve_checkpoint(path: str | Path | None) -> Path | None:
+    """An existing checkpoint file for ``demo.model_checkpoint`` (relative paths are tried
+    against the working directory, then the repo root), or ``None``."""
+    if path is None or not str(path).strip():
+        return None
+    p = Path(str(path))
+    candidates = [p] if p.is_absolute() else [Path.cwd() / p, REPO_ROOT / p]
+    for c in candidates:
+        if c.is_file():
+            return c
+    return None
+
+
+def model_config(cfg: Any, checkpoint: Path) -> DictConfig:
+    """``cfg`` with ``eval.model.checkpoint`` set to ``checkpoint`` and ``encode_missing``
+    from ``demo.model_encode_missing`` (default true: demo queries are never cached)."""
+    base = cfg if isinstance(cfg, DictConfig) else OmegaConf.create({})
+    out = OmegaConf.merge(base, {})
+    encode = bool(_select(base, "demo.model_encode_missing", True))
+    OmegaConf.update(out, "eval.model.checkpoint", str(checkpoint), force_add=True)
+    OmegaConf.update(out, "eval.model.encode_missing", encode, force_add=True)
+    return out
+
+
+def default_model_setter(cfg: Any) -> TextKnobSetter | None:
+    """A :class:`TextKnobSetter` for the P6 model at ``demo.model_checkpoint``, or ``None``
+    when no config is loaded or the checkpoint file does not exist (clean checkout, Space)."""
+    if not isinstance(cfg, DictConfig):
+        return None
+    ckpt = resolve_checkpoint(_select(cfg, "demo.model_checkpoint", None))
+    if ckpt is None:
+        return None
+    return TextKnobSetter(model_config(cfg, ckpt), MODEL_METHOD)
+
+
+class TextMethods:
+    """The two text paths of the M4 demo: the baseline (``demo.text_method``) and the P6
+    model. :meth:`predict` routes by choice (:data:`BASELINE` / :data:`MODEL`); a missing
+    model gives :data:`MODEL_MISSING` and never affects the baseline."""
+
+    def __init__(self, baseline: TextKnobSetter, model: TextKnobSetter | None = None) -> None:
+        self.baseline = baseline
+        self.model = model
+
+    @property
+    def model_available(self) -> bool:
+        return self.model is not None
+
+    def label(self, choice: str) -> str:
+        if choice == MODEL:
+            return MODEL_LABEL
+        name = self.baseline.method_name
+        return f"{METHOD_LABELS.get(name, name)} (baseline)"
+
+    def choices(self) -> list[tuple[str, str]]:
+        """Radio choices ``(label, value)``; the model is listed even when it is missing (it
+        then answers with :data:`MODEL_MISSING`)."""
+        return [(self.label(BASELINE), BASELINE), (self.label(MODEL), MODEL)]
+
+    def setter(self, choice: str | None) -> TextKnobSetter:
+        if choice in (None, "", BASELINE):
+            return self.baseline
+        if choice == MODEL:
+            if self.model is None:
+                raise TextMethodError(MODEL_MISSING)
+            return self.model
+        raise TextMethodError(f"unknown text method choice {choice!r}")
+
+    def predict(
+        self,
+        choice: str | None,
+        text: str | None,
+        load_clip: Callable[[], np.ndarray] | None = None,
+        sample_rate: int = 44100,
+    ) -> TextPrediction:
+        return self.setter(choice).predict(text, load_clip, sample_rate=sample_rate)
+
+    def warm_up(self) -> None:
+        self.baseline.warm_up()
+        if self.model is not None:
+            self.model.warm_up()
+
+
 # ============================================================================ attribution
 
 
@@ -368,15 +483,23 @@ def controls_match(
 
 
 __all__ = [
+    "BASELINE",
     "DEFAULT_CONFIG",
     "DEFAULT_METHOD",
     "DEMO_METHODS",
+    "MODEL",
+    "MODEL_MISSING",
+    "MODEL_NOTE",
     "DemoQuery",
     "TextKnobSetter",
     "TextMethodError",
+    "TextMethods",
     "TextPrediction",
     "controls_match",
+    "default_model_setter",
     "demo_query",
+    "model_config",
+    "resolve_checkpoint",
     "info_summary",
     "scrub_paths",
 ]

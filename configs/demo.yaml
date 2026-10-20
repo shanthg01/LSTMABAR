@@ -1,4 +1,4 @@
-# M3 demo (P5 task 5.6, D7). Usage: lstmabar demo [--config configs/demo.yaml] [dotlist overrides]
+# M3/M4 demo (P5 task 5.6, D7; P6 task 6.8). Usage: lstmabar demo [--config configs/demo.yaml] [dotlist overrides]
 # e.g. lstmabar demo demo.text_method=knn_clap demo.text_hparams.k=10
 #      lstmabar demo demo.text_method=p6_model eval.model.checkpoint=runs/.../checkpoint.pt
 # The eval config supplies the data paths (train split for fitting), the embedding cache dir
@@ -14,6 +14,13 @@ demo:
   # knn_bge (k=25) in the 2026-10-15 run; the LLM baseline is never used here.
   text_method: knn_bge       # best demo-eligible baseline on val (reports/p5_baselines.md, 2026-10-15)
   text_hparams: {k: 25}       # the val-selected k (same run); passed to Method.set_hparams (e.g. {k: 10} for kNN); {}: none
+  # M4 (P6 6.8): the "P6 model" choice of the text A/B. The best stage-1 variant (bge text,
+  # reports/v2_results.md: ties knn_bge on the LLM-written gold sets, better in distribution),
+  # so it is offered next to the baseline, not as the default. Checkpoints are local only
+  # (runs/ is gitignored): when the file is missing the choice says so and the baseline works.
+  # Relative paths: working directory first, then the repo root.
+  model_checkpoint: runs/stage1_ab_bge_text/seed0/checkpoint.pt
+  model_encode_missing: true  # demo queries are never cached: encode the text on the fly
 
 eval:
   model:                      # p6_model (lstmabar.models.method.ModelMethod)

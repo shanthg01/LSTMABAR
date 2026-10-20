@@ -356,32 +356,55 @@ def test_render_with_archetype_panel(kb, monkeypatch, numba_ok):
 # --- M3: text -> knobs ----------------------------------------------------------------------------
 
 
-def _text_app(fail=None, kb=None, uses_audio=False):
+def _fixed_setter(name="mean", fail=None, uses_audio=False, gain=0.75):
     from omegaconf import OmegaConf
 
     from lstmabar.demo.text import TextKnobSetter
     from lstmabar.eval.baselines.base import Method, complete_board
 
     class Fixed(Method):
-        name = "fake"
-
         def __init__(self):
             super().__init__(None)
+            self.name = name
             self.uses_audio = uses_audio
 
         def predict(self, queries):
             if fail is not None:
                 raise fail
             # real-board names: only drive.gain_db and the gates exist on FakeBoard
-            b = {"drive": {"gain_db": 0.75, "enabled": 1.0}, "eq": {"enabled": 0.0}}
+            b = {"drive": {"gain_db": gain, "enabled": 1.0}, "eq": {"enabled": 0.0}}
             return [complete_board(b, enabled=1.0) for _ in queries]
 
         def info(self):
             return {"name": self.name, "k": 3}
 
     cfg = OmegaConf.create({"seed": 0, "audio": {"inference_peak_dbfs": -15.0}})
-    setter = TextKnobSetter(cfg, "mean", build=lambda n, c, seed=0: Fixed(), load_train=list)
-    return build_app(FakeBoard, kb={} if kb is None else kb, text_setter=setter)
+    return TextKnobSetter(cfg, name, build=lambda n, c, seed=0: Fixed(), load_train=list)
+
+
+def _atlas():
+    from lstmabar.demo.explain import AtlasEntry
+    from lstmabar.eval.baselines.base import complete_board
+
+    def entry(pid, gain):
+        board = complete_board({"drive": {"gain_db": gain}}, enabled=1.0)
+        return AtlasEntry(pid, pid.upper(), {"drive": gain}, {"drive": "Drive"}, board)
+
+    return [entry("soft", 0.2), entry("hot", 0.8)]
+
+
+def _text_app(fail=None, kb=None, uses_audio=False, model=None):
+    from lstmabar.demo.explain import PedalExplainer
+
+    setter = _fixed_setter("mean", fail=fail, uses_audio=uses_audio)
+    kb = {} if kb is None else kb
+    return build_app(
+        FakeBoard,
+        kb=kb,
+        text_setter=setter,
+        model_setter=model,
+        explainer=PedalExplainer(kb, atlas=_atlas()),
+    )
 
 
 def _text_controls():
@@ -393,7 +416,7 @@ def test_text_sets_sliders_and_gates_through_the_generated_controls():
     labels = {getattr(b, "label", None) for b in app.blocks.values()}
     assert "Instruction" in labels
     current = [True, True, False, 3.0, 0.25, 0.4, -6.0]
-    pedal, *rest = _fn(app, "on_text")("more crunch", None, "single_notes", *current)
+    pedal, *rest = _fn(app, "on_text")("more crunch", "baseline", None, "single_notes", *current)
     checks, sliders = rest[:N_BLOCKS], rest[N_BLOCKS : N_BLOCKS + N_SLIDERS]
     text_md, state = rest[N_BLOCKS + N_SLIDERS :]
     assert pedal == MANUAL
@@ -415,12 +438,12 @@ def test_text_sets_sliders_and_gates_through_the_generated_controls():
 
 def test_text_errors_keep_the_controls_and_hide_paths():
     app = _text_app(fail=RuntimeError(r"cannot read C:\Users\me\secret\cache.npz"))
-    out = _fn(app, "on_text")("x", None, "single_notes", *_text_controls())
+    out = _fn(app, "on_text")("x", "baseline", None, "single_notes", *_text_controls())
     assert all(u == gr.update() for u in out[: 1 + N_BLOCKS + N_SLIDERS])
     assert out[-1] == gr.update()
     msg = out[-2]
     assert "text method unavailable (mean)" in msg and "secret" not in msg
-    empty = _fn(app, "on_text")("  ", None, "single_notes", *_text_controls())
+    empty = _fn(app, "on_text")("  ", "baseline", None, "single_notes", *_text_controls())
     assert "Type an instruction" in empty[-2]
 
 
@@ -436,7 +459,7 @@ def test_render_applies_the_inference_level():
 
 def test_text_switches_an_active_pedal_to_the_manual_board(kb):
     app = _text_app(kb=kb)
-    pedal, *_ = _fn(app, "on_text")("darker", None, "single_notes", *_text_controls())
+    pedal, *_ = _fn(app, "on_text")("darker", "baseline", None, "single_notes", *_text_controls())
     assert pedal == MANUAL
 
 
@@ -444,7 +467,7 @@ def test_text_action_is_private_and_shows_decode_errors():
     app = _text_app(uses_audio=True)
     assert _deps(app, "on_text")[0].api_visibility == "private"
     bad = (44100, np.zeros(0, np.int16))
-    out = _fn(app, "on_text")("x", bad, "single_notes", *_text_controls())
+    out = _fn(app, "on_text")("x", "baseline", bad, "single_notes", *_text_controls())
     assert "empty" in out[-2] and "unavailable" not in out[-2]
 
 
@@ -457,3 +480,50 @@ def test_default_app_reads_the_demo_config():
     want = str(load_config(DEFAULT_CONFIG).demo.text_method)
     assert any(f"Text method: `{want}`" in str(v) for v in md)
     assert want == "knn_bge"  # the M3 pick (reports/p5_baselines.md); change deliberately
+
+
+# --- M4: baseline vs model, nearest pedal ---------------------------------------------------------
+
+
+def test_text_explains_with_the_nearest_pedal():
+    app = _text_app()
+    out = _fn(app, "on_text")("more gain", "baseline", None, "single_notes", *_text_controls())
+    assert "**Nearest pedal:** HOT at Drive 8" in out[-2]
+
+
+def test_text_model_choice_routes_and_reports_a_missing_checkpoint():
+    from lstmabar.demo.text import MODEL_MISSING
+
+    app = _text_app()  # no model
+    radio = [b for b in app.blocks.values() if isinstance(b, gr.Radio)]
+    assert len(radio) == 1 and [c[1] for c in radio[0].choices] == ["baseline", "model"]
+    out = _fn(app, "on_text")("x", "model", None, "single_notes", *_text_controls())
+    assert out[-2] == f"*{MODEL_MISSING}*" and out[-1] == gr.update()
+    assert all(u == gr.update() for u in out[: 1 + N_BLOCKS + N_SLIDERS])
+
+    app = _text_app(model=_fixed_setter("p6_model", gain=0.25))
+    out = _fn(app, "on_text")("x", "model", None, "single_notes", *_text_controls())
+    assert "`p6_model`" in out[-2] and "SOFT" in out[-2]
+    assert out[1 + N_BLOCKS] == pytest.approx(-12.0)  # drive gain 0.25 of [-24, 24] dB
+
+
+def test_compare_renders_both_methods_on_the_same_input():
+    app = _text_app(model=_fixed_setter("p6_model", gain=0.25))
+    assert _deps(app, "on_compare")[0].api_visibility == "private"
+    base, model, md = _fn(app, "on_compare")(
+        "more gain", None, "single_notes", False, *_text_controls()
+    )
+    assert base[0] == model[0] == 44100 and base[1].shape == model[1].shape
+    assert not np.array_equal(base[1], model[1])  # +12 dB vs -12 dB drive
+    assert "kNN" not in md and "mean (baseline)" in md and "P6 model" in md
+    assert "HOT" in md and "SOFT" in md
+
+
+def test_compare_without_model_still_renders_the_baseline():
+    from lstmabar.demo.text import MODEL_MISSING
+
+    app = _text_app()
+    base, model, md = _fn(app, "on_compare")("x", None, "single_notes", False, *_text_controls())
+    assert base is not None and model is None
+    assert MODEL_MISSING in md
+    assert "C:" not in md and "runs/" not in md
