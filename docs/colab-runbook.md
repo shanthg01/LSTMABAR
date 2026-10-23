@@ -128,8 +128,8 @@ the best stage-1 variant) with `L_param + L_audio` through the oversampled pedal
 **Cost.** Measured on the local CPU (4 threads, busy machine), batch 32 with 1–1.5 s crops
 and the default 0.5 s pre-roll: **10.1 s/step** end to end (7.8 s/step with a 0.1 s pre-roll;
 decoding a crop ≈ 14 ms/item). One seed is 8 epochs × 767 steps = 6,136 steps (fewer if early
-stopping fires): ~17 h per seed on this CPU, so local training is out. GPU speed is **not measured
-yet**. The filters and the oversampler are FFT/conv ops, and the compressor's smoothing loop
+stopping fires): ~17 h per seed on this CPU, so local training is out. GPU speed on a Colab T4: **0.261 s/step** (owner's 50-step Cell E smoke, 2026-10-21) ≈ 27 min of steps
+per seed. The filters and the oversampler are FFT/conv ops, and the compressor's smoothing loop
 runs in NumPy on the host. Run Cell E first and extrapolate from its s/step:
 `hours per seed ≈ s/step × 6,136 / 3,600`, plus the val evaluations (step 0 and one per epoch).
 
