@@ -21,7 +21,7 @@
 
 **Not done / caveats.**
 - LLM zero-shot is not in these tables (needs the owner's API key); the listening test (6.6) is not done. `L_clap` (drive-amount only) was not tried in stage 2.
-- Interpretation: both training stages improve the in-distribution match (stage 2 mainly the audio match), but on the held-out LLM-written instructions every learned and retrieval method lands within noise of kNN-bge. The limit appears to be text understanding with frozen embeddings, not the render; the remaining levers are the text side (fine-tuned or larger text encoders, more varied caption paraphrases) and real `human` gold items to measure it properly.
+- Interpretation: both training stages improve the in-distribution match (stage 2 mainly the audio match), but neither bge-text model (stage 1 or stage 2) beats kNN-bge on any LLM-written gold set (all paired CIs include 0), and the CLAP-text model is worse on `llm_draft`. A plausible explanation (an untested hypothesis) is that the limit is the frozen text side rather than the render, since stage 2 improved the render match without moving gold; the levers that would test it are the text side (fine-tuned or larger text encoders, more varied caption paraphrases) and real `human` gold items.
 - All gold sets are LLM-written; the training paraphrases are also Claude-written, so these sets are closer in style to the training captions than real people's would be (D9).
 - Model selection used val only (early stopping on the parameter part of the D8 proxy); gold was never used for selection. Wilcoxon p-values are uncorrected for multiple comparisons.
 - Seed variance is small throughout (seed SD of the gold 2AFC means ≤ 0.02), so the conclusions are not seed noise.
