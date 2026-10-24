@@ -94,8 +94,10 @@ def collect(cfg) -> dict[str, Any]:
                 _, v, sm = unit_scores(rd, m, split, key)
                 out["synthetic"][split][key][name] = _cell(v, sm, seed)
 
-    ref = str(r.reference)
-    for name in r.compare:
+    for entry in r.compare:
+        # "a" = a vs results.reference; "a:b" = a vs b
+        name, _, other = str(entry).partition(":")
+        ref = other or str(r.reference)
         rows = []
         for s in SOURCES:
             a_ids, a, _ = unit_scores(*methods[name], "gold", "afc_mrstft", _gold_keep(s))

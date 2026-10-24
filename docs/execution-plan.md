@@ -485,13 +485,15 @@ Stage 1 (6.1–6.2, 6.4 for stage 1, 6.5 stage-1 ablations, 6.7) done: [reports/
 **Update (2026-10-23).**
 - **6.8 M4 demo done (PR #60):** "Set knobs from text" with kNN-bge (default) or the bge-text stage-1 model, "Render both" A/B on the same input and instruction, a nearest-KB-pedal line (`demo/explain.py`; a lookup of the predicted settings, not an independent judgement) and a UI note matching `reports/v2_results.md` (the model is not distinguishable from kNN-bge on the LLM-written gold sets). The model option needs the local checkpoint `runs/stage1_ab_bge_text/seed0/` (gitignored); without it the baseline still works.
 - **6.3 stage-2 code done (PR #61):** `lstmabar train stage2` fine-tunes the bge-text stage-1 checkpoints with `L_param + L_audio` (MR-STFT through the oversampled pedalboard on 1–1.5 s crops aligned to the compressor's control grid, 0.5 s pre-roll); selection on val only (2.5 × parameter criterion + 0.33 × MR-STFT on 128 strided val items; step 0 = the stage-1 checkpoint is a candidate). `L_clap` is a documented TODO. CPU cost 10.1 s/step (~17 h/seed), so it trains on Colab ([colab-runbook.md](colab-runbook.md) §4).
-- **Stage-2 training in progress on Colab:** the 50-step smoke measured 0.261 s/step on a T4 (owner's Colab log; not in the repo): ≈ 27 min of steps per seed, ≈ 2.2 h for 5 seeds plus the val evaluations (step 0 + one per epoch); the smoke's val MR-STFT moved 1.086 → 1.035 and param L1 0.097 → 0.100 (50 steps only; not a result).
+- **6.3 / 6.4 stage 2 trained and scored (2026-10-23):** 5 seeds on a Colab T4 (≈ 0.26 s/step, ≈ 27 min per seed), scored locally in `runs/eval_p6_stage2/` and added to [reports/v2_results.md](../reports/v2_results.md) as `p6_stage2_bge`. **The exit gate is still not met:** on the LLM-written gold sets stage 2 is not distinguishable from kNN-bge (paired 2AFC −0.018 / +0.014 / −0.027, all CIs include 0) or from stage 1, and its gold CIs overlap mean params' on every set. In distribution it is clearly better: synthetic `test` MR-STFT 0.954 [0.901, 1.009] vs kNN-bge 1.263 [1.185, 1.344] (non-overlapping; paired −0.309), at a small cost in param L1 (0.124 vs 0.112 for stage 1). On the unseen pedal it improves on stage 1 (paired −0.074 [−0.108, −0.041]) but not on kNN-bge or mean params.
+
+**P6 outcome.** Documented negative result for the exit gate (allowed by the gate), with an M4 demo shipped. Both training stages improve the in-distribution match; on held-out LLM-written instructions every learned and retrieval method is within noise of kNN-bge, so the bottleneck is the frozen text side, not the render.
 
 **Next.**
-1. Owner: finish the 5 stage-2 seeds on Colab (runbook §4 Cell F) and download `runs/stage2_bge/` + `runs/stage2_bge_s*/`.
-2. Score the stage-2 checkpoints locally as `p6_model` in their own run dir (`eval run`, as for `eval_p6_bge`), add them to `results.extra_models` in `configs/eval/v2_results.yaml`, regenerate `reports/v2_results.md` and update the exit-gate statement.
-3. Owner: rotate the Anthropic key → LLM zero-shot into the shared run dir.
-4. Listening test (6.6, ≥ 10 listeners) and real `human` gold items remain open; neither blocks the stage-2 result.
+1. Owner: rotate the Anthropic key → LLM zero-shot into the shared run dir (`eval run --methods llm_zero_shot` after `--estimate`), then rebuild `reports/v2_results.md`.
+2. Optional demo update: offer the stage-2 checkpoints (`runs/stage2_bge/seed0/`) as the demo's model option (better audio match in distribution; same gold result).
+3. Real `human` gold items (docs/gold-collection.md) and the listening test (6.6, ≥ 10 listeners): the remaining evaluation gaps.
+4. P7 candidates that target the measured bottleneck: a fine-tuned or larger text encoder, more varied caption paraphrases; then the P7 list as planned.
 
 ### P6 prep notes
 
