@@ -14,8 +14,11 @@ results:
     p6_bge_text:
       run_dir: runs/eval_p6_bge/20261019-120227
       method: p6_model
+    p6_stage2_bge:                                # stage 2 (L_param + L_audio, Colab), 5 seeds
+      run_dir: runs/eval_p6_stage2/20261023-133115
+      method: p6_model
   reference: knn_bge                              # the best baseline (M3, val-selected)
-  compare: [p6_model, p6_bge_text]
+  compare: [p6_model, p6_bge_text, p6_stage2_bge, "p6_stage2_bge:mean", "p6_stage2_bge:p6_bge_text"]   # "a" = vs reference; "a:b" = a vs b
   synthetic_metrics: [mrstft, param_l1, gate_acc, centroid_oct]
   subset_run: runs/eval_t2fx_l100/20261019-172245 # Text2FX (Colab) + every method, --limit 100
   ablations:                                      # stage-1 val summaries (glob, one per seed)

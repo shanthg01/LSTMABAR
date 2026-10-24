@@ -30,3 +30,10 @@ def test_fmt_cells():
     assert _fmt(None) == "n/a"
     c = {"mean": 0.5, "lo": 0.4, "hi": 0.6, "n": 10, "seed_sd": 0.01, "n_seeds": 5}
     assert _fmt(c) == "0.500 [0.400, 0.600] (10); seed SD 0.010"
+
+
+def test_compare_pair():
+    from lstmabar.eval.results import compare_pair
+
+    assert compare_pair("x", "knn_bge") == ("x", "knn_bge")
+    assert compare_pair("x:mean", "knn_bge") == ("x", "mean")
